@@ -3,28 +3,40 @@ import { ChevronDown } from "lucide-react";
 
 const faqs = [
   {
-    q: "¿Qué archivos puedo subir?",
-    a: "Aceptamos archivos STL, OBJ, 3MF y STEP. Si tenés otro formato, contactanos y te ayudamos a convertirlo.",
+    q: "¿Qué formatos de archivo aceptan?",
+    a: "Aceptamos archivos en formato STL, OBJ y 3MF. Si tu modelo está en otro formato, contactanos y te ayudamos a convertirlo.",
   },
   {
-    q: "¿Cuánto tarda recibir una cotización?",
-    a: "En general, recibís las primeras cotizaciones dentro de las 24 horas hábiles. Depende del tipo de proyecto y la complejidad.",
+    q: "¿Cuánto tarda una cotización para particulares?",
+    a: "Las cotizaciones para particulares se generan en minutos. Subís tu archivo, completás los datos básicos y recibís propuestas rápidamente.",
   },
   {
-    q: "¿Cómo verifican a los proveedores?",
-    a: "Cada proveedor pasa por un proceso de validación que incluye muestras de calidad, documentación fiscal y evaluación de capacidad productiva.",
+    q: "¿Cuánto tarda una propuesta para empresas?",
+    a: "Las propuestas corporativas se entregan en hasta 72 horas hábiles. Incluyen opciones consolidadas de múltiples proveedores verificados.",
   },
   {
-    q: "¿Puedo pedir varias piezas diferentes en un solo pedido?",
-    a: "Sí. Podés subir múltiples archivos y especificar cantidades distintas para cada uno. El sistema genera cotizaciones consolidadas.",
+    q: "¿Puedo pedir varias copias de la misma pieza?",
+    a: "Sí. Cada cotización es por un solo archivo/pieza, pero podés indicar la cantidad de copias que necesitás.",
   },
   {
-    q: "¿Hacen envíos a todo el país?",
-    a: "Sí, coordinamos entregas en todo el territorio argentino. Los costos de envío se incluyen en la cotización.",
+    q: "¿Puedo subir varias piezas diferentes en una sola cotización?",
+    a: "No. Cada cotización corresponde a una sola pieza o archivo. Si necesitás cotizar piezas distintas, podés crear una cotización separada para cada una.",
+  },
+  {
+    q: "¿Cómo validan a los proveedores?",
+    a: "Cada proveedor pasa por un proceso de evaluación que contempla capacidad técnica, materiales disponibles, cumplimiento de plazos de entrega, calidad de comunicación y confiabilidad operativa. La evaluación es continua.",
+  },
+  {
+    q: "¿Mi archivo se mantiene confidencial?",
+    a: "Sí. Tu modelo 3D no se comparte públicamente ni se utiliza fuera del contexto de tu cotización. Tratamos la confidencialidad como prioridad.",
   },
   {
     q: "¿Emiten factura?",
     a: "Sí. Emitimos factura A o B según tu condición fiscal. Para empresas, ofrecemos cuenta corriente.",
+  },
+  {
+    q: "¿Hacen envíos a todo el país?",
+    a: "Sí, coordinamos entregas en todo el territorio argentino. Los costos de envío se incluyen en la cotización.",
   },
 ];
 

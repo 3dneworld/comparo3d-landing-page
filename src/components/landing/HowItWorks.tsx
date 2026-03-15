@@ -5,25 +5,25 @@ const steps = [
     icon: Upload,
     number: "01",
     title: "Subí tu archivo",
-    desc: "Cargá tu archivo STL o describí lo que necesitás. Aceptamos los formatos más comunes.",
+    desc: "Cargá tu modelo 3D y definí lo básico para cotizar.",
   },
   {
     icon: Users,
     number: "02",
-    title: "Recibí cotizaciones",
-    desc: "Proveedores verificados compiten para darte el mejor precio, plazo y calidad.",
+    title: "Recibí opciones",
+    desc: "Compará propuestas según precio, material y plazo.",
   },
   {
     icon: BarChart3,
     number: "03",
-    title: "Compará y elegí",
-    desc: "Revisá cada propuesta: precio, material, tiempo de entrega. Todo en un solo lugar.",
+    title: "Elegí la mejor",
+    desc: "Seleccioná la opción que mejor se ajuste a tu necesidad.",
   },
   {
     icon: PackageCheck,
     number: "04",
     title: "Recibí tu pieza",
-    desc: "Coordinamos la producción y entrega. Vos solo esperás tu pieza terminada.",
+    desc: "Coordinamos producción y entrega para que no tengas que resolverlo por tu cuenta.",
   },
 ];
 
