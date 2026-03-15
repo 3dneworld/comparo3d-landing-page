@@ -1,20 +1,35 @@
 import { ArrowRight } from "lucide-react";
+import { useAudience } from "@/contexts/AudienceContext";
 
 const FinalCTA = () => {
+  const { audience } = useAudience();
+
+  const copy = audience === "particular"
+    ? {
+        headline: "Empezá a cotizar tu pieza hoy",
+        sub: "Es rápido, simple y sin vueltas. Subí tu archivo y compará opciones.",
+        cta: "Cotizar ahora",
+      }
+    : {
+        headline: "Solicitá una propuesta corporativa",
+        sub: "Centralizá compras de impresión 3D con seguimiento y facturación simplificados.",
+        cta: "Solicitar propuesta",
+      };
+
   return (
     <section className="py-20 md:py-28 bg-gradient-dark">
       <div className="container text-center">
         <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-hero-foreground max-w-2xl mx-auto">
-          Empezá a comparar cotizaciones hoy
+          {copy.headline}
         </h2>
         <p className="mt-4 text-hero-muted max-w-lg mx-auto">
-          Es gratis, rápido y sin compromiso. Subí tu archivo y recibí presupuestos de proveedores verificados.
+          {copy.sub}
         </p>
         <a
           href="#cotizar"
           className="mt-8 inline-flex items-center gap-2 bg-gradient-primary text-primary-foreground px-10 py-4 rounded-lg font-semibold text-lg hover:opacity-90 transition-opacity shadow-cta"
         >
-          Cotizar ahora
+          {copy.cta}
           <ArrowRight size={20} />
         </a>
       </div>

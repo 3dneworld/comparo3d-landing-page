@@ -8,7 +8,7 @@ const Footer = () => {
               COMPARO<span className="text-gradient-primary">3D</span>
             </span>
             <p className="mt-3 text-sm text-hero-muted leading-relaxed">
-              La plataforma argentina para comparar cotizaciones de impresión 3D.
+              La plataforma argentina para cotizar y comparar impresión 3D.
             </p>
           </div>
           <div>
@@ -29,7 +29,6 @@ const Footer = () => {
           <div>
             <h4 className="font-display font-semibold text-hero-foreground text-sm mb-3">Contacto</h4>
             <ul className="space-y-2">
-              <li className="text-sm text-hero-muted">hola@comparo3d.com</li>
               <li className="text-sm text-hero-muted">Buenos Aires, Argentina</li>
             </ul>
           </div>

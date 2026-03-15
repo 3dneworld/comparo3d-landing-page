@@ -1,3 +1,4 @@
+import { AudienceProvider } from "@/contexts/AudienceContext";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import TrustStrip from "@/components/landing/TrustStrip";
@@ -14,19 +15,21 @@ const Index = () => {
   console.log("[Index] Landing page rendered");
 
   return (
-    <div className="min-h-screen">
-      <Navbar />
-      <Hero />
-      <TrustStrip />
-      <HowItWorks />
-      <QuoteSection />
-      <CompaniesSection />
-      <ProjectsGallery />
-      <MaterialsSection />
-      <FAQ />
-      <FinalCTA />
-      <Footer />
-    </div>
+    <AudienceProvider>
+      <div className="min-h-screen">
+        <Navbar />
+        <Hero />
+        <TrustStrip />
+        <HowItWorks />
+        <QuoteSection />
+        <CompaniesSection />
+        <ProjectsGallery />
+        <MaterialsSection />
+        <FAQ />
+        <FinalCTA />
+        <Footer />
+      </div>
+    </AudienceProvider>
   );
 };
 

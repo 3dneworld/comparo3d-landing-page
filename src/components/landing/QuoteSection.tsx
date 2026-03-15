@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Upload, User, FileText, ShoppingCart, ChevronRight, RotateCcw } from "lucide-react";
+import { Upload, User, FileText, ShoppingCart, ChevronRight, ChevronDown, RotateCcw, Lock, MapPin } from "lucide-react";
+import { useAudience } from "@/contexts/AudienceContext";
 
 const STORAGE_KEY = "comparo3d_quote";
 
@@ -7,10 +8,17 @@ interface QuoteData {
   nombre: string;
   email: string;
   telefono: string;
+  ubicacion: string;
   material: string;
   cantidad: string;
   detalles: string;
   fileName: string;
+  // Advanced fields
+  colorAcabado: string;
+  usoPieza: string;
+  urgencia: string;
+  tolerancia: string;
+  observaciones: string;
   step: number;
   sessionId: string;
   updatedAt: string;
@@ -20,17 +28,23 @@ const defaultData: QuoteData = {
   nombre: "",
   email: "",
   telefono: "",
+  ubicacion: "",
   material: "",
   cantidad: "1",
   detalles: "",
   fileName: "",
+  colorAcabado: "",
+  usoPieza: "",
+  urgencia: "",
+  tolerancia: "",
+  observaciones: "",
   step: 1,
   sessionId: "",
   updatedAt: "",
 };
 
 const stepLabels = [
-  { icon: Upload, label: "Archivo STL" },
+  { icon: Upload, label: "Archivo 3D" },
   { icon: User, label: "Tus datos" },
   { icon: FileText, label: "Cotizaciones" },
   { icon: ShoppingCart, label: "Compra" },
@@ -38,12 +52,15 @@ const stepLabels = [
 
 const materials = ["PLA", "ABS", "PETG", "Resina", "Nylon", "TPU", "Otro"];
 
-const generateSessionId = () => `CMP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+const generateSessionId = () =>
+  `CMP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
 const QuoteSection = () => {
+  const { audience } = useAudience();
   const [data, setData] = useState<QuoteData>(defaultData);
   const [hasSaved, setHasSaved] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load from localStorage on mount
@@ -61,7 +78,6 @@ const QuoteSection = () => {
     }
   }, []);
 
-  // Auto-save to localStorage
   const saveToStorage = useCallback((newData: QuoteData) => {
     const toSave = { ...newData, updatedAt: new Date().toISOString() };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
@@ -106,31 +122,78 @@ const QuoteSection = () => {
     console.log("[QuoteSection] Quote reset");
   };
 
+  const handleDetectLocation = () => {
+    // TODO: Integrate geolocation API or IP-based detection
+    console.log("[QuoteSection] Detect location triggered");
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        () => {
+          // For now just set a placeholder — real implementation would reverse geocode
+          updateField("ubicacion", "Buenos Aires");
+          console.log("[QuoteSection] Location detected");
+        },
+        (err) => {
+          console.warn("[QuoteSection] Geolocation error:", err.message);
+        }
+      );
+    }
+  };
+
   // Mock quotes for step 3
   const mockQuotes = [
-    { provider: "Proveedor A", price: 4500, time: "3 días", rating: 4.8 },
-    { provider: "Proveedor B", price: 3900, time: "5 días", rating: 4.5 },
-    { provider: "Proveedor C", price: 5200, time: "2 días", rating: 4.9 },
+    { provider: "Proveedor A", price: 4500, time: "3 días" },
+    { provider: "Proveedor B", price: 3900, time: "5 días" },
+    { provider: "Proveedor C", price: 5200, time: "2 días" },
   ];
+
+  const isEmpresa = audience === "empresa";
 
   return (
     <section id="cotizar" className="py-20 md:py-28 bg-muted/50">
       <div className="container max-w-3xl">
-        <div className="text-center mb-10">
+        <div className="text-center mb-6">
           <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Empezá ahora</p>
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">Pedí tu cotización</h2>
         </div>
 
-        {/* Continue banner */}
+        {/* Helper notes */}
+        <div className="text-center mb-8 space-y-1">
+          <p className="text-sm text-muted-foreground">
+            1 archivo por cotización. Podés pedir varias copias de la misma pieza.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Formatos: STL, OBJ, 3MF · No se aceptan múltiples piezas diferentes en una sola cotización.
+          </p>
+          {isEmpresa ? (
+            <p className="text-xs font-medium text-accent mt-2">
+              Recibí una propuesta en hasta 72 hs hábiles.
+            </p>
+          ) : (
+            <p className="text-xs font-medium text-primary mt-2">
+              Recibí cotizaciones en minutos.
+            </p>
+          )}
+        </div>
+
+        {/* Session recovery */}
         {hasSaved && data.step > 1 && (
           <div className="mb-6 bg-primary/5 border border-primary/20 rounded-lg p-4 flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-foreground">Tenés una cotización en curso</p>
+              <p className="text-sm font-medium text-foreground">Encontramos una cotización empezada</p>
               <p className="text-xs text-muted-foreground">Sesión {data.sessionId}</p>
             </div>
             <div className="flex gap-2">
-              <button onClick={resetQuote} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-                <RotateCcw size={12} /> Nueva
+              <button
+                onClick={resetQuote}
+                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 px-3 py-1.5 rounded border border-border hover:bg-muted transition-colors"
+              >
+                <RotateCcw size={12} /> Empezar de nuevo
+              </button>
+              <button
+                onClick={() => {}}
+                className="text-xs text-primary font-semibold flex items-center gap-1 px-3 py-1.5 rounded bg-primary/10 hover:bg-primary/15 transition-colors"
+              >
+                Continuar
               </button>
             </div>
           </div>
@@ -170,9 +233,13 @@ const QuoteSection = () => {
 
         {/* Step content */}
         <div className="bg-card rounded-xl border border-border p-6 md:p-8 shadow-card">
+          {/* ===== STEP 1: FILE UPLOAD ===== */}
           {data.step === 1 && (
             <div>
-              <h3 className="font-display font-semibold text-lg text-foreground mb-4">Subí tu archivo</h3>
+              <h3 className="font-display font-semibold text-lg text-foreground mb-1">Subí tu archivo 3D</h3>
+              <p className="text-sm text-muted-foreground mb-5">
+                Un solo archivo por cotización. Si necesitás cotizar piezas distintas, creá una cotización por cada una.
+              </p>
               <div
                 onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                 onDragLeave={() => setIsDragging(false)}
@@ -187,17 +254,23 @@ const QuoteSection = () => {
                   <p className="text-sm font-medium text-foreground">{data.fileName}</p>
                 ) : (
                   <>
-                    <p className="text-sm font-medium text-foreground">Arrastrá tu archivo STL acá</p>
-                    <p className="text-xs text-muted-foreground mt-1">o hacé clic para seleccionar (.stl, .obj, .3mf)</p>
+                    <p className="text-sm font-medium text-foreground">Arrastrá tu archivo acá</p>
+                    <p className="text-xs text-muted-foreground mt-1">o hacé clic para seleccionar</p>
+                    <p className="text-xs text-muted-foreground mt-2 font-medium">Formatos aceptados: STL, OBJ, 3MF</p>
                   </>
                 )}
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".stl,.obj,.3mf,.step"
+                  accept=".stl,.obj,.3mf"
                   className="hidden"
                   onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
                 />
+              </div>
+              {/* Confidentiality note */}
+              <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
+                <Lock size={13} className="shrink-0" />
+                <span>Tu archivo se mantiene confidencial y no se comparte fuera del proceso de cotización.</span>
               </div>
               <button
                 onClick={() => goToStep(2)}
@@ -208,6 +281,7 @@ const QuoteSection = () => {
             </div>
           )}
 
+          {/* ===== STEP 2: USER DATA ===== */}
           {data.step === 2 && (
             <div>
               <h3 className="font-display font-semibold text-lg text-foreground mb-4">Tus datos</h3>
@@ -242,6 +316,25 @@ const QuoteSection = () => {
                   />
                 </div>
                 <div>
+                  <label className="text-sm font-medium text-foreground block mb-1.5">Ubicación / Ciudad</label>
+                  <div className="relative">
+                    <input
+                      value={data.ubicacion}
+                      onChange={(e) => updateField("ubicacion", e.target.value)}
+                      className="w-full px-4 py-2.5 pr-28 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      placeholder="Tu ciudad"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleDetectLocation}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors px-2 py-1 rounded bg-primary/5 hover:bg-primary/10"
+                    >
+                      <MapPin size={12} />
+                      Detectar
+                    </button>
+                  </div>
+                </div>
+                <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Material</label>
                   <select
                     value={data.material}
@@ -255,13 +348,14 @@ const QuoteSection = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">Cantidad de piezas</label>
+                  <label className="text-sm font-medium text-foreground block mb-1.5">Cantidad de copias</label>
                   <input
                     type="number"
                     min="1"
                     value={data.cantidad}
                     onChange={(e) => updateField("cantidad", e.target.value)}
                     className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="Copias de la misma pieza"
                   />
                 </div>
               </div>
@@ -275,6 +369,82 @@ const QuoteSection = () => {
                   placeholder="Contanos qué necesitás..."
                 />
               </div>
+
+              {/* TODO: Implement Google auth for "Continuar con Google" */}
+              <button
+                type="button"
+                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+                onClick={() => console.log("[QuoteSection] Google auth placeholder")}
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Continuar con Google
+              </button>
+
+              {/* Advanced section */}
+              <div className="mt-5 border-t border-border pt-4">
+                <button
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ChevronDown size={16} className={`transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
+                  Avanzado
+                </button>
+                {showAdvanced && (
+                  <div className="mt-4 grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-foreground block mb-1.5">Color / acabado</label>
+                      <input
+                        value={data.colorAcabado}
+                        onChange={(e) => updateField("colorAcabado", e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="Ej: blanco, negro mate"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground block mb-1.5">Uso de la pieza</label>
+                      <input
+                        value={data.usoPieza}
+                        onChange={(e) => updateField("usoPieza", e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="Ej: prototipo, producción final"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground block mb-1.5">Urgencia</label>
+                      <select
+                        value={data.urgencia}
+                        onChange={(e) => updateField("urgencia", e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      >
+                        <option value="">Sin urgencia especial</option>
+                        <option value="normal">Normal</option>
+                        <option value="urgente">Urgente</option>
+                        <option value="flexible">Flexible</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground block mb-1.5">Tolerancia / precisión</label>
+                      <input
+                        value={data.tolerancia}
+                        onChange={(e) => updateField("tolerancia", e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="Ej: ±0.2mm"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-sm font-medium text-foreground block mb-1.5">Observaciones adicionales</label>
+                      <textarea
+                        value={data.observaciones}
+                        onChange={(e) => updateField("observaciones", e.target.value)}
+                        rows={2}
+                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                        placeholder="Cualquier detalle extra que nos ayude a cotizar mejor"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={() => goToStep(1)}
@@ -286,36 +456,54 @@ const QuoteSection = () => {
                   onClick={() => goToStep(3)}
                   className="flex-1 bg-gradient-primary text-primary-foreground py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-cta"
                 >
-                  Ver cotizaciones <ChevronRight size={18} />
+                  {isEmpresa ? "Solicitar propuesta" : "Ver cotizaciones"} <ChevronRight size={18} />
                 </button>
               </div>
             </div>
           )}
 
+          {/* ===== STEP 3: QUOTES ===== */}
           {data.step === 3 && (
             <div>
-              <h3 className="font-display font-semibold text-lg text-foreground mb-1">Cotizaciones disponibles</h3>
+              <h3 className="font-display font-semibold text-lg text-foreground mb-1">
+                {isEmpresa ? "Propuesta en proceso" : "Cotizaciones disponibles"}
+              </h3>
               <p className="text-sm text-muted-foreground mb-6">Sesión: {data.sessionId}</p>
-              {/* TODO: Replace mock quotes with real API data */}
-              <div className="space-y-3">
-                {mockQuotes.map((q) => (
-                  <div key={q.provider} className="border border-border rounded-lg p-4 flex items-center justify-between hover:shadow-card-hover transition-shadow">
-                    <div>
-                      <p className="font-semibold text-foreground">{q.provider}</p>
-                      <p className="text-xs text-muted-foreground">Entrega: {q.time} · ⭐ {q.rating}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-display font-bold text-lg text-foreground">${q.price.toLocaleString("es-AR")}</p>
-                      <button
-                        onClick={() => goToStep(4)}
-                        className="text-xs font-semibold text-primary hover:underline"
-                      >
-                        Elegir →
-                      </button>
-                    </div>
+
+              {isEmpresa ? (
+                <div className="text-center py-8">
+                  <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4">
+                    <FileText size={24} className="text-accent" />
                   </div>
-                ))}
-              </div>
+                  <p className="text-sm text-foreground font-medium mb-1">Tu propuesta está siendo preparada</p>
+                  <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                    Nuestro equipo está coordinando con proveedores verificados. Recibís la propuesta consolidada en hasta 72 hs hábiles.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* TODO: Replace mock quotes with real API data */}
+                  <div className="space-y-3">
+                    {mockQuotes.map((q) => (
+                      <div key={q.provider} className="border border-border rounded-lg p-4 flex items-center justify-between hover:shadow-card-hover transition-shadow">
+                        <div>
+                          <p className="font-semibold text-foreground">{q.provider}</p>
+                          <p className="text-xs text-muted-foreground">Entrega estimada: {q.time}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-display font-bold text-lg text-foreground">${q.price.toLocaleString("es-AR")}</p>
+                          <button
+                            onClick={() => goToStep(4)}
+                            className="text-xs font-semibold text-primary hover:underline"
+                          >
+                            Elegir →
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
               <button
                 onClick={() => goToStep(2)}
                 className="mt-6 px-6 py-3 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors"
@@ -325,6 +513,7 @@ const QuoteSection = () => {
             </div>
           )}
 
+          {/* ===== STEP 4: CONFIRMATION ===== */}
           {data.step === 4 && (
             <div className="text-center py-8">
               <div className="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center mx-auto mb-4">
@@ -332,7 +521,9 @@ const QuoteSection = () => {
               </div>
               <h3 className="font-display font-semibold text-xl text-foreground mb-2">¡Listo!</h3>
               <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
-                Tu pedido fue registrado. Nos vamos a poner en contacto con vos para coordinar el pago y la entrega.
+                {isEmpresa
+                  ? "Tu solicitud fue registrada. Nos vamos a poner en contacto para coordinar la propuesta corporativa."
+                  : "Tu pedido fue registrado. Nos vamos a poner en contacto con vos para coordinar el pago y la entrega."}
               </p>
               <p className="text-xs text-muted-foreground">Referencia: {data.sessionId}</p>
               <button
