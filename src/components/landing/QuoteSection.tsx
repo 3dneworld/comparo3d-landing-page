@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Upload, User, FileText, ShoppingCart, ChevronRight, ChevronDown, RotateCcw, Lock, MapPin } from "lucide-react";
+import { Upload, User, FileText, ShoppingCart, ChevronRight, ChevronDown, RotateCcw, Lock, MapPin, CheckCircle2 } from "lucide-react";
 import { useAudience } from "@/contexts/AudienceContext";
 
 const STORAGE_KEY = "comparo3d_quote";
@@ -13,7 +13,6 @@ interface QuoteData {
   cantidad: string;
   detalles: string;
   fileName: string;
-  // Advanced fields
   colorAcabado: string;
   usoPieza: string;
   urgencia: string;
@@ -55,6 +54,8 @@ const materials = ["PLA", "ABS", "PETG", "Resina", "Nylon", "TPU", "Otro"];
 const generateSessionId = () =>
   `CMP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
+const inputClasses = "w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors";
+
 const QuoteSection = () => {
   const { audience } = useAudience();
   const [data, setData] = useState<QuoteData>(defaultData);
@@ -63,7 +64,6 @@ const QuoteSection = () => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load from localStorage on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -81,7 +81,6 @@ const QuoteSection = () => {
   const saveToStorage = useCallback((newData: QuoteData) => {
     const toSave = { ...newData, updatedAt: new Date().toISOString() };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-    console.log("[QuoteSection] Auto-saved to localStorage");
   }, []);
 
   const updateField = (field: keyof QuoteData, value: string) => {
@@ -97,14 +96,12 @@ const QuoteSection = () => {
     }
     setData(updated);
     saveToStorage(updated);
-    console.log("[QuoteSection] Step changed to:", step);
   };
 
   const handleFileSelect = (file: File | null) => {
     if (file) {
       console.log("[QuoteSection] File selected:", file.name, file.size);
       updateField("fileName", file.name);
-      // TODO: Upload file to backend when API is ready
     }
   };
 
@@ -119,18 +116,14 @@ const QuoteSection = () => {
     localStorage.removeItem(STORAGE_KEY);
     setData(defaultData);
     setHasSaved(false);
-    console.log("[QuoteSection] Quote reset");
+    setShowAdvanced(false);
   };
 
   const handleDetectLocation = () => {
-    // TODO: Integrate geolocation API or IP-based detection
-    console.log("[QuoteSection] Detect location triggered");
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         () => {
-          // For now just set a placeholder — real implementation would reverse geocode
           updateField("ubicacion", "Buenos Aires");
-          console.log("[QuoteSection] Location detected");
         },
         (err) => {
           console.warn("[QuoteSection] Geolocation error:", err.message);
@@ -139,7 +132,6 @@ const QuoteSection = () => {
     }
   };
 
-  // Mock quotes for step 3
   const mockQuotes = [
     { provider: "Proveedor A", price: 4500, time: "3 días" },
     { provider: "Proveedor B", price: 3900, time: "5 días" },
@@ -157,19 +149,19 @@ const QuoteSection = () => {
         </div>
 
         {/* Helper notes */}
-        <div className="text-center mb-8 space-y-1">
+        <div className="text-center mb-8 space-y-1.5">
           <p className="text-sm text-muted-foreground">
-            1 archivo por cotización. Podés pedir varias copias de la misma pieza.
+            1 archivo por cotización · Podés pedir varias copias de la misma pieza
           </p>
           <p className="text-xs text-muted-foreground">
-            Formatos: STL, OBJ, 3MF · No se aceptan múltiples piezas diferentes en una sola cotización.
+            Formatos: STL, OBJ, 3MF
           </p>
           {isEmpresa ? (
-            <p className="text-xs font-medium text-accent mt-2">
+            <p className="text-xs font-medium text-accent mt-1">
               Recibí una propuesta en hasta 72 hs hábiles.
             </p>
           ) : (
-            <p className="text-xs font-medium text-primary mt-2">
+            <p className="text-xs font-medium text-primary mt-1">
               Recibí cotizaciones en minutos.
             </p>
           )}
@@ -177,21 +169,24 @@ const QuoteSection = () => {
 
         {/* Session recovery */}
         {hasSaved && data.step > 1 && (
-          <div className="mb-6 bg-primary/5 border border-primary/20 rounded-lg p-4 flex items-center justify-between">
+          <div className="mb-6 bg-card border border-primary/15 rounded-xl p-5 flex items-center justify-between shadow-card">
             <div>
-              <p className="text-sm font-medium text-foreground">Encontramos una cotización empezada</p>
-              <p className="text-xs text-muted-foreground">Sesión {data.sessionId}</p>
+              <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <CheckCircle2 size={15} className="text-primary" />
+                Encontramos una cotización empezada
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5 ml-[23px]">Sesión {data.sessionId}</p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={resetQuote}
-                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 px-3 py-1.5 rounded border border-border hover:bg-muted transition-colors"
+                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
               >
                 <RotateCcw size={12} /> Empezar de nuevo
               </button>
               <button
                 onClick={() => {}}
-                className="text-xs text-primary font-semibold flex items-center gap-1 px-3 py-1.5 rounded bg-primary/10 hover:bg-primary/15 transition-colors"
+                className="text-xs text-primary-foreground font-semibold flex items-center gap-1 px-4 py-2 rounded-lg bg-gradient-primary hover:opacity-90 transition-opacity shadow-cta"
               >
                 Continuar
               </button>
@@ -237,7 +232,7 @@ const QuoteSection = () => {
           {data.step === 1 && (
             <div>
               <h3 className="font-display font-semibold text-lg text-foreground mb-1">Subí tu archivo 3D</h3>
-              <p className="text-sm text-muted-foreground mb-5">
+              <p className="text-sm text-muted-foreground mb-6">
                 Un solo archivo por cotización. Si necesitás cotizar piezas distintas, creá una cotización por cada una.
               </p>
               <div
@@ -245,18 +240,36 @@ const QuoteSection = () => {
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
-                  isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all ${
+                  isDragging
+                    ? "border-primary bg-primary/5"
+                    : data.fileName
+                    ? "border-primary/30 bg-primary/3"
+                    : "border-border hover:border-primary/40 hover:bg-muted/30"
                 }`}
               >
-                <Upload size={32} className="mx-auto text-muted-foreground mb-3" />
                 {data.fileName ? (
-                  <p className="text-sm font-medium text-foreground">{data.fileName}</p>
+                  <div>
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                      <CheckCircle2 size={24} className="text-primary" />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">{data.fileName}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Hacé clic para cambiar el archivo</p>
+                  </div>
                 ) : (
                   <>
+                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                      <Upload size={22} className="text-muted-foreground" />
+                    </div>
                     <p className="text-sm font-medium text-foreground">Arrastrá tu archivo acá</p>
                     <p className="text-xs text-muted-foreground mt-1">o hacé clic para seleccionar</p>
-                    <p className="text-xs text-muted-foreground mt-2 font-medium">Formatos aceptados: STL, OBJ, 3MF</p>
+                    <div className="flex items-center justify-center gap-2 mt-4">
+                      {["STL", "OBJ", "3MF"].map((f) => (
+                        <span key={f} className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                          .{f.toLowerCase()}
+                        </span>
+                      ))}
+                    </div>
                   </>
                 )}
                 <input
@@ -267,9 +280,8 @@ const QuoteSection = () => {
                   onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
                 />
               </div>
-              {/* Confidentiality note */}
               <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
-                <Lock size={13} className="shrink-0" />
+                <Lock size={13} className="shrink-0 text-muted-foreground/60" />
                 <span>Tu archivo se mantiene confidencial y no se comparte fuera del proceso de cotización.</span>
               </div>
               <button
@@ -284,160 +296,181 @@ const QuoteSection = () => {
           {/* ===== STEP 2: USER DATA ===== */}
           {data.step === 2 && (
             <div>
-              <h3 className="font-display font-semibold text-lg text-foreground mb-4">Tus datos</h3>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">Nombre</label>
-                  <input
-                    value={data.nombre}
-                    onChange={(e) => updateField("nombre", e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Tu nombre"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">Email</label>
-                  <input
-                    type="email"
-                    value={data.email}
-                    onChange={(e) => updateField("email", e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="tu@email.com"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">Teléfono</label>
-                  <input
-                    type="tel"
-                    value={data.telefono}
-                    onChange={(e) => updateField("telefono", e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="+54 11 ..."
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">Ubicación / Ciudad</label>
-                  <div className="relative">
+              <h3 className="font-display font-semibold text-lg text-foreground mb-1">Tus datos</h3>
+              <p className="text-sm text-muted-foreground mb-6">Completá tus datos para recibir las cotizaciones.</p>
+
+              <div className="space-y-5">
+                {/* Row 1: Nombre + Email */}
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5 uppercase tracking-wide">Nombre</label>
                     <input
-                      value={data.ubicacion}
-                      onChange={(e) => updateField("ubicacion", e.target.value)}
-                      className="w-full px-4 py-2.5 pr-28 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      placeholder="Tu ciudad"
+                      value={data.nombre}
+                      onChange={(e) => updateField("nombre", e.target.value)}
+                      className={inputClasses}
+                      placeholder="Tu nombre completo"
                     />
-                    <button
-                      type="button"
-                      onClick={handleDetectLocation}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors px-2 py-1 rounded bg-primary/5 hover:bg-primary/10"
-                    >
-                      <MapPin size={12} />
-                      Detectar
-                    </button>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5 uppercase tracking-wide">Email</label>
+                    <input
+                      type="email"
+                      value={data.email}
+                      onChange={(e) => updateField("email", e.target.value)}
+                      className={inputClasses}
+                      placeholder="tu@email.com"
+                    />
                   </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">Material</label>
-                  <select
-                    value={data.material}
-                    onChange={(e) => updateField("material", e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="">Seleccionar material</option>
-                    {materials.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
+
+                {/* Row 2: Teléfono + Ubicación */}
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5 uppercase tracking-wide">Teléfono</label>
+                    <input
+                      type="tel"
+                      value={data.telefono}
+                      onChange={(e) => updateField("telefono", e.target.value)}
+                      className={inputClasses}
+                      placeholder="+54 11 ..."
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5 uppercase tracking-wide">Ubicación / Ciudad</label>
+                    <div className="relative">
+                      <input
+                        value={data.ubicacion}
+                        onChange={(e) => updateField("ubicacion", e.target.value)}
+                        className={`${inputClasses} pr-24`}
+                        placeholder="Tu ciudad"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleDetectLocation}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors px-2 py-1 rounded bg-primary/5 hover:bg-primary/10"
+                      >
+                        <MapPin size={12} />
+                        Detectar
+                      </button>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Row 3: Material + Cantidad */}
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5 uppercase tracking-wide">Material</label>
+                    <select
+                      value={data.material}
+                      onChange={(e) => updateField("material", e.target.value)}
+                      className={inputClasses}
+                    >
+                      <option value="">Seleccionar material</option>
+                      {materials.map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5 uppercase tracking-wide">Cantidad de copias</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={data.cantidad}
+                      onChange={(e) => updateField("cantidad", e.target.value)}
+                      className={inputClasses}
+                      placeholder="Copias de la misma pieza"
+                    />
+                  </div>
+                </div>
+
+                {/* Detalles */}
                 <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">Cantidad de copias</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={data.cantidad}
-                    onChange={(e) => updateField("cantidad", e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Copias de la misma pieza"
+                  <label className="text-xs font-semibold text-foreground block mb-1.5 uppercase tracking-wide">Detalles del proyecto</label>
+                  <textarea
+                    value={data.detalles}
+                    onChange={(e) => updateField("detalles", e.target.value)}
+                    rows={3}
+                    className={`${inputClasses} resize-none`}
+                    placeholder="Contanos qué necesitás..."
                   />
                 </div>
               </div>
-              <div className="mt-4">
-                <label className="text-sm font-medium text-foreground block mb-1.5">Detalles del proyecto</label>
-                <textarea
-                  value={data.detalles}
-                  onChange={(e) => updateField("detalles", e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                  placeholder="Contanos qué necesitás..."
-                />
+
+              {/* Google continuation */}
+              <div className="mt-5 pt-5 border-t border-border">
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
+                  onClick={() => console.log("[QuoteSection] Google auth placeholder")}
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                  Continuar con Google
+                </button>
               </div>
 
-              {/* TODO: Implement Google auth for "Continuar con Google" */}
-              <button
-                type="button"
-                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
-                onClick={() => console.log("[QuoteSection] Google auth placeholder")}
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                Continuar con Google
-              </button>
-
               {/* Advanced section */}
-              <div className="mt-5 border-t border-border pt-4">
+              <div className="mt-5 pt-5 border-t border-border">
                 <button
                   onClick={() => setShowAdvanced(!showAdvanced)}
                   className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <ChevronDown size={16} className={`transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
-                  Avanzado
+                  Opciones avanzadas
                 </button>
                 {showAdvanced && (
-                  <div className="mt-4 grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-foreground block mb-1.5">Color / acabado</label>
-                      <input
-                        value={data.colorAcabado}
-                        onChange={(e) => updateField("colorAcabado", e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                        placeholder="Ej: blanco, negro mate"
-                      />
+                  <div className="mt-4 space-y-4">
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold text-foreground block mb-1.5 uppercase tracking-wide">Color / acabado</label>
+                        <input
+                          value={data.colorAcabado}
+                          onChange={(e) => updateField("colorAcabado", e.target.value)}
+                          className={inputClasses}
+                          placeholder="Ej: blanco, negro mate"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-foreground block mb-1.5 uppercase tracking-wide">Uso de la pieza</label>
+                        <input
+                          value={data.usoPieza}
+                          onChange={(e) => updateField("usoPieza", e.target.value)}
+                          className={inputClasses}
+                          placeholder="Ej: prototipo, producción final"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold text-foreground block mb-1.5 uppercase tracking-wide">Urgencia</label>
+                        <select
+                          value={data.urgencia}
+                          onChange={(e) => updateField("urgencia", e.target.value)}
+                          className={inputClasses}
+                        >
+                          <option value="">Sin urgencia especial</option>
+                          <option value="normal">Normal</option>
+                          <option value="urgente">Urgente</option>
+                          <option value="flexible">Flexible</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-foreground block mb-1.5 uppercase tracking-wide">Tolerancia / precisión</label>
+                        <input
+                          value={data.tolerancia}
+                          onChange={(e) => updateField("tolerancia", e.target.value)}
+                          className={inputClasses}
+                          placeholder="Ej: ±0.2mm"
+                        />
+                      </div>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-foreground block mb-1.5">Uso de la pieza</label>
-                      <input
-                        value={data.usoPieza}
-                        onChange={(e) => updateField("usoPieza", e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                        placeholder="Ej: prototipo, producción final"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground block mb-1.5">Urgencia</label>
-                      <select
-                        value={data.urgencia}
-                        onChange={(e) => updateField("urgencia", e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      >
-                        <option value="">Sin urgencia especial</option>
-                        <option value="normal">Normal</option>
-                        <option value="urgente">Urgente</option>
-                        <option value="flexible">Flexible</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground block mb-1.5">Tolerancia / precisión</label>
-                      <input
-                        value={data.tolerancia}
-                        onChange={(e) => updateField("tolerancia", e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                        placeholder="Ej: ±0.2mm"
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="text-sm font-medium text-foreground block mb-1.5">Observaciones adicionales</label>
+                      <label className="text-xs font-semibold text-foreground block mb-1.5 uppercase tracking-wide">Observaciones adicionales</label>
                       <textarea
                         value={data.observaciones}
                         onChange={(e) => updateField("observaciones", e.target.value)}
                         rows={2}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                        className={`${inputClasses} resize-none`}
                         placeholder="Cualquier detalle extra que nos ayude a cotizar mejor"
                       />
                     </div>
@@ -471,7 +504,7 @@ const QuoteSection = () => {
               <p className="text-sm text-muted-foreground mb-6">Sesión: {data.sessionId}</p>
 
               {isEmpresa ? (
-                <div className="text-center py-8">
+                <div className="text-center py-10">
                   <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4">
                     <FileText size={24} className="text-accent" />
                   </div>
@@ -481,28 +514,26 @@ const QuoteSection = () => {
                   </p>
                 </div>
               ) : (
-                <>
+                <div className="space-y-3">
                   {/* TODO: Replace mock quotes with real API data */}
-                  <div className="space-y-3">
-                    {mockQuotes.map((q) => (
-                      <div key={q.provider} className="border border-border rounded-lg p-4 flex items-center justify-between hover:shadow-card-hover transition-shadow">
-                        <div>
-                          <p className="font-semibold text-foreground">{q.provider}</p>
-                          <p className="text-xs text-muted-foreground">Entrega estimada: {q.time}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-display font-bold text-lg text-foreground">${q.price.toLocaleString("es-AR")}</p>
-                          <button
-                            onClick={() => goToStep(4)}
-                            className="text-xs font-semibold text-primary hover:underline"
-                          >
-                            Elegir →
-                          </button>
-                        </div>
+                  {mockQuotes.map((q) => (
+                    <div key={q.provider} className="border border-border rounded-xl p-4 flex items-center justify-between hover:shadow-card-hover transition-shadow">
+                      <div>
+                        <p className="font-semibold text-foreground">{q.provider}</p>
+                        <p className="text-xs text-muted-foreground">Entrega estimada: {q.time}</p>
                       </div>
-                    ))}
-                  </div>
-                </>
+                      <div className="text-right">
+                        <p className="font-display font-bold text-lg text-foreground">${q.price.toLocaleString("es-AR")}</p>
+                        <button
+                          onClick={() => goToStep(4)}
+                          className="text-xs font-semibold text-primary hover:underline"
+                        >
+                          Elegir →
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
               <button
                 onClick={() => goToStep(2)}
@@ -515,7 +546,7 @@ const QuoteSection = () => {
 
           {/* ===== STEP 4: CONFIRMATION ===== */}
           {data.step === 4 && (
-            <div className="text-center py-8">
+            <div className="text-center py-10">
               <div className="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center mx-auto mb-4">
                 <ShoppingCart size={28} className="text-primary-foreground" />
               </div>

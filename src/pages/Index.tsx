@@ -2,6 +2,7 @@ import { AudienceProvider } from "@/contexts/AudienceContext";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import TrustStrip from "@/components/landing/TrustStrip";
+import ProviderLogos from "@/components/landing/ProviderLogos";
 import HowItWorks from "@/components/landing/HowItWorks";
 import QuoteSection from "@/components/landing/QuoteSection";
 import CompaniesSection from "@/components/landing/CompaniesSection";
@@ -12,14 +13,13 @@ import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
 
 const Index = () => {
-  console.log("[Index] Landing page rendered");
-
   return (
     <AudienceProvider>
       <div className="min-h-screen">
         <Navbar />
         <Hero />
         <TrustStrip />
+        <ProviderLogos />
         <HowItWorks />
         <QuoteSection />
         <CompaniesSection />
