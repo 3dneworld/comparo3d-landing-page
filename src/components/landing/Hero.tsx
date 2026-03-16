@@ -1,18 +1,19 @@
 import { ArrowRight, ChevronDown, Upload, BarChart3, PackageCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
+import hero3dParts from "@/assets/hero-3d-parts.jpg";
 
 const headlines: Record<Audience, { title: string; sub: string; cta: string; secondaryCta: string; secondaryHref: string }> = {
   particular: {
     title: "Cotizá tu impresión 3D en minutos",
-    sub: "Subí tu archivo, compará opciones de proveedores verificados de Argentina y elegí la mejor sin perder tiempo buscando por tu cuenta.",
+    sub: "Subí tu archivo, compará opciones reales de impresión 3D en Argentina y elegí la mejor sin perder tiempo buscando proveedor por proveedor.",
     cta: "Cotizar ahora",
     secondaryCta: "Cómo funciona",
     secondaryHref: "#como-funciona",
   },
   empresa: {
     title: "Centralizá compras de impresión 3D con un solo interlocutor",
-    sub: "COMPARO3D recibe tu requerimiento, coordina proveedores verificados y te entrega una propuesta consolidada para simplificar compras, seguimiento y facturación.",
+    sub: "COMPARO3D recibe tu requerimiento, coordina una red evaluada de proveedores y te entrega una propuesta consolidada para simplificar compras, seguimiento y facturación.",
     cta: "Cotizar para empresa",
     secondaryCta: "Ver solución empresa",
     secondaryHref: "#empresas",
@@ -22,8 +23,6 @@ const headlines: Record<Audience, { title: string; sub: string; cta: string; sec
 const Hero = () => {
   const { audience, setAudience } = useAudience();
   const current = headlines[audience];
-
-  console.log("[Hero] Audience selected:", audience);
 
   return (
     <section className="relative bg-gradient-dark pt-28 pb-20 md:pt-36 md:pb-28 overflow-hidden">
@@ -89,62 +88,59 @@ const Hero = () => {
             </div>
           </motion.div>
 
-          {/* Right: visual block — premium flow illustration */}
-          <div className="flex-1 max-w-md w-full hidden lg:block">
-            <div className="bg-hero-muted/5 border border-hero-muted/10 rounded-2xl p-6 space-y-4">
-              {/* Step 1: Upload */}
-              <div className="flex items-center gap-4 bg-hero-muted/5 rounded-xl p-4 border border-hero-muted/8">
-                <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center shrink-0">
-                  <Upload size={18} className="text-primary-foreground" />
+          {/* Right: real visual composition */}
+          <div className="flex-1 max-w-lg w-full hidden lg:block">
+            <div className="relative">
+              {/* Main image — real 3D printed parts */}
+              <div className="rounded-2xl overflow-hidden border border-hero-muted/10 shadow-2xl">
+                <img
+                  src={hero3dParts}
+                  alt="Piezas impresas en 3D: engranajes, carcasa electrónica, modelo arquitectónico"
+                  className="w-full h-auto object-cover"
+                  loading="eager"
+                />
+              </div>
+
+              {/* Floating UI overlay — upload indicator */}
+              <div className="absolute -bottom-4 -left-4 bg-card border border-border rounded-xl p-3 shadow-card-hover flex items-center gap-3 min-w-[200px]">
+                <div className="w-9 h-9 rounded-lg bg-gradient-primary flex items-center justify-center shrink-0">
+                  <Upload size={16} className="text-primary-foreground" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-hero-muted mb-1">Archivo cargado</p>
-                  <div className="h-2 bg-hero-muted/15 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-primary rounded-full" style={{ width: "100%" }} />
-                  </div>
-                  <p className="text-[11px] text-hero-muted/60 mt-1">pieza-soporte.stl — 2.4 MB</p>
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Archivo cargado</p>
+                  <p className="text-xs font-semibold text-foreground">pieza-soporte.stl</p>
                 </div>
               </div>
 
-              {/* Step 2: Quotes comparison */}
-              <div className="bg-hero-muted/5 rounded-xl p-4 border border-hero-muted/8">
-                <div className="flex items-center gap-2 mb-3">
-                  <BarChart3 size={14} className="text-primary" />
-                  <p className="text-xs text-hero-muted">Cotizaciones recibidas</p>
+              {/* Floating UI overlay — quotes comparison */}
+              <div className="absolute -top-3 -right-3 bg-card border border-border rounded-xl p-3 shadow-card-hover min-w-[180px]">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <BarChart3 size={12} className="text-primary" />
+                  <p className="text-[10px] text-muted-foreground font-medium">3 cotizaciones</p>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {[
-                    { label: "Proveedor A", price: "$4.500", time: "3 días", highlight: true },
-                    { label: "Proveedor B", price: "$5.100", time: "2 días", highlight: false },
-                    { label: "Proveedor C", price: "$3.800", time: "5 días", highlight: false },
+                    { label: "Proveedor A", price: "$4.500", best: true },
+                    { label: "Proveedor B", price: "$5.100", best: false },
+                    { label: "Proveedor C", price: "$3.800", best: false },
                   ].map((q) => (
                     <div
                       key={q.label}
-                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs ${
-                        q.highlight
-                          ? "bg-primary/10 border border-primary/20"
-                          : "bg-hero-muted/5 border border-hero-muted/5"
+                      className={`flex items-center justify-between px-2 py-1 rounded text-[10px] ${
+                        q.best ? "bg-primary/10 border border-primary/20" : "bg-muted/50"
                       }`}
                     >
-                      <span className="text-hero-muted">{q.label}</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-hero-muted/60">{q.time}</span>
-                        <span className={`font-semibold ${q.highlight ? "text-primary" : "text-hero-foreground"}`}>{q.price}</span>
-                      </div>
+                      <span className="text-muted-foreground">{q.label}</span>
+                      <span className={`font-semibold ${q.best ? "text-primary" : "text-foreground"}`}>{q.price}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Step 3: Delivery */}
-              <div className="flex items-center gap-4 bg-hero-muted/5 rounded-xl p-4 border border-hero-muted/8">
-                <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
-                  <PackageCheck size={18} className="text-accent" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-hero-foreground">Entrega coordinada</p>
-                  <p className="text-[11px] text-hero-muted/60">Seguimiento incluido · Envío a todo el país</p>
-                </div>
+              {/* Floating — delivery */}
+              <div className="absolute bottom-8 -right-2 bg-card border border-border rounded-lg px-3 py-2 shadow-card flex items-center gap-2">
+                <PackageCheck size={14} className="text-accent" />
+                <span className="text-[10px] font-medium text-foreground">Entrega coordinada</span>
               </div>
             </div>
           </div>

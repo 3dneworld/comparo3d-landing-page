@@ -4,7 +4,7 @@ const benefits = [
   {
     icon: Building2,
     title: "Un solo interlocutor comercial",
-    desc: "Centralizá la comunicación en un único punto de contacto para todos tus pedidos.",
+    desc: "Centralizá la comunicación en un único punto de contacto. Sin ida y vuelta con múltiples proveedores.",
   },
   {
     icon: Boxes,
@@ -14,7 +14,7 @@ const benefits = [
   {
     icon: ClipboardMinus,
     title: "Facturación simplificada",
-    desc: "Una sola factura, sin multiplicar órdenes de compra ni proveedores.",
+    desc: "Una sola factura por operación. Menos órdenes de compra, menos gestión manual.",
   },
   {
     icon: Users,
@@ -23,13 +23,13 @@ const benefits = [
   },
   {
     icon: MapPin,
-    title: "Seguimiento consolidado",
-    desc: "Sabé el estado de cada pedido desde un único canal.",
+    title: "Seguimiento centralizado",
+    desc: "Estado claro de cada pedido desde un único canal, sin dispersión.",
   },
   {
     icon: ShieldCheck,
     title: "Red de proveedores verificados",
-    desc: "Trabajamos solo con proveedores evaluados en capacidad, calidad y cumplimiento.",
+    desc: "Proveedores evaluados en capacidad técnica, calidad y cumplimiento de entrega.",
   },
 ];
 
@@ -43,7 +43,7 @@ const CompaniesSection = () => {
             Impresión 3D para empresas, sin dispersión operativa
           </h2>
           <p className="mt-4 text-hero-muted max-w-2xl mx-auto">
-            Simplificá compras, coordinación, seguimiento y administración. Todo desde una sola plataforma.
+            Simplificá compras, coordinación y administración. Menos gestión manual, menos ida y vuelta, un solo interlocutor.
           </p>
         </div>
 
