@@ -3,21 +3,21 @@ import { motion } from "framer-motion";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import modeloPreview from "@/assets/modelo-preview.png";
 
-const headlines: Record<Audience, { title: string; sub: string; cta: string; secondaryCta: string; secondaryHref: string }> = {
+const headlines: Record<Audience, {title: string;sub: string;cta: string;secondaryCta: string;secondaryHref: string;}> = {
   particular: {
     title: "Cotizá tu impresión 3D en minutos",
     sub: "Subí tu archivo, compará opciones reales de impresión 3D en Argentina y elegí la mejor sin perder tiempo buscando proveedor por proveedor.",
     cta: "Cotizar ahora",
     secondaryCta: "Cómo funciona",
-    secondaryHref: "#como-funciona",
+    secondaryHref: "#como-funciona"
   },
   empresa: {
     title: "Centralizá compras de impresión 3D con un solo interlocutor",
     sub: "COMPARO3D recibe tu requerimiento, coordina una red evaluada de proveedores y te entrega una propuesta consolidada para simplificar compras, seguimiento y facturación.",
     cta: "Cotizar para empresa",
     secondaryCta: "Ver solución empresa",
-    secondaryHref: "#empresas",
-  },
+    secondaryHref: "#empresas"
+  }
 };
 
 const Hero = () => {
@@ -33,27 +33,27 @@ const Hero = () => {
       <div
         className="absolute inset-0 opacity-[0.03]"
         style={{
-          backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0z' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E\")",
-        }}
-      />
+          backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0z' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E\")"
+        }} />
+      
 
       <div className="container relative z-10">
         {/* Audience toggle */}
         <div className="flex justify-center mb-10">
           <div className="inline-flex bg-hero-muted/10 rounded-full p-1 border border-hero-muted/15">
-            {(["particular", "empresa"] as Audience[]).map((a) => (
-              <button
-                key={a}
-                onClick={() => setAudience(a)}
-                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                  audience === a
-                    ? "bg-gradient-primary text-primary-foreground shadow-cta"
-                    : "text-hero-muted hover:text-hero-foreground"
-                }`}
-              >
+            {(["particular", "empresa"] as Audience[]).map((a) =>
+            <button
+              key={a}
+              onClick={() => setAudience(a)}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
+              audience === a ?
+              "bg-gradient-primary text-primary-foreground shadow-cta" :
+              "text-hero-muted hover:text-hero-foreground"}`
+              }>
+              
                 {a === "particular" ? "Particular" : "Empresa"}
               </button>
-            ))}
+            )}
           </div>
         </div>
 
@@ -64,8 +64,8 @@ const Hero = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="flex-1 text-center lg:text-left max-w-xl"
-          >
+            className="flex-1 text-center lg:text-left max-w-xl">
+            
             <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-hero-foreground leading-tight tracking-tight">
               {current.title}
             </h1>
@@ -76,15 +76,15 @@ const Hero = () => {
             <div className="mt-8 flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-4">
               <a
                 href="#cotizar"
-                className="bg-gradient-primary text-primary-foreground px-8 py-3.5 rounded-lg font-semibold text-base hover:opacity-90 transition-opacity shadow-cta flex items-center gap-2"
-              >
+                className="bg-gradient-primary text-primary-foreground px-8 py-3.5 rounded-lg font-semibold text-base hover:opacity-90 transition-opacity shadow-cta flex items-center gap-2">
+                
                 {current.cta}
                 <ArrowRight size={18} />
               </a>
               <a
                 href={current.secondaryHref}
-                className="text-hero-muted hover:text-hero-foreground transition-colors text-sm font-medium flex items-center gap-1"
-              >
+                className="text-hero-muted hover:text-hero-foreground transition-colors text-sm font-medium flex items-center gap-1">
+                
                 {current.secondaryCta}
                 <ChevronDown size={16} />
               </a>
@@ -122,8 +122,8 @@ const Hero = () => {
                     <img
                       src={modeloPreview}
                       alt="Vista previa de pieza 3D"
-                      className="h-full w-full object-contain p-3"
-                    />
+                      className="h-full w-full p-3 mx-px my-px object-scale-down rounded py-0 px-0" />
+                    
                   </div>
                 </div>
               </div>
@@ -136,25 +136,25 @@ const Hero = () => {
                 </div>
                 <div className="space-y-2">
                   {[
-                    { label: "Proveedor A", price: "$4.500", time: "3 días", highlight: true },
-                    { label: "Proveedor B", price: "$5.100", time: "2 días", highlight: false },
-                    { label: "Proveedor C", price: "$3.800", time: "5 días", highlight: false },
-                  ].map((q) => (
-                    <div
-                      key={q.label}
-                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs ${
-                        q.highlight
-                          ? "bg-primary/10 border border-primary/20"
-                          : "bg-hero-muted/5 border border-hero-muted/5"
-                      }`}
-                    >
+                  { label: "Proveedor A", price: "$4.500", time: "3 días", highlight: true },
+                  { label: "Proveedor B", price: "$5.100", time: "2 días", highlight: false },
+                  { label: "Proveedor C", price: "$3.800", time: "5 días", highlight: false }].
+                  map((q) =>
+                  <div
+                    key={q.label}
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs ${
+                    q.highlight ?
+                    "bg-primary/10 border border-primary/20" :
+                    "bg-hero-muted/5 border border-hero-muted/5"}`
+                    }>
+                    
                       <span className="text-hero-muted">{q.label}</span>
                       <div className="flex items-center gap-3">
                         <span className="text-hero-muted/60">{q.time}</span>
                         <span className={`font-semibold ${q.highlight ? "text-primary" : "text-hero-foreground"}`}>{q.price}</span>
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
 
@@ -172,8 +172,8 @@ const Hero = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>);
+
 };
 
 export default Hero;
