@@ -34,19 +34,22 @@ const HowItWorks = () => {
         <div className="text-center mb-14">
           <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Proceso simple</p>
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">Cómo funciona</h2>
+          <p className="mt-3 text-muted-foreground max-w-lg mx-auto">
+            Cotizá, compará y recibí tu pieza en pocos pasos.
+          </p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {steps.map((step, i) => (
             <div
               key={step.number}
-              className="relative bg-card rounded-xl p-6 shadow-card hover:shadow-card-hover transition-shadow border border-border group"
+              className="relative bg-card rounded-xl p-7 shadow-card hover:shadow-card-hover transition-shadow border border-border group"
             >
-              <span className="text-5xl font-display font-bold text-muted/60 absolute top-4 right-5 select-none">
+              <span className="text-5xl font-display font-bold text-muted/50 absolute top-4 right-5 select-none">
                 {step.number}
               </span>
-              <div className="w-11 h-11 rounded-lg bg-gradient-primary flex items-center justify-center mb-4">
-                <step.icon size={20} className="text-primary-foreground" />
+              <div className="w-12 h-12 rounded-lg bg-gradient-primary flex items-center justify-center mb-5">
+                <step.icon size={22} className="text-primary-foreground" />
               </div>
               <h3 className="font-display font-semibold text-lg text-foreground mb-2">{step.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
