@@ -2,6 +2,7 @@ import { AudienceProvider } from "@/contexts/AudienceContext";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import TrustStrip from "@/components/landing/TrustStrip";
+import ProvidersSection from "@/components/landing/ProvidersSection";
 import HowItWorks from "@/components/landing/HowItWorks";
 import QuoteSection from "@/components/landing/QuoteSection";
 import CompaniesSection from "@/components/landing/CompaniesSection";
@@ -20,6 +21,7 @@ const Index = () => {
         <Navbar />
         <Hero />
         <TrustStrip />
+        <ProvidersSection />
         <HowItWorks />
         <QuoteSection />
         <CompaniesSection />

@@ -43,14 +43,14 @@ const CompaniesSection = () => {
             Impresión 3D para empresas, sin dispersión operativa
           </h2>
           <p className="mt-4 text-hero-muted max-w-2xl mx-auto">
-            Simplificá compras, coordinación, seguimiento y administración. Todo desde una sola plataforma.
+            Simplificá compras, coordinación, seguimiento y administración. Un solo interlocutor para toda tu operación de impresión 3D.
           </p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
           {benefits.map((b) => (
             <div key={b.title} className="bg-hero-muted/5 border border-hero-muted/10 rounded-xl p-6 hover:border-hero-muted/20 transition-colors">
-              <div className="w-10 h-10 rounded-lg bg-gradient-accent flex items-center justify-center mb-4">
+              <div className="w-11 h-11 rounded-lg bg-gradient-accent flex items-center justify-center mb-4">
                 <b.icon size={20} className="text-accent-foreground" />
               </div>
               <h3 className="font-display font-semibold text-hero-foreground mb-2">{b.title}</h3>
