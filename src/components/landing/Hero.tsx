@@ -1,18 +1,19 @@
-import { ArrowRight, ChevronDown, Upload, BarChart3, PackageCheck } from "lucide-react";
+import { ArrowRight, ChevronDown, Upload, BarChart3, PackageCheck, Eye, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
+import modeloPreview from "@/assets/modelo-preview.png";
 
 const headlines: Record<Audience, { title: string; sub: string; cta: string; secondaryCta: string; secondaryHref: string }> = {
   particular: {
     title: "Cotizá tu impresión 3D en minutos",
-    sub: "Subí tu archivo, compará opciones de proveedores verificados de Argentina y elegí la mejor sin perder tiempo buscando por tu cuenta.",
+    sub: "Subí tu archivo, compará opciones reales de impresión 3D en Argentina y elegí la mejor sin perder tiempo buscando proveedor por proveedor.",
     cta: "Cotizar ahora",
     secondaryCta: "Cómo funciona",
     secondaryHref: "#como-funciona",
   },
   empresa: {
     title: "Centralizá compras de impresión 3D con un solo interlocutor",
-    sub: "COMPARO3D recibe tu requerimiento, coordina proveedores verificados y te entrega una propuesta consolidada para simplificar compras, seguimiento y facturación.",
+    sub: "COMPARO3D recibe tu requerimiento, coordina una red evaluada de proveedores y te entrega una propuesta consolidada para simplificar compras, seguimiento y facturación.",
     cta: "Cotizar para empresa",
     secondaryCta: "Ver solución empresa",
     secondaryHref: "#empresas",
@@ -22,6 +23,7 @@ const headlines: Record<Audience, { title: string; sub: string; cta: string; sec
 const Hero = () => {
   const { audience, setAudience } = useAudience();
   const current = headlines[audience];
+  const isEmpresa = audience === "empresa";
 
   console.log("[Hero] Audience selected:", audience);
 
@@ -89,20 +91,40 @@ const Hero = () => {
             </div>
           </motion.div>
 
-          {/* Right: visual block — premium flow illustration */}
+          {/* Right: process flow illustration with model preview */}
           <div className="flex-1 max-w-md w-full hidden lg:block">
             <div className="bg-hero-muted/5 border border-hero-muted/10 rounded-2xl p-6 space-y-4">
-              {/* Step 1: Upload */}
+              {/* Step 1: Upload complete */}
               <div className="flex items-center gap-4 bg-hero-muted/5 rounded-xl p-4 border border-hero-muted/8">
                 <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center shrink-0">
                   <Upload size={18} className="text-primary-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-hero-muted mb-1">Archivo cargado</p>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <p className="text-xs text-hero-muted">Archivo cargado</p>
+                    <CheckCircle2 size={12} className="text-accent" />
+                  </div>
                   <div className="h-2 bg-hero-muted/15 rounded-full overflow-hidden">
                     <div className="h-full bg-gradient-primary rounded-full" style={{ width: "100%" }} />
                   </div>
-                  <p className="text-[11px] text-hero-muted/60 mt-1">pieza-soporte.stl — 2.4 MB</p>
+                  <p className="text-[11px] text-hero-muted/60 mt-1">{isEmpresa ? "disco-acople.stl — 3.1 MB" : "pieza-soporte.stl — 2.4 MB"}</p>
+                </div>
+              </div>
+
+              {/* Step 1.5: Model preview */}
+              <div className="bg-hero-muted/5 rounded-xl border border-hero-muted/8 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 pt-3 pb-2">
+                  <Eye size={13} className="text-primary" />
+                  <p className="text-xs text-hero-muted">Vista previa del modelo</p>
+                </div>
+                <div className="px-4 pb-4">
+                  <div className="bg-hero-muted/8 rounded-lg overflow-hidden flex items-center justify-center h-36">
+                    <img
+                      src={modeloPreview}
+                      alt="Vista previa de pieza 3D"
+                      className="h-full w-full object-contain p-3"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -110,7 +132,7 @@ const Hero = () => {
               <div className="bg-hero-muted/5 rounded-xl p-4 border border-hero-muted/8">
                 <div className="flex items-center gap-2 mb-3">
                   <BarChart3 size={14} className="text-primary" />
-                  <p className="text-xs text-hero-muted">Cotizaciones recibidas</p>
+                  <p className="text-xs text-hero-muted">{isEmpresa ? "Propuesta consolidada" : "Cotizaciones recibidas"}</p>
                 </div>
                 <div className="space-y-2">
                   {[
