@@ -1,10 +1,10 @@
 const materials = [
-  { name: "PLA", use: "Prototipos, maquetas, piezas decorativas", benefit: "Buena terminación, fácil de imprimir, biodegradable" },
+  { name: "PLA", use: "Prototipos, piezas decorativas, maquetas", benefit: "Fácil de imprimir, buena terminación, biodegradable" },
   { name: "ABS", use: "Carcasas, piezas funcionales, automotriz", benefit: "Resistente al calor y a impactos" },
-  { name: "PETG", use: "Envases, piezas mecánicas, uso alimentario", benefit: "Resistencia química y buena flexibilidad" },
+  { name: "PETG", use: "Envases, piezas mecánicas, uso alimentario", benefit: "Buena resistencia química y flexibilidad" },
   { name: "Resina", use: "Joyería, odontología, detalles finos", benefit: "Alta precisión y acabado superficial liso" },
   { name: "Nylon", use: "Engranajes, herramientas, piezas técnicas", benefit: "Alta resistencia mecánica y durabilidad" },
-  { name: "TPU", use: "Juntas, suelas, carcasas flexibles", benefit: "Flexible y absorbe impactos" },
+  { name: "TPU", use: "Juntas, suelas, carcasas flexibles", benefit: "Flexible, absorbe impactos" },
 ];
 
 const MaterialsSection = () => {
@@ -19,15 +19,10 @@ const MaterialsSection = () => {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-4xl mx-auto">
           {materials.map((m) => (
-            <div key={m.name} className="bg-card border border-border rounded-xl p-6 hover:shadow-card-hover transition-shadow group">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/8 flex items-center justify-center">
-                  <span className="font-display font-bold text-sm text-primary">{m.name.substring(0, 2)}</span>
-                </div>
-                <h3 className="font-display font-bold text-lg text-foreground">{m.name}</h3>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-2">{m.use}</p>
-              <p className="text-xs text-primary font-medium leading-relaxed">{m.benefit}</p>
+            <div key={m.name} className="bg-card border border-border rounded-xl p-5 hover:shadow-card-hover transition-shadow">
+              <h3 className="font-display font-bold text-xl text-foreground">{m.name}</h3>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{m.use}</p>
+              <p className="text-xs text-primary mt-3 font-medium leading-relaxed">{m.benefit}</p>
             </div>
           ))}
         </div>

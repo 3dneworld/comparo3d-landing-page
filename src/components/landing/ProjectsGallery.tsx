@@ -1,17 +1,12 @@
-import projectEnclosure from "@/assets/project-enclosure.jpg";
-import projectArchitecture from "@/assets/project-architecture.jpg";
-import projectGears from "@/assets/project-gears.jpg";
-import projectMedical from "@/assets/project-medical.jpg";
-import projectPackaging from "@/assets/project-packaging.jpg";
-import projectFigurines from "@/assets/project-figurines.jpg";
+import { Layers } from "lucide-react";
 
 const projects = [
-  { title: "Carcasa electrónica", material: "PLA", pieces: 12, category: "Ingeniería", image: projectEnclosure },
-  { title: "Modelo arquitectónico escala 1:100", material: "Resina", pieces: 1, category: "Arquitectura", image: projectArchitecture },
-  { title: "Engranajes de repuesto", material: "Nylon", pieces: 48, category: "Industria", image: projectGears },
-  { title: "Instrumental de práctica", material: "Resina", pieces: 6, category: "Salud", image: projectMedical },
-  { title: "Packaging personalizado", material: "PETG", pieces: 200, category: "Retail", image: projectPackaging },
-  { title: "Figuras coleccionables", material: "PLA", pieces: 30, category: "Consumo", image: projectFigurines },
+  { title: "Prototipo carcasa electrónica", material: "PLA", pieces: 12, category: "Ingeniería" },
+  { title: "Modelo arquitectónico escala 1:100", material: "Resina", pieces: 1, category: "Arquitectura" },
+  { title: "Engranajes de repuesto industrial", material: "Nylon", pieces: 48, category: "Industria" },
+  { title: "Packaging personalizado", material: "PETG", pieces: 200, category: "Retail" },
+  { title: "Instrumental de práctica médica", material: "Resina", pieces: 6, category: "Salud" },
+  { title: "Figuras coleccionables", material: "PLA", pieces: 30, category: "Consumo" },
 ];
 
 const categoryColors: Record<string, string> = {
@@ -38,13 +33,11 @@ const ProjectsGallery = () => {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {projects.map((p) => (
             <div key={p.title} className="group bg-card border border-border rounded-xl overflow-hidden hover:shadow-card-hover transition-shadow">
-              <div className="h-44 overflow-hidden bg-muted/40">
-                <img
-                  src={p.image}
-                  alt={`Proyecto de impresión 3D: ${p.title}`}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                />
+              {/* Visual placeholder — intentional neutral area */}
+              <div className="h-36 bg-muted/60 flex items-center justify-center border-b border-border">
+                <div className="w-14 h-14 rounded-xl bg-card border border-border flex items-center justify-center shadow-sm">
+                  <Layers size={24} className="text-muted-foreground/50" />
+                </div>
               </div>
               <div className="p-5">
                 <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${categoryColors[p.category] || "bg-muted text-muted-foreground"}`}>
