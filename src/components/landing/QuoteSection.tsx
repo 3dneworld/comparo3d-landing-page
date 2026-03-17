@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Upload, User, FileText, ShoppingCart, ChevronRight, ChevronDown, RotateCcw, Lock, MapPin } from "lucide-react";
+import { Upload, User, FileText, ShoppingCart, ChevronRight, ChevronDown, RotateCcw, Lock, MapPin, Eye, CheckCircle2 } from "lucide-react";
 import { useAudience } from "@/contexts/AudienceContext";
+import modeloPreview from "@/assets/modelo-preview.png";
 
 const STORAGE_KEY = "comparo3d_quote";
 
