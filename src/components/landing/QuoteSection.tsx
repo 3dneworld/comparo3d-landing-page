@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Upload, User, FileText, ShoppingCart, ChevronRight, ChevronDown, RotateCcw, Lock, MapPin } from "lucide-react";
+import { Upload, User, FileText, ShoppingCart, ChevronRight, ChevronDown, RotateCcw, Lock, MapPin, Eye, CheckCircle2 } from "lucide-react";
 import { useAudience } from "@/contexts/AudienceContext";
+import modeloPreview from "@/assets/modelo-preview.png";
 
 const STORAGE_KEY = "comparo3d_quote";
 
@@ -284,6 +285,32 @@ const QuoteSection = () => {
           {/* ===== STEP 2: USER DATA ===== */}
           {data.step === 2 && (
             <div>
+              {/* Model preview card */}
+              {data.fileName && (
+                <div className="mb-6 bg-muted/50 border border-border rounded-xl overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 pt-3 pb-2">
+                    <Eye size={14} className="text-primary" />
+                    <p className="text-sm font-medium text-foreground">Vista previa del modelo</p>
+                    <CheckCircle2 size={14} className="text-accent ml-auto" />
+                    <span className="text-xs text-accent font-medium">Cargado</span>
+                  </div>
+                  <div className="px-4 pb-4">
+                    <div className="bg-background rounded-lg overflow-hidden flex items-center justify-center h-40 border border-border">
+                      {/* TODO: Replace with real thumbnail from uploaded file when backend supports it */}
+                      <img
+                        src={modeloPreview}
+                        alt="Vista previa del modelo 3D"
+                        className="h-full w-full object-contain p-4"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs text-muted-foreground">{data.fileName}</p>
+                      <p className="text-xs text-muted-foreground">Tu pieza fue cargada correctamente</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <h3 className="font-display font-semibold text-lg text-foreground mb-4">Tus datos</h3>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
