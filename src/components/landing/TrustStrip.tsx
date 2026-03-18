@@ -19,12 +19,12 @@ const TrustStrip = () => {
               key={item.label}
               className="flex items-start gap-4 p-5 rounded-xl bg-muted/50 border border-border/60"
             >
-              <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                <item.icon size={20} className="text-primary" />
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <item.icon size={22} className="text-primary" />
               </div>
               <div>
-                <p className="text-sm font-bold text-foreground leading-tight">{item.label}</p>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{item.desc}</p>
+                <p className="text-sm font-bold text-foreground leading-snug">{item.label}</p>
+                <p className="text-[13px] text-muted-foreground mt-1.5 leading-[1.6]">{item.desc}</p>
               </div>
             </div>
           ))}

@@ -3,25 +3,25 @@ import { Upload, Users, BarChart3, PackageCheck } from "lucide-react";
 const steps = [
   {
     icon: Upload,
-    number: "01",
+    number: "1",
     title: "Subí tu archivo",
     desc: "Cargá tu modelo 3D y definí lo básico para cotizar.",
   },
   {
     icon: Users,
-    number: "02",
+    number: "2",
     title: "Recibí opciones",
     desc: "Compará propuestas según precio, material y plazo.",
   },
   {
     icon: BarChart3,
-    number: "03",
+    number: "3",
     title: "Elegí la mejor",
     desc: "Seleccioná la opción que mejor se ajuste a tu necesidad.",
   },
   {
     icon: PackageCheck,
-    number: "04",
+    number: "4",
     title: "Recibí tu pieza",
     desc: "Coordinamos producción y entrega para que no tengas que resolverlo por tu cuenta.",
   },
@@ -45,14 +45,14 @@ const HowItWorks = () => {
               key={step.number}
               className="relative bg-card rounded-xl p-7 shadow-card hover:shadow-card-hover transition-shadow border border-border group"
             >
-              <span className="text-5xl font-display font-bold text-muted/50 absolute top-4 right-5 select-none">
+              <span className="text-3xl font-display font-semibold text-muted-foreground/20 absolute top-4 right-5 select-none">
                 {step.number}
               </span>
-              <div className="w-12 h-12 rounded-lg bg-gradient-primary flex items-center justify-center mb-5">
-                <step.icon size={22} className="text-primary-foreground" />
+              <div className="w-14 h-14 rounded-lg bg-gradient-primary flex items-center justify-center mb-5">
+                <step.icon size={26} className="text-primary-foreground" />
               </div>
               <h3 className="font-display font-semibold text-lg text-foreground mb-2">{step.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+              <p className="text-[13px] text-muted-foreground leading-[1.65]">{step.desc}</p>
               {i < steps.length - 1 && (
                 <div className="hidden lg:block absolute top-1/2 -right-4 w-8 h-[2px] bg-border" />
               )}

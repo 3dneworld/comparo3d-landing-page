@@ -4,7 +4,7 @@ import { ChevronDown } from "lucide-react";
 const faqs = [
   {
     q: "¿Qué formatos de archivo aceptan?",
-    a: "Aceptamos archivos en formato STL, OBJ y 3MF. Si tu modelo está en otro formato, contactanos y te ayudamos a convertirlo.",
+    a: "Aceptamos archivos en formato STL. Si tu modelo está en otro formato, contactanos y te ayudamos a convertirlo.",
   },
   {
     q: "¿Cuánto tarda una cotización para particulares?",
