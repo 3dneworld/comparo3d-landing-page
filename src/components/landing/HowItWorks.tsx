@@ -9,7 +9,7 @@ const steps = [
   },
   {
     icon: Users,
-    number: "02",
+    number: "2",
     title: "Recibí opciones",
     desc: "Compará propuestas según precio, material y plazo.",
   },
