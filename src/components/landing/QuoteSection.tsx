@@ -257,7 +257,7 @@ const QuoteSection = () => {
                   <>
                     <p className="text-sm font-medium text-foreground">Arrastrá tu archivo acá</p>
                     <p className="text-xs text-muted-foreground mt-1">o hacé clic para seleccionar</p>
-                    <p className="text-xs text-muted-foreground mt-2 font-medium">Formatos aceptados: STL, OBJ, 3MF</p>
+                    <p className="text-xs text-muted-foreground mt-2 font-medium">Formato aceptado: STL</p>
                   </>
                 )}
                 <input
