@@ -3,7 +3,7 @@ import { Upload, Users, BarChart3, PackageCheck } from "lucide-react";
 const steps = [
   {
     icon: Upload,
-    number: "01",
+    number: "1",
     title: "Subí tu archivo",
     desc: "Cargá tu modelo 3D y definí lo básico para cotizar.",
   },
