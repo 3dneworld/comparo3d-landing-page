@@ -14,15 +14,15 @@ const MaterialsSection = () => {
         <div className="text-center mb-14">
           <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Capacidades</p>
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">Materiales disponibles</h2>
-          <p className="mt-3 text-muted-foreground">Trabajamos con una amplia variedad de materiales y tecnologías de impresión 3D.</p>
+          <p className="mt-3 text-base text-muted-foreground leading-relaxed">Trabajamos con una amplia variedad de materiales y tecnologías de impresión 3D.</p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-4xl mx-auto">
           {materials.map((m) => (
-            <div key={m.name} className="bg-card border border-border rounded-xl p-5 hover:shadow-card-hover transition-shadow">
+            <div key={m.name} className="bg-card border border-border rounded-xl p-6 hover:shadow-card-hover transition-shadow">
               <h3 className="font-display font-bold text-xl text-foreground">{m.name}</h3>
               <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{m.use}</p>
-              <p className="text-xs text-primary mt-3 font-medium leading-relaxed">{m.benefit}</p>
+              <p className="text-sm text-primary mt-3 font-medium leading-relaxed">{m.benefit}</p>
             </div>
           ))}
         </div>

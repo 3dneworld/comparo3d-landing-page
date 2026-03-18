@@ -3,25 +3,25 @@ import { Upload, Users, BarChart3, PackageCheck } from "lucide-react";
 const steps = [
   {
     icon: Upload,
-    number: "01",
+    number: "1",
     title: "Subí tu archivo",
     desc: "Cargá tu modelo 3D y definí lo básico para cotizar.",
   },
   {
     icon: Users,
-    number: "02",
+    number: "2",
     title: "Recibí opciones",
     desc: "Compará propuestas según precio, material y plazo.",
   },
   {
     icon: BarChart3,
-    number: "03",
+    number: "3",
     title: "Elegí la mejor",
     desc: "Seleccioná la opción que mejor se ajuste a tu necesidad.",
   },
   {
     icon: PackageCheck,
-    number: "04",
+    number: "4",
     title: "Recibí tu pieza",
     desc: "Coordinamos producción y entrega para que no tengas que resolverlo por tu cuenta.",
   },
@@ -34,7 +34,7 @@ const HowItWorks = () => {
         <div className="text-center mb-14">
           <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Proceso simple</p>
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">Cómo funciona</h2>
-          <p className="mt-3 text-muted-foreground max-w-lg mx-auto">
+          <p className="mt-3 text-base text-muted-foreground max-w-lg mx-auto leading-relaxed">
             Cotizá, compará y recibí tu pieza en pocos pasos.
           </p>
         </div>
@@ -45,11 +45,11 @@ const HowItWorks = () => {
               key={step.number}
               className="relative bg-card rounded-xl p-7 shadow-card hover:shadow-card-hover transition-shadow border border-border group"
             >
-              <span className="text-5xl font-display font-bold text-muted/50 absolute top-4 right-5 select-none">
+              <span className="text-4xl font-display font-bold text-primary/15 absolute top-4 right-5 select-none">
                 {step.number}
               </span>
-              <div className="w-12 h-12 rounded-lg bg-gradient-primary flex items-center justify-center mb-5">
-                <step.icon size={22} className="text-primary-foreground" />
+              <div className="w-14 h-14 rounded-lg bg-gradient-primary flex items-center justify-center mb-5">
+                <step.icon size={24} className="text-primary-foreground" />
               </div>
               <h3 className="font-display font-semibold text-lg text-foreground mb-2">{step.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>

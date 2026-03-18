@@ -163,7 +163,7 @@ const QuoteSection = () => {
             1 archivo por cotización. Podés pedir varias copias de la misma pieza.
           </p>
           <p className="text-xs text-muted-foreground">
-            Formatos: STL, OBJ, 3MF · No se aceptan múltiples piezas diferentes en una sola cotización.
+            Formato aceptado: STL · No se aceptan múltiples piezas diferentes en una sola cotización.
           </p>
           {isEmpresa ? (
             <p className="text-xs font-medium text-accent mt-2">
@@ -257,13 +257,13 @@ const QuoteSection = () => {
                   <>
                     <p className="text-sm font-medium text-foreground">Arrastrá tu archivo acá</p>
                     <p className="text-xs text-muted-foreground mt-1">o hacé clic para seleccionar</p>
-                    <p className="text-xs text-muted-foreground mt-2 font-medium">Formatos aceptados: STL, OBJ, 3MF</p>
+                    <p className="text-xs text-muted-foreground mt-2 font-medium">Formato aceptado: STL</p>
                   </>
                 )}
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".stl,.obj,.3mf"
+                  accept=".stl"
                   className="hidden"
                   onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
                 />

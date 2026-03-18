@@ -42,7 +42,7 @@ const CompaniesSection = () => {
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-hero-foreground">
             Impresión 3D para empresas, sin dispersión operativa
           </h2>
-          <p className="mt-4 text-hero-muted max-w-2xl mx-auto">
+          <p className="mt-4 text-base text-hero-muted max-w-2xl mx-auto leading-relaxed">
             Simplificá compras, coordinación, seguimiento y administración. Un solo interlocutor para toda tu operación de impresión 3D.
           </p>
         </div>
@@ -50,10 +50,10 @@ const CompaniesSection = () => {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
           {benefits.map((b) => (
             <div key={b.title} className="bg-hero-muted/5 border border-hero-muted/10 rounded-xl p-6 hover:border-hero-muted/20 transition-colors">
-              <div className="w-11 h-11 rounded-lg bg-gradient-accent flex items-center justify-center mb-4">
-                <b.icon size={20} className="text-accent-foreground" />
+              <div className="w-12 h-12 rounded-lg bg-gradient-accent flex items-center justify-center mb-4">
+                <b.icon size={22} className="text-accent-foreground" />
               </div>
-              <h3 className="font-display font-semibold text-hero-foreground mb-2">{b.title}</h3>
+              <h3 className="font-display font-semibold text-base text-hero-foreground mb-2">{b.title}</h3>
               <p className="text-sm text-hero-muted leading-relaxed">{b.desc}</p>
             </div>
           ))}
