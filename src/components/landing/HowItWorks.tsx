@@ -21,7 +21,7 @@ const steps = [
   },
   {
     icon: PackageCheck,
-    number: "04",
+    number: "4",
     title: "Recibí tu pieza",
     desc: "Coordinamos producción y entrega para que no tengas que resolverlo por tu cuenta.",
   },
