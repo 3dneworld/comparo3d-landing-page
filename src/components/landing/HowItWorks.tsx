@@ -52,7 +52,7 @@ const HowItWorks = () => {
                 <step.icon size={22} className="text-primary-foreground" />
               </div>
               <h3 className="font-display font-semibold text-lg text-foreground mb-2">{step.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
+              <p className="text-[13px] text-muted-foreground leading-[1.65]">{step.desc}</p>
               {i < steps.length - 1 && (
                 <div className="hidden lg:block absolute top-1/2 -right-4 w-8 h-[2px] bg-border" />
               )}
