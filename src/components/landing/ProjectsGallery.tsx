@@ -27,28 +27,27 @@ const ProjectsGallery = () => {
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">
             Proyectos que gestionamos
           </h2>
-          <p className="mt-3 text-base text-muted-foreground leading-relaxed">Algunos ejemplos del tipo de trabajos que coordinamos a través de la plataforma.</p>
+          <p className="mt-3 text-muted-foreground">Algunos ejemplos del tipo de trabajos que coordinamos a través de la plataforma.</p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {projects.map((p) => (
             <div key={p.title} className="group bg-card border border-border rounded-xl overflow-hidden hover:shadow-card-hover transition-shadow">
               {/* Image slot — replace with real project photos when available */}
-              <div className="h-44 bg-gradient-to-br from-muted/60 to-muted/30 flex items-center justify-center border-b border-border relative overflow-hidden">
-                <div className="absolute inset-0 opacity-[0.03]" style={{
+              <div className="h-40 bg-gradient-to-br from-muted/80 to-muted/40 flex items-center justify-center border-b border-border relative overflow-hidden">
+                <div className="absolute inset-0 opacity-[0.04]" style={{
                   backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h20v20H0z' fill='none' stroke='%23000' stroke-width='0.3'/%3E%3C/svg%3E\")"
                 }} />
-                <div className="w-16 h-16 rounded-2xl bg-card/80 border border-border flex items-center justify-center shadow-sm backdrop-blur-sm">
-                  <Layers size={28} className="text-muted-foreground/50" />
+                <div className="w-16 h-16 rounded-2xl bg-card border border-border flex items-center justify-center shadow-sm">
+                  <Layers size={28} className="text-muted-foreground/40" />
                 </div>
-                <span className="absolute bottom-3 right-3 text-[10px] font-medium text-muted-foreground/40 uppercase tracking-wider">Imagen próximamente</span>
               </div>
               <div className="p-5">
                 <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${categoryColors[p.category] || "bg-muted text-muted-foreground"}`}>
                   {p.category}
                 </span>
                 <h3 className="font-display font-semibold text-foreground mt-3 mb-1.5">{p.title}</h3>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span>{p.material}</span>
                   <span className="w-1 h-1 rounded-full bg-border" />
                   <span>{p.pieces} {p.pieces === 1 ? "pieza" : "piezas"}</span>

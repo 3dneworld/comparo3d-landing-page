@@ -4,7 +4,7 @@ import { ChevronDown } from "lucide-react";
 const faqs = [
   {
     q: "¿Qué formatos de archivo aceptan?",
-    a: "Aceptamos archivos en formato STL. Si tu modelo está en otro formato, contactanos y te ayudamos a convertirlo.",
+    a: "Aceptamos archivos en formato STL, OBJ y 3MF. Si tu modelo está en otro formato, contactanos y te ayudamos a convertirlo.",
   },
   {
     q: "¿Cuánto tarda una cotización para particulares?",
@@ -51,14 +51,14 @@ const FAQ = () => {
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">FAQ</h2>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           {faqs.map((faq, i) => (
             <div key={i} className="border border-border rounded-lg overflow-hidden">
               <button
                 onClick={() => setOpen(open === i ? null : i)}
                 className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-muted/50 transition-colors"
               >
-                <span className="text-sm md:text-base font-medium text-foreground pr-4">{faq.q}</span>
+                <span className="text-sm font-medium text-foreground pr-4">{faq.q}</span>
                 <ChevronDown
                   size={18}
                   className={`text-muted-foreground shrink-0 transition-transform ${open === i ? "rotate-180" : ""}`}
@@ -66,7 +66,7 @@ const FAQ = () => {
               </button>
               {open === i && (
                 <div className="px-5 pb-4">
-                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed">{faq.a}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
                 </div>
               )}
             </div>
