@@ -163,7 +163,7 @@ const QuoteSection = () => {
             1 archivo por cotización. Podés pedir varias copias de la misma pieza.
           </p>
           <p className="text-xs text-muted-foreground">
-            Formatos: STL, OBJ, 3MF · No se aceptan múltiples piezas diferentes en una sola cotización.
+            Formato: STL · No se aceptan múltiples piezas diferentes en una sola cotización.
           </p>
           {isEmpresa ? (
             <p className="text-xs font-medium text-accent mt-2">
