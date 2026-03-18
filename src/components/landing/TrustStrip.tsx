@@ -11,20 +11,20 @@ const items = [
 
 const TrustStrip = () => {
   return (
-    <section className="py-14 md:py-20 bg-card border-y border-border">
+    <section className="py-16 md:py-24 bg-card border-y border-border">
       <div className="container">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-5 md:gap-6 max-w-4xl mx-auto">
           {items.map((item) => (
             <div
               key={item.label}
-              className="flex items-start gap-4 p-5 rounded-xl bg-muted/50 border border-border/60"
+              className="flex items-start gap-4 p-5 md:p-6 rounded-xl bg-muted/50 border border-border/60"
             >
-              <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                <item.icon size={20} className="text-primary" />
+              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <item.icon size={22} className="text-primary" />
               </div>
               <div>
-                <p className="text-sm font-bold text-foreground leading-tight">{item.label}</p>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{item.desc}</p>
+                <p className="text-sm md:text-base font-bold text-foreground leading-tight">{item.label}</p>
+                <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{item.desc}</p>
               </div>
             </div>
           ))}

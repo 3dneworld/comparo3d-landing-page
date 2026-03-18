@@ -263,7 +263,7 @@ const QuoteSection = () => {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".stl,.obj,.3mf"
+                  accept=".stl"
                   className="hidden"
                   onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
                 />
