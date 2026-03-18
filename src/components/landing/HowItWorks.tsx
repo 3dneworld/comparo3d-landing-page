@@ -15,7 +15,7 @@ const steps = [
   },
   {
     icon: BarChart3,
-    number: "03",
+    number: "3",
     title: "Elegí la mejor",
     desc: "Seleccioná la opción que mejor se ajuste a tu necesidad.",
   },
