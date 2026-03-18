@@ -45,7 +45,7 @@ const HowItWorks = () => {
               key={step.number}
               className="relative bg-card rounded-xl p-7 shadow-card hover:shadow-card-hover transition-shadow border border-border group"
             >
-              <span className="text-5xl font-display font-bold text-muted/50 absolute top-4 right-5 select-none">
+              <span className="text-3xl font-display font-semibold text-muted-foreground/20 absolute top-4 right-5 select-none">
                 {step.number}
               </span>
               <div className="w-12 h-12 rounded-lg bg-gradient-primary flex items-center justify-center mb-5">
