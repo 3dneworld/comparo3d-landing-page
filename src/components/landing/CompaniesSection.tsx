@@ -1,35 +1,41 @@
-import { Building2, Users, Boxes, ClipboardMinus, ShieldCheck, MapPin } from "lucide-react";
+import { Building2, Boxes, ClipboardMinus, Layers, MapPin, ShieldCheck } from "lucide-react";
 
 const benefits = [
   {
     icon: Building2,
     title: "Un solo interlocutor comercial",
-    desc: "Centralizá la comunicación en un único punto de contacto para todos tus pedidos.",
+    desc: "Un punto de contacto para coordinar todo el proceso.",
+    priority: true,
   },
   {
     icon: Boxes,
     title: "Comparación centralizada",
     desc: "Recibí propuestas consolidadas sin negociar proveedor por proveedor.",
+    priority: false,
   },
   {
     icon: ClipboardMinus,
     title: "Facturación simplificada",
-    desc: "Una sola factura, sin multiplicar órdenes de compra ni proveedores.",
+    desc: "Factura A o B según corresponda, sin dispersión administrativa.",
+    priority: false,
   },
   {
-    icon: Users,
-    title: "Menos carga administrativa",
-    desc: "Reducí el tiempo que tu equipo dedica a cotizar, comparar y hacer seguimiento.",
+    icon: Layers,
+    title: "Producción paralela coordinada",
+    desc: "Cuando el proyecto lo permite, coordinamos varios proveedores para reducir plazos.",
+    priority: true,
   },
   {
     icon: MapPin,
     title: "Seguimiento consolidado",
-    desc: "Sabé el estado de cada pedido desde un único canal.",
+    desc: "Estado claro del pedido en cada etapa.",
+    priority: false,
   },
   {
     icon: ShieldCheck,
     title: "Red de proveedores verificados",
-    desc: "Trabajamos solo con proveedores evaluados en capacidad, calidad y cumplimiento.",
+    desc: "Capacidad, calidad y cumplimiento evaluados.",
+    priority: false,
   },
 ];
 
@@ -43,17 +49,30 @@ const CompaniesSection = () => {
             Impresión 3D para empresas, sin dispersión operativa
           </h2>
           <p className="mt-4 text-hero-muted max-w-2xl mx-auto">
-            Simplificá compras, coordinación, seguimiento y administración. Un solo interlocutor para toda tu operación de impresión 3D.
+            Centralizá compras, coordinación, seguimiento y administración con un único frente operativo.
           </p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
           {benefits.map((b) => (
-            <div key={b.title} className="bg-hero-muted/5 border border-hero-muted/10 rounded-xl p-6 hover:border-hero-muted/20 transition-colors">
-              <div className="w-11 h-11 rounded-lg bg-gradient-accent flex items-center justify-center mb-4">
-                <b.icon size={20} className="text-accent-foreground" />
+            <div
+              key={b.title}
+              className={`rounded-xl p-6 transition-colors ${
+                b.priority
+                  ? "bg-hero-muted/[0.08] border border-hero-muted/20"
+                  : "bg-hero-muted/5 border border-hero-muted/10 hover:border-hero-muted/15"
+              }`}
+            >
+              <div
+                className={`w-11 h-11 rounded-lg flex items-center justify-center mb-4 ${
+                  b.priority ? "bg-gradient-accent" : "bg-hero-muted/10"
+                }`}
+              >
+                <b.icon size={20} className={b.priority ? "text-accent-foreground" : "text-hero-muted"} />
               </div>
-              <h3 className="font-display font-semibold text-hero-foreground mb-2">{b.title}</h3>
+              <h3 className={`font-display font-semibold mb-2 ${b.priority ? "text-hero-foreground" : "text-hero-foreground/90"}`}>
+                {b.title}
+              </h3>
               <p className="text-sm text-hero-muted leading-relaxed">{b.desc}</p>
             </div>
           ))}
@@ -66,6 +85,7 @@ const CompaniesSection = () => {
           >
             Solicitar propuesta para empresa
           </a>
+          <p className="mt-3 text-xs text-hero-muted/60">Propuesta inicial hasta 72 hs hábiles.</p>
         </div>
       </div>
     </section>
