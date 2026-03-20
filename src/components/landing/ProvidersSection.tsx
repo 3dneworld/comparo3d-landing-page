@@ -1,8 +1,10 @@
+import pjalLogo from "@/assets/providers/pjal-logo.png";
+
 const providers = [
-  { name: "PRINTALOT" },
-  { name: "Piscobot" },
-  { name: "PJAL" },
-  { name: "Joaco3D" },
+  { name: "PRINTALOT", logo: null },
+  { name: "Piscobot", logo: null },
+  { name: "PJAL", logo: pjalLogo },
+  { name: "Joaco3D", logo: null },
 ];
 
 const ProvidersSection = () => {
