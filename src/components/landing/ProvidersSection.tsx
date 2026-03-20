@@ -29,8 +29,12 @@ const ProvidersSection = () => {
               key={p.name}
               className="flex flex-col items-center rounded-xl border border-border bg-card p-4 md:p-5"
             >
-              <div className="w-full aspect-[5/2] rounded-lg bg-muted/40 border border-border/50 mb-3 flex items-center justify-center">
-                <div className="w-16 h-[2px] rounded-full bg-muted-foreground/10" />
+              <div className="w-full aspect-[5/2] rounded-lg bg-muted/40 border border-border/50 mb-3 flex items-center justify-center overflow-hidden">
+                {p.logo ? (
+                  <img src={p.logo} alt={`${p.name} logo`} className="h-full w-auto object-contain p-1.5" />
+                ) : (
+                  <div className="w-16 h-[2px] rounded-full bg-muted-foreground/10" />
+                )}
               </div>
               <span className="text-sm font-semibold text-foreground">{p.name}</span>
               <span className="text-[11px] text-muted-foreground/60 mt-0.5">Proveedor evaluado</span>
