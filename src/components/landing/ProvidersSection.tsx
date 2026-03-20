@@ -2,7 +2,7 @@ const providers = [
   { name: "PRINTALOT" },
   { name: "Piscobot" },
   { name: "PJAL" },
-  { name: "Trideo" },
+  { name: "Joaco3D" },
 ];
 
 const ProvidersSection = () => {
