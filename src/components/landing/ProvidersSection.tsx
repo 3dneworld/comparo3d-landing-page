@@ -1,5 +1,5 @@
 const providers = [
-  { name: "CHE3D" },
+  { name: "PRINTALOT" },
   { name: "3D Insumos" },
   { name: "PJAL" },
   { name: "Trideo" },
