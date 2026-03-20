@@ -69,29 +69,30 @@ const TrustStrip = () => {
               key={item.label}
               className={`flex items-start gap-4 p-5 md:p-6 rounded-xl transition-none ${
                 item.priority
-                  ? "bg-primary/[0.04] border-2 border-primary/15 shadow-sm"
+                  ? "bg-primary/[0.06] border-2 border-primary/20 shadow-[0_2px_12px_-2px_hsl(var(--primary)/0.10)]"
                   : "bg-muted/40 border border-border/60"
               }`}
             >
               <div
-                className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 ${
                   item.priority
-                    ? "bg-primary/15"
-                    : "bg-primary/8"
+                    ? "bg-primary/20"
+                    : "bg-primary/10"
                 }`}
               >
                 <item.icon
-                  size={20}
-                  className={item.priority ? "text-primary" : "text-primary/80"}
+                  size={26}
+                  strokeWidth={item.priority ? 2.2 : 2}
+                  className={item.priority ? "text-primary" : "text-primary/75"}
                 />
               </div>
-              <div className="min-w-0">
-                <p className={`text-sm font-bold leading-snug ${
-                  item.priority ? "text-foreground" : "text-foreground/90"
+              <div className="min-w-0 pt-0.5">
+                <p className={`text-[15px] font-bold leading-snug ${
+                  item.priority ? "text-foreground" : "text-foreground/85"
                 }`}>
                   {item.label}
                 </p>
-                <p className="text-[13px] text-muted-foreground mt-1 leading-[1.55]">
+                <p className="text-[13px] text-muted-foreground/90 mt-1.5 leading-relaxed">
                   {item.desc}
                 </p>
               </div>
