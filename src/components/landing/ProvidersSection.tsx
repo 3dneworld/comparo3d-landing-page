@@ -1,8 +1,9 @@
 const providers = [
-  { name: "PRINTALOT" },
-  { name: "Piscobot" },
-  { name: "PJAL" },
-  { name: "Joaco3D" },
+  { name: "PAL",      logo: "/logos/PAL.png"        },
+  { name: "Piscobot", logo: "/logos/Piscobot.png"    },
+  { name: "Nost3rD",  logo: "/logos/Nost3rd.jpg"     },
+  { name: "Joaco3D",  logo: "/logos/JOACO3D.png"     },
+  { name: "MEGA 3D",  logo: "/logos/Mega3D.jpeg"     },
 ];
 
 const ProvidersSection = () => {
@@ -21,17 +22,21 @@ const ProvidersSection = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 max-w-3xl mx-auto">
+        <div className="flex flex-wrap justify-center gap-4 md:gap-5 max-w-4xl mx-auto">
           {providers.map((p) => (
             <div
               key={p.name}
-              className="flex flex-col items-center rounded-xl border border-border bg-card p-4 md:p-5"
+              className="flex flex-col items-center rounded-xl border border-border bg-card p-4 md:p-5 w-[calc(50%-8px)] sm:w-[calc(33.333%-14px)] md:w-[calc(20%-16px)] min-w-[130px] max-w-[180px]"
             >
-              <div className="w-full aspect-[5/2] rounded-lg bg-muted/40 border border-border/50 mb-3 flex items-center justify-center">
-                <div className="w-16 h-[2px] rounded-full bg-muted-foreground/10" />
+              <div className="w-full aspect-[5/3] rounded-lg bg-white border border-border/40 mb-3 flex items-center justify-center overflow-hidden">
+                <img
+                  src={p.logo}
+                  alt={`Logo ${p.name}`}
+                  className="w-full h-full object-contain p-2"
+                  loading="lazy"
+                />
               </div>
-              <span className="text-sm font-semibold text-foreground">{p.name}</span>
-              <span className="text-[11px] text-muted-foreground/60 mt-0.5">Proveedor evaluado</span>
+              <span className="text-sm font-semibold text-foreground text-center">{p.name}</span>
             </div>
           ))}
         </div>
