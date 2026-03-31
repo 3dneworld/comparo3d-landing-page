@@ -7,18 +7,18 @@ interface FAQItem {
   a: string;
 }
 
-const faqCopy: Record<Audience, { eyebrow: string; title: string; support: string }> = {
+const sectionCopy: Record<Audience, { eyebrow: string; title: string; support: string }> = {
   particular: {
     eyebrow: "PREGUNTAS FRECUENTES",
-    title: "FAQ para particulares",
+    title: "Lo que necesitás saber antes de cotizar",
     support:
-      "Respuestas rápidas para entender cómo funciona la cotización, qué podés subir y qué esperar del proceso.",
+      "Respuestas claras para particulares: qué podés subir, cuánto tarda y cómo funciona la comparación de opciones.",
   },
   empresa: {
     eyebrow: "PREGUNTAS FRECUENTES",
-    title: "FAQ para empresas",
+    title: "Respuestas para compras y coordinación B2B",
     support:
-      "Respuestas orientadas a compras, coordinación, confidencialidad, facturación y tiempos de propuesta para operaciones B2B.",
+      "Información puntual para empresas sobre propuestas, facturación, confidencialidad, seguimiento y coordinación operativa.",
   },
 };
 
@@ -26,11 +26,11 @@ const faqsByAudience: Record<Audience, FAQItem[]> = {
   particular: [
     {
       q: "¿Qué formato de archivo aceptan?",
-      a: "Hoy aceptamos archivos STL para la cotización automática. Si tenés el modelo en otro formato, primero habría que convertirlo antes de cotizar.",
+      a: "Hoy la cotización automática trabaja con archivos STL. Si tu modelo está en otro formato, primero habría que convertirlo antes de cotizar.",
     },
     {
       q: "¿Cuánto tarda una cotización para particulares?",
-      a: "En la experiencia para particulares, la cotización se resuelve en minutos. Subís tu archivo, completás los datos y recibís opciones comparables sin tener que buscar proveedor por proveedor.",
+      a: "La experiencia para particulares está pensada para resolverse en minutos. Subís tu archivo, completás los datos y recibís opciones comparables sin tener que buscar proveedor por proveedor.",
     },
     {
       q: "¿Puedo pedir varias copias de la misma pieza?",
@@ -38,11 +38,11 @@ const faqsByAudience: Record<Audience, FAQItem[]> = {
     },
     {
       q: "¿Puedo subir varias piezas diferentes en una sola cotización?",
-      a: "No. La lógica actual es una cotización por pieza o archivo. Si necesitás cotizar varias piezas distintas, tenés que generar una cotización separada para cada una.",
+      a: "No. La lógica actual es una cotización por archivo o pieza. Si necesitás cotizar varias piezas distintas, tenés que generar una cotización separada para cada una.",
     },
     {
       q: "¿Qué pasa si no sé qué material elegir?",
-      a: "Podés avanzar igual. La plataforma orienta sobre materiales frecuentes y, si hace falta, la recomendación final se ajusta según el uso real de la pieza, el nivel de exigencia y la terminación que buscás.",
+      a: "Podés avanzar igual. La plataforma muestra materiales frecuentes y, si hace falta, la recomendación final se ajusta según el uso real de la pieza, el nivel de exigencia y la terminación que buscás.",
     },
     {
       q: "¿Mi archivo se mantiene confidencial?",
@@ -54,7 +54,7 @@ const faqsByAudience: Record<Audience, FAQItem[]> = {
     },
     {
       q: "¿Emiten factura?",
-      a: "Sí. Para particulares se puede emitir la factura que corresponda según el caso y la condición fiscal de la operación.",
+      a: "Sí. En operaciones para particulares se emite la factura que corresponda según el caso y la condición fiscal aplicable.",
     },
   ],
   empresa: [
@@ -87,68 +87,73 @@ const faqsByAudience: Record<Audience, FAQItem[]> = {
       a: "La red se evalúa por capacidad técnica, materiales disponibles, cumplimiento, calidad de respuesta y confiabilidad operativa. No se trata solo de precio.",
     },
     {
-      q: "¿Hacen envíos y seguimiento?",
-      a: "Sí. La propuesta contempla coordinación de entrega y seguimiento del pedido para evitar dispersión operativa entre múltiples proveedores.",
+      q: "¿Cómo se coordina el seguimiento y la entrega?",
+      a: "La propuesta contempla coordinación de entrega y seguimiento del pedido para evitar dispersión operativa entre múltiples proveedores.",
     },
   ],
 };
 
 const FAQ = () => {
   const { audience } = useAudience();
-  const copy = faqCopy[audience];
+  const copy = sectionCopy[audience];
   const faqs = useMemo(() => faqsByAudience[audience], [audience]);
-  const [open, setOpen] = useState<number | null>(0);
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="py-20 md:py-28 bg-background">
-      <div className="container max-w-4xl">
-        <div className="text-center mb-12 md:mb-14">
-          <p className="text-xs font-semibold text-primary uppercase tracking-[0.16em] mb-3">
+    <section id="faq" className="bg-background py-14 md:py-18">
+      <div className="container max-w-5xl">
+        <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary md:text-xs">
             {copy.eyebrow}
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">
+          <h2 className="text-3xl font-bold leading-tight text-foreground md:text-4xl">
             {copy.title}
           </h2>
-          <p className="mt-4 text-sm md:text-lg text-muted-foreground leading-relaxed max-w-3xl mx-auto">
+          <p className="mx-auto mt-4 max-w-3xl text-[15px] leading-relaxed text-muted-foreground md:text-[17px]">
             {copy.support}
           </p>
         </div>
 
         <div className="space-y-3">
-          {faqs.map((faq, i) => {
-            const isOpen = open === i;
+          {faqs.map((faq, index) => {
+            const isOpen = openIndex === index;
 
             return (
               <div
                 key={faq.q}
-                className={`rounded-2xl border transition-colors ${
+                className={[
+                  "overflow-hidden rounded-2xl border bg-card transition-all duration-200",
                   isOpen
-                    ? "border-primary/20 bg-primary/[0.03]"
-                    : "border-border bg-card hover:bg-muted/30"
-                }`}
+                    ? "border-primary/20 bg-primary/[0.03] shadow-[0_10px_30px_-18px_hsl(var(--primary)/0.28)]"
+                    : "border-border hover:border-primary/12 hover:bg-muted/20",
+                ].join(" ")}
               >
                 <button
-                  onClick={() => setOpen(isOpen ? null : i)}
-                  className="w-full flex items-start justify-between gap-4 px-5 py-5 md:px-6 md:py-5 text-left"
+                  type="button"
                   aria-expanded={isOpen}
+                  onClick={() => setOpenIndex(isOpen ? null : index)}
+                  className="flex w-full items-start justify-between gap-4 px-5 py-5 text-left md:px-6 md:py-5"
                 >
-                  <span className="text-[15px] md:text-base font-semibold text-foreground leading-snug pr-4">
+                  <span className="pr-4 text-[15px] font-semibold leading-snug text-foreground md:text-base">
                     {faq.q}
                   </span>
 
                   <span
-                    className={`mt-0.5 shrink-0 transition-transform ${
-                      isOpen ? "rotate-180" : ""
-                    }`}
+                    className={[
+                      "mt-0.5 shrink-0 rounded-full border p-1.5 transition-all duration-200",
+                      isOpen
+                        ? "rotate-180 border-primary/15 bg-primary/10"
+                        : "border-border bg-background",
+                    ].join(" ")}
                   >
-                    <ChevronDown size={18} className="text-muted-foreground" />
+                    <ChevronDown size={16} className="text-muted-foreground" />
                   </span>
                 </button>
 
                 {isOpen && (
                   <div className="px-5 pb-5 md:px-6 md:pb-6">
-                    <div className="h-px bg-border mb-4" />
-                    <p className="text-sm md:text-[15px] text-muted-foreground leading-relaxed">
+                    <div className="mb-4 h-px bg-border" />
+                    <p className="text-sm leading-relaxed text-muted-foreground md:text-[15px]">
                       {faq.a}
                     </p>
                   </div>

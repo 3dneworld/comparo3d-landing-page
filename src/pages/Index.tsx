@@ -1,4 +1,4 @@
-import { AudienceProvider } from "@/contexts/AudienceContext";
+import { AudienceProvider, useAudience } from "@/contexts/AudienceContext";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import TrustStrip from "@/components/landing/TrustStrip";
@@ -12,25 +12,37 @@ import FAQ from "@/components/landing/FAQ";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
 
-const Index = () => {
-  console.log("[Index] Landing page rendered");
+const LandingContent = () => {
+  const { audience } = useAudience();
 
   return (
-    <AudienceProvider>
-      <div className="min-h-screen">
-        <Navbar />
+    <div className="min-h-screen bg-background text-foreground">
+      <Navbar />
+
+      <main>
         <Hero />
         <TrustStrip />
         <ProvidersSection />
         <HowItWorks />
         <QuoteSection />
-        <CompaniesSection />
+        {audience === "empresa" && <CompaniesSection />}
         <ProjectsGallery />
         <MaterialsSection />
         <FAQ />
         <FinalCTA />
-        <Footer />
-      </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+};
+
+const Index = () => {
+  console.log("[Index] Landing page rendered");
+
+  return (
+    <AudienceProvider>
+      <LandingContent />
     </AudienceProvider>
   );
 };
