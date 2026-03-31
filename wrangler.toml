@@ -1,0 +1,9 @@
+name = "comparo3d-landing-page"
+compatibility_date = "2026-03-31"
+
+assets = { directory = "./dist" }
+
+routes = [
+  { pattern = "comparo3d.com.ar/*", custom_domain = true },
+  { pattern = "www.comparo3d.com.ar/*", custom_domain = true }
+]
