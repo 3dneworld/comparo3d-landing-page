@@ -1,4 +1,5 @@
-import { Building2, Boxes, ClipboardMinus, Layers, MapPin, ShieldCheck } from "lucide-react";
+import { Building2, Boxes, ClipboardCheck, Layers, MapPin, ShieldCheck } from "lucide-react";
+import { useAudience } from "@/contexts/AudienceContext";
 
 const benefits = [
   {
@@ -14,9 +15,9 @@ const benefits = [
     priority: false,
   },
   {
-    icon: ClipboardMinus,
-    title: "Facturación simplificada",
-    desc: "Factura A o B según corresponda, sin dispersión administrativa.",
+    icon: ClipboardCheck,
+    title: "Factura A",
+    desc: "Operación orientada a empresas con emisión de factura A.",
     priority: false,
   },
   {
@@ -40,6 +41,12 @@ const benefits = [
 ];
 
 const CompaniesSection = () => {
+  const { audience } = useAudience();
+
+  if (audience !== "empresa") {
+    return null;
+  }
+
   return (
     <section id="empresas" className="py-20 md:py-28 bg-gradient-dark">
       <div className="container">
@@ -70,7 +77,11 @@ const CompaniesSection = () => {
               >
                 <b.icon size={20} className={b.priority ? "text-accent-foreground" : "text-hero-muted"} />
               </div>
-              <h3 className={`font-display font-semibold mb-2 ${b.priority ? "text-hero-foreground" : "text-hero-foreground/90"}`}>
+              <h3
+                className={`font-display font-semibold mb-2 ${
+                  b.priority ? "text-hero-foreground" : "text-hero-foreground/90"
+                }`}
+              >
                 {b.title}
               </h3>
               <p className="text-sm text-hero-muted leading-relaxed">{b.desc}</p>
