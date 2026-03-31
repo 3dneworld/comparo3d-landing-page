@@ -32,14 +32,14 @@ const stepsByAudience: Record<Audience, StepItem[]> = {
     },
     {
       step: "Paso 2",
-      title: "Compará opciones reales",
+      title: "Compará opciones",
       desc: "Ves propuestas comparables según precio, plazo y condiciones de entrega.",
       icon: BarChart3,
     },
     {
       step: "Paso 3",
       title: "Elegí la mejor",
-      desc: "Seleccionás la opción que mejor se ajusta a tu necesidad sin perder tiempo buscando por tu cuenta.",
+      desc: "Seleccionás la opción que mejor sin perder tiempo buscando por tu cuenta.",
       icon: ClipboardList,
     },
     {
