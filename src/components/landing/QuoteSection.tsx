@@ -3,7 +3,8 @@ import {
   Upload,
   User,
   FileText,
-  ShoppingCart,
+  CreditCard,
+  CheckCircle2,
   RotateCcw,
   Files,
   ShieldCheck,
@@ -13,6 +14,7 @@ import { useQuoteFlow } from "@/hooks/useQuoteFlow";
 import { StepUpload } from "./quote/StepUpload";
 import { StepUserData } from "./quote/StepUserData";
 import { StepQuotes } from "./quote/StepQuotes";
+import { StepCheckout } from "./quote/StepCheckout";
 import { StepConfirmation } from "./quote/StepConfirmation";
 import { QuoteOption } from "@/lib/api";
 
@@ -51,7 +53,8 @@ const stepLabels = [
   { icon: Upload, label: "Archivo 3D", short: "Archivo" },
   { icon: User, label: "Tus datos", short: "Datos" },
   { icon: FileText, label: "Cotizaciones", short: "Opciones" },
-  { icon: ShoppingCart, label: "Compra", short: "Compra" },
+  { icon: CreditCard, label: "Envío y pago", short: "Pago" },
+  { icon: CheckCircle2, label: "Confirmación", short: "Listo" },
 ];
 
 function loadSaved(): QuoteData | null {
@@ -77,6 +80,8 @@ const QuoteSection = () => {
 
   const [data, setDataRaw] = useState<QuoteData>(() => loadSaved() ?? defaultData);
   const [hasSaved, setHasSaved] = useState(() => !!loadSaved());
+  /** Cotización elegida por el usuario (Paso 3 → 4). No se persiste en localStorage. */
+  const [selectedQuote, setSelectedQuote] = useState<QuoteOption | null>(null);
 
   const setData = (updater: Partial<QuoteData> | ((prev: QuoteData) => QuoteData)) => {
     setDataRaw((prev) => {
@@ -161,6 +166,9 @@ const QuoteSection = () => {
   };
 
   const handleSelectQuote = async (quoteOptionUid: string) => {
+    // Guardar la cotización elegida ANTES de llamar al backend para tenerla disponible en Paso 4
+    const chosen = flow.quotes.find((q) => q.quote_option_uid === quoteOptionUid) ?? null;
+    setSelectedQuote(chosen);
     const ok = await flow.handleAcceptQuote(quoteOptionUid);
     if (ok) goToStep(4);
   };
@@ -344,6 +352,32 @@ const QuoteSection = () => {
           )}
 
           {data.step === 4 && (
+            <StepCheckout
+              selectedQuote={
+                selectedQuote ?? {
+                  quote_option_uid: "",
+                  provider_id: 0,
+                  provider_name: "—",
+                  provider_score: 0,
+                  provider_tier: "",
+                  provider_location: "",
+                  price_ars: 0,
+                  delivery_days: 0,
+                  trust_metrics: { score: 0, reviews_count: 0, on_time_pct: 0 },
+                }
+              }
+              orderId={flow.orderId ?? ""}
+              sessionId={data.sessionId}
+              isEmpresa={isEmpresa}
+              isAccepting={flow.isLoading}
+              onBack={() => {
+                flow.clearError();
+                goToStep(3);
+              }}
+            />
+          )}
+
+          {data.step === 5 && (
             <StepConfirmation
               isEmpresa={isEmpresa}
               sessionId={data.sessionId}

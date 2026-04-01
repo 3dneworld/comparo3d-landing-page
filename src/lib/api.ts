@@ -185,3 +185,114 @@ export async function acceptQuote(
 export function isApiError(r: unknown): r is ApiError {
   return typeof r === "object" && r !== null && (r as ApiError).success === false;
 }
+
+// ─── Shipping ────────────────────────────────────────────────────────────────
+
+export interface ShippingMethod {
+  id: string;
+  name: string;
+  eta_days: number;
+  description?: string;
+}
+
+export interface ShippingMethodsResponse {
+  success: true;
+  methods: ShippingMethod[];
+}
+
+export interface ShippingEstimateRequest {
+  method_id: string;
+  postal_code: string;
+  province?: string;
+}
+
+export interface ShippingEstimateResponse {
+  success: true;
+  method_id: string;
+  price: number;
+  eta_days: number;
+  currency: string;
+}
+
+/** Obtener métodos de envío disponibles. */
+export async function getShippingMethods(): Promise<ShippingMethodsResponse | ApiError> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/shipping/methods`);
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || "Error al obtener métodos de envío" };
+    }
+    return data as ShippingMethodsResponse;
+  } catch {
+    return { success: false, error: "Error de conexión al obtener métodos de envío" };
+  }
+}
+
+/** Estimar precio de envío dado método + CP. */
+export async function getShippingEstimate(
+  request: ShippingEstimateRequest
+): Promise<ShippingEstimateResponse | ApiError> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/shipping/estimate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || "Error al calcular envío" };
+    }
+    return data as ShippingEstimateResponse;
+  } catch {
+    return { success: false, error: "Error de conexión al calcular envío" };
+  }
+}
+
+// ─── Checkout (MercadoPago) ──────────────────────────────────────────────────
+
+export interface CheckoutAddress {
+  street: string;
+  number: string;
+  floor?: string;
+  city: string;
+  postal_code: string;
+  province: string;
+}
+
+export interface CreateCheckoutRequest {
+  order_id: string;
+  shipping: {
+    method_id: string;
+    price: number;
+    eta_days: number;
+    address?: CheckoutAddress;
+  };
+}
+
+export interface CreateCheckoutResponse {
+  success: true;
+  init_point: string;
+  preference_id: string;
+  order_id: string;
+}
+
+/** Crear preferencia de pago en MercadoPago y obtener init_point. */
+export async function createCheckout(
+  sessionId: string,
+  request: CreateCheckoutRequest
+): Promise<CreateCheckoutResponse | ApiError> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/quotes/${sessionId}/checkout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || "Error al iniciar el pago" };
+    }
+    return data as CreateCheckoutResponse;
+  } catch {
+    return { success: false, error: "Error de conexión al iniciar el pago" };
+  }
+}
