@@ -393,6 +393,7 @@ const QuoteSection = () => {
                 tolerancia: data.tolerancia, observaciones: data.observaciones,
               }}
               fileName={data.fileName}
+              thumbnailUrl={flow.thumbnailUrl}
               isEmpresa={isEmpresa}
               isLoading={flow.isLoading}
               progressMessage={flow.progressMessage}

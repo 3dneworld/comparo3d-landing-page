@@ -22,6 +22,7 @@ interface FormState {
 interface StepUserDataProps {
   data: FormState;
   fileName: string;
+  thumbnailUrl?: string | null;
   isEmpresa: boolean;
   isLoading: boolean;
   progressMessage: string;
@@ -34,6 +35,7 @@ interface StepUserDataProps {
 export function StepUserData({
   data,
   fileName,
+  thumbnailUrl,
   isEmpresa,
   isLoading,
   progressMessage,
@@ -69,7 +71,7 @@ export function StepUserData({
           <div className="px-4 pb-4">
             <div className="flex h-36 items-center justify-center overflow-hidden rounded-lg border border-border bg-background">
               <img
-                src={modeloPreview}
+                src={thumbnailUrl || modeloPreview}
                 alt="Vista previa del modelo 3D"
                 className="h-full w-full object-contain p-4"
               />

@@ -33,6 +33,8 @@ export interface QuoteFlowState {
   orderId: string | null;
   /** Archivo STL seleccionado (ref) */
   stlFile: File | null;
+  /** Thumbnail base64 del STL subido (data:image/png;base64,...) */
+  thumbnailUrl: string | null;
 }
 
 interface UseQuoteFlowOptions {
@@ -56,6 +58,7 @@ export function useQuoteFlow({
     quotes: [],
     orderId: null,
     stlFile: null,
+    thumbnailUrl: null,
   });
 
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -115,6 +118,7 @@ export function useQuoteFlow({
         isLoading: false,
         progressMessage: "",
         stlFile: file,
+        thumbnailUrl: result.thumbnail_base64 || null,
       }));
 
       return true;
