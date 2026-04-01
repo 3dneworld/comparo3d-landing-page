@@ -31,13 +31,13 @@ const sectionCopy: Record<Audience, { eyebrow: string; headline: string; support
     eyebrow: "CASOS DE USO FRECUENTES",
     headline: "Qué tipo de piezas podés cotizar",
     support:
-      "Desde repuestos y accesorios útiles hasta hobby, makers y prototipos personales. La idea es que el usuario vea rápido que esta plataforma le sirve para casos reales.",
+      "Desde repuestos y accesorios útiles hasta makers, hobby y prototipos personales. La idea es que el usuario vea rápido que la plataforma sirve para casos reales.",
   },
   empresa: {
     eyebrow: "TIPOS DE TRABAJO",
     headline: "Qué tipo de proyectos coordinamos",
     support:
-      "Desde piezas funcionales y validación de producto hasta series cortas y necesidades operativas con proveedores evaluados.",
+      "Desde piezas funcionales y validación de producto hasta series cortas y necesidades operativas con una red evaluada.",
   },
 };
 
@@ -83,7 +83,7 @@ const projectCards: Record<Audience, ProjectCard[]> = {
       categoryTone: "bg-accent/10 text-accent",
       title: "Modelismo, hobby y proyectos personales",
       desc: "Componentes personalizados, detalles, adaptadores y piezas hechas para hobbies o ideas propias.",
-      material: "Resina / PLA",
+      material: "PLA / PETG",
       piecesLabel: "1 a 12 piezas",
       visualLabel: "Proyecto personal",
       cues: ["detalle", "personalización"],
@@ -141,7 +141,7 @@ const projectCards: Record<Audience, ProjectCard[]> = {
       categoryTone: "bg-primary/10 text-primary",
       title: "Validación de producto y prototipos",
       desc: "Iteraciones para validar forma, ensamble o presentación antes de entrar en fabricación.",
-      material: "PLA / Resina",
+      material: "PLA / PETG",
       piecesLabel: "1 a 10 piezas",
       visualLabel: "Desarrollo",
       cues: ["I+D", "validación"],
@@ -190,30 +190,32 @@ const ProjectsGallery = () => {
   const cards = projectCards[audience];
 
   return (
-    <section className="py-20 md:py-28 bg-background">
+    <section className="bg-background py-14 md:py-18">
       <div className="container">
-        <div className="text-center max-w-3xl mx-auto mb-14 md:mb-16">
-          <p className="text-xs font-semibold text-primary uppercase tracking-[0.16em] mb-3">
+        <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
+          <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.16em] text-primary md:text-[13px]">
             {copy.eyebrow}
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">
+
+          <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
             {copy.headline}
           </h2>
-          <p className="mt-4 text-sm md:text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+
+          <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
             {copy.support}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
           {cards.map((project) => (
             <article
               key={project.title}
-              className="group bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-card-hover transition-shadow"
+              className="group overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/14 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.18)]"
             >
               <div
-                className={`relative h-44 border-b border-border overflow-hidden ${
+                className={`relative h-40 overflow-hidden border-b border-border ${
                   project.emphasis
-                    ? "bg-gradient-to-br from-primary/[0.08] via-background to-primary/[0.03]"
+                    ? "bg-gradient-to-br from-primary/[0.08] via-background to-primary/[0.025]"
                     : "bg-gradient-to-br from-muted/70 via-background to-muted/35"
                 }`}
               >
@@ -230,28 +232,28 @@ const ProjectsGallery = () => {
                     className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-[0.04em] ${
                       project.emphasis
                         ? "bg-primary/10 text-primary"
-                        : "bg-background/85 text-muted-foreground border border-border"
+                        : "border border-border bg-background/85 text-muted-foreground"
                     }`}
                   >
                     {project.visualLabel}
                   </span>
 
                   <div
-                    className={`w-14 h-14 rounded-2xl border flex items-center justify-center backdrop-blur-sm ${
+                    className={`flex h-14 w-14 items-center justify-center rounded-2xl border backdrop-blur-sm ${
                       project.emphasis
-                        ? "bg-primary/10 border-primary/15 text-primary"
-                        : "bg-background/80 border-border text-foreground/70"
+                        ? "border-primary/15 bg-primary/10 text-primary"
+                        : "border-border bg-background/80 text-foreground/70"
                     }`}
                   >
                     <project.icon size={28} strokeWidth={2.1} />
                   </div>
                 </div>
 
-                <div className="absolute left-5 right-5 bottom-5 flex flex-wrap gap-2">
+                <div className="absolute bottom-5 left-5 right-5 flex flex-wrap gap-2">
                   {project.cues.map((cue) => (
                     <span
                       key={cue}
-                      className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] text-muted-foreground bg-background/85 border border-border"
+                      className="inline-flex items-center rounded-full border border-border bg-background/85 px-2.5 py-1 text-[11px] text-muted-foreground"
                     >
                       {cue}
                     </span>
@@ -266,17 +268,17 @@ const ProjectsGallery = () => {
                   {project.category}
                 </span>
 
-                <h3 className="mt-4 font-display text-xl font-semibold text-foreground leading-snug">
+                <h3 className="mt-4 text-[22px] font-semibold leading-[1.18] text-foreground md:text-[24px]">
                   {project.title}
                 </h3>
 
-                <p className="mt-3 text-sm text-muted-foreground leading-relaxed min-h-[72px]">
+                <p className="mt-3 min-h-[72px] text-[14px] leading-[1.7] text-muted-foreground md:text-[15px]">
                   {project.desc}
                 </p>
 
-                <div className="mt-5 flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="mt-5 flex items-center gap-3 text-[12px] text-muted-foreground md:text-[13px]">
                   <span>{project.material}</span>
-                  <span className="w-1 h-1 rounded-full bg-border" />
+                  <span className="h-1 w-1 rounded-full bg-border" />
                   <span>{project.piecesLabel}</span>
                 </div>
               </div>

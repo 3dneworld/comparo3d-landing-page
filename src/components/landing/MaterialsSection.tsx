@@ -15,20 +15,20 @@ interface MaterialCard {
 
 const sectionCopy: Record<Audience, { eyebrow: string; headline: string; support: string; footnote: string }> = {
   particular: {
-    eyebrow: "MATERIALES MÁS PEDIDOS",
-    headline: "Elegí el material correcto sin volverte técnico",
+    eyebrow: "MATERIALES DISPONIBLES",
+    headline: "Materiales FDM para elegir con más criterio",
     support:
-      "No necesitás saber de impresión 3D para pedir una cotización. Esta sección te orienta rápido sobre qué material suele servir mejor según el tipo de pieza.",
+      "Hoy COMPARO3D trabaja con impresión FDM. Esta guía te ayuda a entender rápido qué material suele convenir según el tipo de pieza y su uso real.",
     footnote:
-      "La recomendación final puede ajustarse según uso, tamaño, exigencia mecánica y terminación buscada.",
+      "La recomendación final puede ajustarse según geometría, tamaño, exigencia mecánica, terminación buscada y factibilidad de fabricación.",
   },
   empresa: {
     eyebrow: "CAPACIDADES DE MATERIAL",
-    headline: "Materiales que solemos coordinar según la necesidad",
+    headline: "Materiales FDM que solemos coordinar según la necesidad",
     support:
-      "Desde prototipado visual hasta piezas funcionales o series cortas. La selección final depende del uso real, la exigencia técnica y el plazo.",
+      "Desde prototipado visual hasta piezas funcionales y componentes de mayor exigencia. La selección final depende del uso real, la demanda técnica y el plazo.",
     footnote:
-      "Si el proyecto requiere un material o proceso específico, la validación se hace caso por caso con la red de proveedores.",
+      "Si el proyecto requiere una validación especial de material, tolerancia o desempeño, se revisa caso por caso con la red de proveedores.",
   },
 };
 
@@ -68,26 +68,15 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       gradientClass: "from-primary/[0.10] via-background to-primary/[0.02]",
     },
     {
-      name: "Resina",
-      bestFor: "Detalle fino",
-      useCases: "Miniaturas, piezas visuales, joyería, dental o prototipos donde importa mucho el detalle.",
-      strengths: ["altísima definición", "superficie lisa", "gran calidad visual"],
-      caution: "No suele ser la opción ideal para piezas de uso duro o golpes frecuentes.",
-      finish: "Excelente",
-      flexibility: "Baja",
-      resistance: "Baja / Media",
-      gradientClass: "from-accent/[0.12] via-background to-accent/[0.04]",
-    },
-    {
       name: "TPU",
       bestFor: "Piezas flexibles",
-      useCases: "Fundas, topes, juntas, suelas, agarres o piezas que necesitan doblarse sin romperse.",
+      useCases: "Fundas, topes, juntas, agarres o piezas que necesitan doblarse sin romperse.",
       strengths: ["flexible", "absorbe impacto", "sirve para piezas blandas"],
       caution: "No es el material indicado si buscás rigidez o mucha precisión dimensional.",
       finish: "Buena",
       flexibility: "Alta",
       resistance: "Media",
-      gradientClass: "from-primary/[0.08] via-background to-primary/[0.02]",
+      gradientClass: "from-accent/[0.12] via-background to-accent/[0.04]",
     },
     {
       name: "Nylon",
@@ -98,6 +87,17 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       finish: "Media",
       flexibility: "Media",
       resistance: "Alta",
+      gradientClass: "from-primary/[0.08] via-background to-primary/[0.02]",
+    },
+    {
+      name: "Policarbonato",
+      bestFor: "Alta exigencia",
+      useCases: "Piezas funcionales exigentes, carcasas robustas y aplicaciones donde importa más el desempeño que la simple terminación.",
+      strengths: ["muy resistente", "mejor temperatura", "más robusto"],
+      caution: "No se usa en todos los casos. Tiene más exigencia de fabricación y conviene cuando la aplicación realmente lo justifica.",
+      finish: "Buena",
+      flexibility: "Baja",
+      resistance: "Muy alta",
       gradientClass: "from-accent/[0.09] via-background to-accent/[0.02]",
     },
   ],
@@ -136,17 +136,6 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       gradientClass: "from-primary/[0.10] via-background to-primary/[0.02]",
     },
     {
-      name: "Resina",
-      bestFor: "Alta definición",
-      useCases: "Piezas de detalle, modelos de validación estética, salud, dental y componentes visuales finos.",
-      strengths: ["gran precisión", "excelente detalle", "acabado superior"],
-      caution: "No siempre es la elección correcta para piezas con trabajo mecánico intenso.",
-      finish: "Excelente",
-      flexibility: "Baja",
-      resistance: "Baja / Media",
-      gradientClass: "from-accent/[0.12] via-background to-accent/[0.04]",
-    },
-    {
       name: "TPU",
       bestFor: "Componentes flexibles",
       useCases: "Juntas, topes, protección, grip, piezas blandas o componentes que absorben impacto.",
@@ -155,7 +144,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       finish: "Buena",
       flexibility: "Alta",
       resistance: "Media",
-      gradientClass: "from-primary/[0.08] via-background to-primary/[0.02]",
+      gradientClass: "from-accent/[0.12] via-background to-accent/[0.04]",
     },
     {
       name: "Nylon",
@@ -166,6 +155,17 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       finish: "Media",
       flexibility: "Media",
       resistance: "Alta",
+      gradientClass: "from-primary/[0.08] via-background to-primary/[0.02]",
+    },
+    {
+      name: "Policarbonato",
+      bestFor: "Desempeño superior",
+      useCases: "Piezas funcionales exigentes, componentes robustos y casos donde temperatura y resistencia pesan más que el costo o la simplicidad.",
+      strengths: ["muy robusto", "mejor temperatura", "alto desempeño"],
+      caution: "Se reserva para casos donde la exigencia lo justifica. No es la opción por defecto para todos los proyectos.",
+      finish: "Buena",
+      flexibility: "Baja",
+      resistance: "Muy alta",
       gradientClass: "from-accent/[0.09] via-background to-accent/[0.02]",
     },
   ],
@@ -183,27 +183,29 @@ const MaterialsSection = () => {
   const materials = materialsByAudience[audience];
 
   return (
-    <section id="materiales" className="py-20 md:py-28 bg-muted/50">
+    <section id="materiales" className="bg-muted/50 py-14 md:py-18">
       <div className="container">
-        <div className="text-center max-w-3xl mx-auto mb-14 md:mb-16">
-          <p className="text-xs font-semibold text-primary uppercase tracking-[0.16em] mb-3">
+        <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
+          <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.16em] text-primary md:text-[13px]">
             {copy.eyebrow}
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">
+
+          <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
             {copy.headline}
           </h2>
-          <p className="mt-4 text-sm md:text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+
+          <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
             {copy.support}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
           {materials.map((material) => (
             <article
               key={material.name}
-              className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-card-hover transition-shadow"
+              className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/14 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.18)]"
             >
-              <div className={`relative h-32 bg-gradient-to-br ${material.gradientClass} border-b border-border`}>
+              <div className={`relative h-32 border-b border-border bg-gradient-to-br ${material.gradientClass}`}>
                 <div
                   className="absolute inset-0 opacity-[0.05]"
                   style={{
@@ -211,23 +213,25 @@ const MaterialsSection = () => {
                       "url(\"data:image/svg+xml,%3Csvg width='22' height='22' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h22v22H0z' fill='none' stroke='%23000000' stroke-width='0.35'/%3E%3C/svg%3E\")",
                   }}
                 />
+
                 <div className="absolute inset-x-6 top-5 flex items-start justify-between gap-4">
                   <div>
-                    <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-background/90 text-muted-foreground border border-border">
+                    <span className="inline-flex items-center rounded-full border border-border bg-background/90 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
                       {material.bestFor}
                     </span>
-                    <h3 className="mt-4 text-3xl font-bold tracking-tight text-foreground">
+                    <h3 className="mt-4 text-[30px] font-bold tracking-tight text-foreground md:text-[32px]">
                       {material.name}
                     </h3>
                   </div>
-                  <div className="w-12 h-12 rounded-xl bg-background/85 border border-border flex items-center justify-center text-primary shrink-0">
+
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border bg-background/85 text-primary">
                     <Layers3 size={24} strokeWidth={2.1} />
                   </div>
                 </div>
               </div>
 
               <div className="p-6">
-                <p className="text-sm text-muted-foreground leading-relaxed min-h-[72px]">
+                <p className="min-h-[76px] text-[14px] leading-[1.7] text-muted-foreground md:text-[15px]">
                   {material.useCases}
                 </p>
 
@@ -235,7 +239,7 @@ const MaterialsSection = () => {
                   {material.strengths.map((item) => (
                     <span
                       key={item}
-                      className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium bg-primary/8 text-primary border border-primary/10"
+                      className="inline-flex items-center rounded-full border border-primary/10 bg-primary/8 px-2.5 py-1 text-[11px] font-medium text-primary"
                     >
                       {item}
                     </span>
@@ -246,16 +250,17 @@ const MaterialsSection = () => {
                   {propertyItems.map((property) => {
                     const Icon = property.icon;
                     const value = material[property.key];
+
                     return (
                       <div
                         key={property.label}
                         className="rounded-xl border border-border bg-muted/40 px-3 py-3 text-center"
                       >
-                        <div className="flex items-center justify-center text-primary/80 mb-2">
+                        <div className="mb-2 flex items-center justify-center text-primary/80">
                           <Icon size={16} strokeWidth={2.1} />
                         </div>
-                        <p className="text-[11px] text-muted-foreground leading-none">{property.label}</p>
-                        <p className="mt-2 text-[12px] font-semibold text-foreground leading-tight">{value}</p>
+                        <p className="text-[11px] leading-none text-muted-foreground">{property.label}</p>
+                        <p className="mt-2 text-[12px] font-semibold leading-tight text-foreground">{value}</p>
                       </div>
                     );
                   })}
@@ -263,10 +268,8 @@ const MaterialsSection = () => {
 
                 <div className="mt-5 rounded-xl border border-border bg-background px-4 py-3">
                   <div className="flex items-start gap-2.5">
-                    <Info size={16} className="text-muted-foreground mt-0.5 shrink-0" />
-                    <p className="text-[12px] text-muted-foreground leading-relaxed">
-                      {material.caution}
-                    </p>
+                    <Info size={16} className="mt-0.5 shrink-0 text-muted-foreground" />
+                    <p className="text-[12px] leading-relaxed text-muted-foreground">{material.caution}</p>
                   </div>
                 </div>
               </div>
@@ -274,10 +277,10 @@ const MaterialsSection = () => {
           ))}
         </div>
 
-        <div className="max-w-4xl mx-auto mt-8 md:mt-10 rounded-2xl border border-border bg-card px-5 py-4 md:px-6 md:py-5">
+        <div className="mx-auto mt-7 max-w-4xl rounded-2xl border border-border bg-card px-5 py-4 md:mt-8 md:px-6 md:py-5">
           <div className="flex items-start gap-3">
-            <Wrench size={18} className="text-primary mt-0.5 shrink-0" />
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <Wrench size={18} className="mt-0.5 shrink-0 text-primary" />
+            <p className="text-[14px] leading-[1.7] text-muted-foreground md:text-[15px]">
               {copy.footnote}
             </p>
           </div>
