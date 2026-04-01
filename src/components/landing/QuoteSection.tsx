@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Upload,
   User,
@@ -18,7 +18,8 @@ import { StepCheckout } from "./quote/StepCheckout";
 import { StepConfirmation } from "./quote/StepConfirmation";
 import { QuoteOption } from "@/lib/api";
 
-const STORAGE_KEY = "comparo3d_quote";
+const STORAGE_KEY      = "comparo3d_quote";
+const MP_BANNER_KEY    = "comparo3d_mp_banner";
 
 interface QuoteData {
   nombre: string;
@@ -82,6 +83,35 @@ const QuoteSection = () => {
   const [hasSaved, setHasSaved] = useState(() => !!loadSaved());
   /** Cotización elegida por el usuario (Paso 3 → 4). No se persiste en localStorage. */
   const [selectedQuote, setSelectedQuote] = useState<QuoteOption | null>(null);
+  /** Banner de retorno desde MercadoPago */
+  const [mpBanner, setMpBanner] = useState<{ type: "success" | "failure" | "pending"; orderId: string } | null>(null);
+
+  // ── Detectar retorno desde MercadoPago (?payment=success|failure|pending&order_id=XXX) ──
+  useEffect(() => {
+    const params  = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    const orderId = params.get("order_id");
+
+    if (!payment || !orderId) return;
+
+    // Limpiar URL sin recargar
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, "", cleanUrl);
+
+    if (payment === "success") {
+      // Ir directo a confirmación con el order_id recuperado
+      setDataRaw((prev) => {
+        const next = { ...prev, step: 5 };
+        saveData(next);
+        return next;
+      });
+      // Inyectar orderId en el flow hook si es posible (via estado local)
+      setMpBanner({ type: "success", orderId });
+    } else if (payment === "failure" || payment === "pending") {
+      setMpBanner({ type: payment as "failure" | "pending", orderId });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setData = (updater: Partial<QuoteData> | ((prev: QuoteData) => QuoteData)) => {
     setDataRaw((prev) => {
@@ -235,6 +265,44 @@ const QuoteSection = () => {
             </p>
           </div>
         </div>
+
+        {/* Banner de retorno desde MercadoPago */}
+        {mpBanner && (
+          <div
+            className={`mb-5 flex items-start justify-between gap-3 rounded-2xl border p-4 ${
+              mpBanner.type === "success"
+                ? "border-green-200 bg-green-50"
+                : mpBanner.type === "pending"
+                ? "border-yellow-200 bg-yellow-50"
+                : "border-red-200 bg-red-50"
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <span className="text-xl leading-none">
+                {mpBanner.type === "success" ? "✅" : mpBanner.type === "pending" ? "⏳" : "⚠️"}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {mpBanner.type === "success"
+                    ? "¡Pago recibido! Tu pedido está confirmado."
+                    : mpBanner.type === "pending"
+                    ? "Pago pendiente — te avisamos cuando se acredite."
+                    : "El pago no se procesó. Podés intentarlo de nuevo."}
+                </p>
+                <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                  Ref: {mpBanner.orderId}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setMpBanner(null)}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+              aria-label="Cerrar"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {/* Banner de sesión guardada */}
         {hasSaved && data.step > 1 && (
