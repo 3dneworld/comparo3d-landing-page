@@ -123,6 +123,8 @@ export async function initDraft(payload: {
   urgencia?: string;
   tolerancia?: string;
   observaciones?: string;
+  infill?: string;
+  layer_height?: string;
 }): Promise<InitDraftResponse | ApiError> {
   const res = await fetch(`${API_BASE_URL}/api/quotes/init-draft`, {
     method: "POST",

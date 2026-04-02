@@ -141,6 +141,8 @@ export function useQuoteFlow({
       urgencia?: string;
       tolerancia?: string;
       observaciones?: string;
+      infill?: string;
+      layer_height?: string;
       stl_sha256?: string;
     }): Promise<boolean> => {
       if (!isMountedRef.current) return false;
