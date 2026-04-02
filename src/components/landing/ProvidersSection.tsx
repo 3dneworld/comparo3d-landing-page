@@ -11,9 +11,6 @@ const ProvidersSection = () => {
     <section className="py-12 md:py-16 bg-background">
       <div className="container">
         <div className="text-center mb-8">
-          <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">
-            Nuestra red
-          </p>
           <h2 className="text-2xl md:text-3xl font-bold text-foreground">
             Red de proveedores evaluados
           </h2>
