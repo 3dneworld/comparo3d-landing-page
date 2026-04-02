@@ -31,8 +31,9 @@ interface QuoteData {
   detalles: string;
   fileName: string;
   colorAcabado: string;
+  infill: string;
+  alturaCapa: string;
   usoPieza: string;
-  urgencia: string;
   tolerancia: string;
   observaciones: string;
   step: number;
@@ -45,7 +46,8 @@ interface QuoteData {
 const defaultData: QuoteData = {
   nombre: "", email: "", telefono: "", ubicacion: "",
   material: "", cantidad: "1", detalles: "", fileName: "",
-  colorAcabado: "", usoPieza: "", urgencia: "", tolerancia: "",
+  colorAcabado: "", infill: "20%", alturaCapa: "0.2mm",
+  usoPieza: "", tolerancia: "",
   observaciones: "", step: 1, sessionId: "", tempName: "",
   stlSha256: "", updatedAt: "",
 };
@@ -174,19 +176,23 @@ const QuoteSection = () => {
     if (!data.nombre || !data.email || !data.material || !data.cantidad) {
       return;
     }
+    // "ASESORAR" → "PLA" para el backend (el usuario elige "No estoy seguro")
+    const materialParaBackend = data.material === "ASESORAR" ? "PLA" : data.material;
+
     const ok = await flow.handleInitDraft({
       client_name: data.nombre,
       client_email: data.email,
       client_phone: data.telefono,
       client_location: data.ubicacion,
-      material: data.material,
+      material: materialParaBackend,
       cantidad: data.cantidad,
       project_details: data.detalles,
       color_acabado: data.colorAcabado,
       uso_pieza: data.usoPieza,
-      urgencia: data.urgencia,
       tolerancia: data.tolerancia,
       observaciones: data.observaciones,
+      infill: data.infill || "20%",
+      layer_height: data.alturaCapa || "0.2mm",
       stl_sha256: data.stlSha256,
     });
     if (ok) {
@@ -389,7 +395,8 @@ const QuoteSection = () => {
                 nombre: data.nombre, email: data.email, telefono: data.telefono,
                 ubicacion: data.ubicacion, material: data.material, cantidad: data.cantidad,
                 detalles: data.detalles, colorAcabado: data.colorAcabado,
-                usoPieza: data.usoPieza, urgencia: data.urgencia,
+                infill: data.infill, alturaCapa: data.alturaCapa,
+                usoPieza: data.usoPieza,
                 tolerancia: data.tolerancia, observaciones: data.observaciones,
               }}
               fileName={data.fileName}

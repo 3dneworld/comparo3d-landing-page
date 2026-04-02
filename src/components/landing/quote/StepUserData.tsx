@@ -2,7 +2,40 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight, Eye, CheckCircle2, MapPin } from "lucide-react";
 import modeloPreview from "@/assets/modelo-preview.png";
 
-const materials = ["PLA", "PETG", "ABS", "TPU", "Nylon", "Policarbonato"];
+// ── Materiales ────────────────────────────────────────────────────────────────
+// "No estoy seguro" se muestra al usuario pero se envía "PLA" al backend
+const MATERIAL_OPTIONS = [
+  { label: "PLA (Económico) - Recomendado", value: "PLA" },
+  { label: "No estoy seguro (Asesorarme)", value: "ASESORAR" }, // → PLA internamente
+  { label: "ABS (Resistente)", value: "ABS" },
+  { label: "PETG (Intermedio)", value: "PETG" },
+  { label: "Nylon (Industrial)", value: "Nylon" },
+  { label: "TPU (Flexible)", value: "TPU" },
+];
+
+// ── Infill opciones ───────────────────────────────────────────────────────────
+const INFILL_OPTIONS = ["5%", "10%", "20%", "25%", "30%", "40%", "50%", "60%", "70%", "80%", "90%", "100%"];
+const INFILL_DEFAULT = "20%";
+
+// ── Altura de capa opciones ───────────────────────────────────────────────────
+const LAYER_OPTIONS = [
+  { label: "0.1mm (Alta calidad)", value: "0.1mm" },
+  { label: "0.2mm (Recomendado)", value: "0.2mm" },
+  { label: "0.3mm (Económico/Rápido)", value: "0.3mm" },
+];
+const LAYER_DEFAULT = "0.2mm";
+
+// ── Colores ───────────────────────────────────────────────────────────────────
+const COLOR_OPTIONS = [
+  { label: "BLANCO",  value: "Blanco",  bg: "#FFFFFF", border: "#D1D5DB" },
+  { label: "NEGRO",   value: "Negro",   bg: "#1F1F1F", border: "#1F1F1F" },
+  { label: "AZUL",    value: "Azul",    bg: "#2563EB", border: "#2563EB" },
+  { label: "ROJO",    value: "Rojo",    bg: "#DC2626", border: "#DC2626" },
+  { label: "GRIS",    value: "Gris",    bg: "#6B7280", border: "#6B7280" },
+  { label: "AMARILLO",value: "Amarillo",bg: "#F59E0B", border: "#F59E0B" },
+  { label: "VERDE",   value: "Verde",   bg: "#16A34A", border: "#16A34A" },
+  { label: "NARANJA", value: "Naranja", bg: "#EA580C", border: "#EA580C" },
+];
 
 interface FormState {
   nombre: string;
@@ -13,8 +46,9 @@ interface FormState {
   cantidad: string;
   detalles: string;
   colorAcabado: string;
+  infill: string;
+  alturaCapa: string;
   usoPieza: string;
-  urgencia: string;
   tolerancia: string;
   observaciones: string;
 }
@@ -45,9 +79,13 @@ export function StepUserData({
   onContinue,
 }: StepUserDataProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [colorCustom, setColorCustom] = useState("");
 
   const inputClass =
     "w-full rounded-xl border border-input bg-background px-4 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring";
+
+  const selectClass =
+    "w-full rounded-xl border border-input bg-background px-4 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring appearance-none cursor-pointer";
 
   const handleDetectLocation = () => {
     if (navigator.geolocation) {
@@ -55,6 +93,20 @@ export function StepUserData({
         onChange("ubicacion", "Buenos Aires");
       });
     }
+  };
+
+  // Color seleccionado actual (puede ser un valor predefinido o el custom)
+  const selectedColor = data.colorAcabado;
+  const isCustomColor = selectedColor && !COLOR_OPTIONS.find(c => c.value === selectedColor);
+
+  const handleColorSelect = (value: string) => {
+    onChange("colorAcabado", value);
+    setColorCustom("");
+  };
+
+  const handleCustomColor = (val: string) => {
+    setColorCustom(val);
+    onChange("colorAcabado", val);
   };
 
   return (
@@ -92,6 +144,7 @@ export function StepUserData({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
+        {/* Nombre */}
         <div>
           <label className="mb-1.5 block text-[14px] font-semibold text-foreground">Nombre *</label>
           <input
@@ -102,6 +155,7 @@ export function StepUserData({
           />
         </div>
 
+        {/* Email */}
         <div>
           <label className="mb-1.5 block text-[14px] font-semibold text-foreground">Email *</label>
           <input
@@ -113,6 +167,7 @@ export function StepUserData({
           />
         </div>
 
+        {/* Teléfono */}
         <div>
           <label className="mb-1.5 block text-[14px] font-semibold text-foreground">Teléfono</label>
           <input
@@ -124,6 +179,7 @@ export function StepUserData({
           />
         </div>
 
+        {/* Ubicación */}
         <div>
           <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
             Ubicación / Ciudad
@@ -146,22 +202,27 @@ export function StepUserData({
           </div>
         </div>
 
+        {/* Material */}
         <div>
           <label className="mb-1.5 block text-[14px] font-semibold text-foreground">Material *</label>
-          <select
-            value={data.material}
-            onChange={(e) => onChange("material", e.target.value)}
-            className={inputClass}
-          >
-            <option value="">Seleccionar material</option>
-            {materials.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={data.material}
+              onChange={(e) => onChange("material", e.target.value)}
+              className={selectClass}
+            >
+              <option value="">Seleccionar material</option>
+              {MATERIAL_OPTIONS.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          </div>
         </div>
 
+        {/* Cantidad */}
         <div>
           <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
             Cantidad de copias *
@@ -177,6 +238,7 @@ export function StepUserData({
         </div>
       </div>
 
+      {/* Detalles */}
       <div className="mt-4">
         <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
           Detalles del proyecto
@@ -190,7 +252,7 @@ export function StepUserData({
         />
       </div>
 
-      {/* Avanzado */}
+      {/* ── Opciones avanzadas ────────────────────────────────────────────────── */}
       <div className="mt-5 border-t border-border pt-4">
         <button
           type="button"
@@ -205,60 +267,157 @@ export function StepUserData({
         </button>
 
         {showAdvanced && (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="mt-5 space-y-6">
+
+            {/* ── Color ─────────────────────────────────────────────────────── */}
             <div>
-              <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
-                Color / acabado
-              </label>
-              <input
-                value={data.colorAcabado}
-                onChange={(e) => onChange("colorAcabado", e.target.value)}
-                className={inputClass}
-                placeholder="Ej: blanco, negro mate"
-              />
+              <label className="mb-3 block text-[14px] font-semibold text-foreground">COLOR</label>
+              <div className="flex flex-wrap gap-4">
+                {COLOR_OPTIONS.map((c) => {
+                  const isSelected = selectedColor === c.value;
+                  return (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onClick={() => handleColorSelect(c.value)}
+                      className="flex flex-col items-center gap-1.5"
+                    >
+                      <span
+                        className={`flex h-12 w-12 items-center justify-center rounded-full transition-all ${
+                          isSelected
+                            ? "ring-2 ring-primary ring-offset-2"
+                            : "hover:ring-2 hover:ring-muted-foreground hover:ring-offset-1"
+                        }`}
+                        style={{ backgroundColor: c.bg, border: `2px solid ${c.border}` }}
+                      >
+                        {isSelected && (
+                          <CheckCircle2
+                            size={20}
+                            style={{ color: c.value === "Blanco" ? "#111" : "#fff" }}
+                            strokeWidth={2.5}
+                          />
+                        )}
+                      </span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        {c.label}
+                      </span>
+                    </button>
+                  );
+                })}
+
+                {/* Botón "DETALLAR" para color custom */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setColorCustom("");
+                    onChange("colorAcabado", "");
+                  }}
+                  className="flex flex-col items-center gap-1.5"
+                >
+                  <span
+                    className={`flex h-12 w-12 items-center justify-center rounded-full border-2 border-dashed transition-all ${
+                      isCustomColor
+                        ? "border-primary bg-primary/5 ring-2 ring-primary ring-offset-2"
+                        : "border-border bg-muted/30 hover:border-muted-foreground"
+                    }`}
+                  >
+                    <span className="text-[18px] font-light text-muted-foreground">+</span>
+                  </span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    DETALLAR
+                  </span>
+                </button>
+              </div>
+
+              {/* Input de color custom (aparece si seleccionó DETALLAR o no hay selección) */}
+              {(!selectedColor || isCustomColor) && (
+                <div className="mt-3">
+                  <input
+                    value={colorCustom || (isCustomColor ? selectedColor : "")}
+                    onChange={(e) => handleCustomColor(e.target.value)}
+                    className={inputClass}
+                    placeholder="Ej: verde menta, transparente, bicolor..."
+                  />
+                </div>
+              )}
             </div>
 
-            <div>
-              <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
-                Uso de la pieza
-              </label>
-              <input
-                value={data.usoPieza}
-                onChange={(e) => onChange("usoPieza", e.target.value)}
-                className={inputClass}
-                placeholder="Ej: prototipo, producción final"
-              />
+            {/* ── Infill y Altura de capa ───────────────────────────────────── */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Infill */}
+              <div>
+                <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
+                  INFILL (RELLENO)
+                </label>
+                <div className="relative">
+                  <select
+                    value={data.infill || INFILL_DEFAULT}
+                    onChange={(e) => onChange("infill", e.target.value)}
+                    className={selectClass}
+                  >
+                    {INFILL_OPTIONS.map((v) => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                </div>
+                <p className="mt-1.5 text-[12px] text-muted-foreground">
+                  Mayor relleno = más resistencia pero más tiempo/costo
+                </p>
+              </div>
+
+              {/* Altura de capa */}
+              <div>
+                <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
+                  ALTURA DE CAPA
+                </label>
+                <div className="relative">
+                  <select
+                    value={data.alturaCapa || LAYER_DEFAULT}
+                    onChange={(e) => onChange("alturaCapa", e.target.value)}
+                    className={selectClass}
+                  >
+                    {LAYER_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                </div>
+                <p className="mt-1.5 text-[12px] text-muted-foreground">
+                  Menor altura = más detalle pero más tiempo
+                </p>
+              </div>
             </div>
 
-            <div>
-              <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
-                Urgencia
-              </label>
-              <select
-                value={data.urgencia}
-                onChange={(e) => onChange("urgencia", e.target.value)}
-                className={inputClass}
-              >
-                <option value="">Sin urgencia especial</option>
-                <option value="normal">Normal</option>
-                <option value="urgente">Urgente</option>
-                <option value="flexible">Flexible</option>
-              </select>
+            {/* ── Uso pieza y Tolerancia ────────────────────────────────────── */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
+                  Uso de la pieza
+                </label>
+                <input
+                  value={data.usoPieza}
+                  onChange={(e) => onChange("usoPieza", e.target.value)}
+                  className={inputClass}
+                  placeholder="Ej: prototipo, producción final"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
+                  Tolerancia / precisión
+                </label>
+                <input
+                  value={data.tolerancia}
+                  onChange={(e) => onChange("tolerancia", e.target.value)}
+                  className={inputClass}
+                  placeholder="Ej: ±0.2mm"
+                />
+              </div>
             </div>
 
+            {/* ── Observaciones ─────────────────────────────────────────────── */}
             <div>
-              <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
-                Tolerancia / precisión
-              </label>
-              <input
-                value={data.tolerancia}
-                onChange={(e) => onChange("tolerancia", e.target.value)}
-                className={inputClass}
-                placeholder="Ej: ±0.2mm"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
               <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
                 Observaciones adicionales
               </label>
