@@ -157,7 +157,7 @@ export function StepUserData({
 
         {/* Email */}
         <div>
-          <label className="mb-1.5 block text-[14px] font-semibold text-foreground">Email *</label>
+          <label className="mb-1.5 block text-[14px] font-semibold text-foreground">E-mail *</label>
           <input
             type="email"
             value={data.email}
