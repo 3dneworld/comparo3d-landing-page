@@ -16,7 +16,7 @@ interface MaterialCard {
 const sectionCopy: Record<Audience, { eyebrow: string; headline: string; support: string; footnote: string }> = {
   particular: {
     eyebrow: "MATERIALES DISPONIBLES",
-    headline: "Materiales FDM para elegir con más criterio",
+    headline: "Materiales FDM para elegir con criterio",
     support:
       "Hoy COMPARO3D trabaja con impresión FDM. Esta guía te ayuda a entender rápido qué material suele convenir según el tipo de pieza y su uso real.",
     footnote:
