@@ -329,17 +329,6 @@ export function StepUserData({
                 </button>
               </div>
 
-              {/* Input de color custom (aparece si seleccionó DETALLAR o no hay selección) */}
-              {(!selectedColor || isCustomColor) && (
-                <div className="mt-3">
-                  <input
-                    value={colorCustom || (isCustomColor ? selectedColor : "")}
-                    onChange={(e) => handleCustomColor(e.target.value)}
-                    className={inputClass}
-                    placeholder="Ej: verde menta, transparente, bicolor..."
-                  />
-                </div>
-              )}
             </div>
 
             {/* ── Infill y Altura de capa ───────────────────────────────────── */}
