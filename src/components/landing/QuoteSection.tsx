@@ -243,7 +243,7 @@ const QuoteSection = () => {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-primary/15 bg-primary/[0.04] px-4 py-3 text-left">
+          <div className="rounded-2xl border border-primary/15 px-4 py-3 text-left bg-card">
             <div className="flex items-center gap-2 text-primary">
               <Upload size={16} />
               <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Formato</span>
