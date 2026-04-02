@@ -39,7 +39,7 @@ const stepsByAudience: Record<Audience, StepItem[]> = {
     {
       step: "Paso 3",
       title: "Elegí la mejor",
-      desc: "Seleccionás la opción que mejor sin perder tiempo buscando por tu cuenta.",
+      desc: "Seleccionás la opción para vos sin perder tiempo buscando por tu cuenta en cada proveedor.",
       icon: ClipboardList,
     },
     {
