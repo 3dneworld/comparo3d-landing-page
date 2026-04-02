@@ -277,14 +277,6 @@ const MaterialsSection = () => {
           ))}
         </div>
 
-        <div className="mx-auto mt-7 max-w-4xl rounded-2xl border border-border bg-card px-5 py-4 md:mt-8 md:px-6 md:py-5">
-          <div className="flex items-start gap-3">
-            <Wrench size={18} className="mt-0.5 shrink-0 text-primary" />
-            <p className="text-[14px] leading-[1.7] text-muted-foreground md:text-[15px]">
-              {copy.footnote}
-            </p>
-          </div>
-        </div>
       </div>
     </section>
   );
