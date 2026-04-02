@@ -249,7 +249,7 @@ const QuoteSection = () => {
               <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Formato</span>
             </div>
             <p className="mt-2 text-[14px] font-medium leading-snug text-foreground">
-              Hoy aceptamos solo STL
+              STL
             </p>
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
               La experiencia actual está pensada para STL y cotización automática.
