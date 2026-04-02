@@ -45,7 +45,7 @@ interface QuoteData {
 
 const defaultData: QuoteData = {
   nombre: "", email: "", telefono: "", ubicacion: "",
-  material: "", cantidad: "1", detalles: "", fileName: "",
+  material: "PLA", cantidad: "1", detalles: "", fileName: "",
   colorAcabado: "", infill: "20%", alturaCapa: "0.2mm",
   usoPieza: "", tolerancia: "",
   observaciones: "", step: 1, sessionId: "", tempName: "",

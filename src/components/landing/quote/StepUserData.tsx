@@ -211,7 +211,7 @@ export function StepUserData({
               onChange={(e) => onChange("material", e.target.value)}
               className={selectClass}
             >
-              <option value="">Seleccionar material</option>
+              
               {MATERIAL_OPTIONS.map((m) => (
                 <option key={m.value} value={m.value}>
                   {m.label}
