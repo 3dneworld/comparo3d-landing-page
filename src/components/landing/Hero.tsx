@@ -66,7 +66,7 @@ const Hero = () => {
             transition={{ duration: 0.3 }}
             className="flex-1 text-center lg:text-left max-w-xl">
             
-            <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-hero-foreground leading-tight tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-hero-foreground leading-tight tracking-tight">
               {current.title}
             </h1>
             <p className="mt-5 text-base md:text-lg text-hero-muted leading-relaxed">
