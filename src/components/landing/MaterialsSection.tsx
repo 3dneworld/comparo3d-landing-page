@@ -18,7 +18,7 @@ const sectionCopy: Record<Audience, { eyebrow: string; headline: string; support
     eyebrow: "MATERIALES DISPONIBLES",
     headline: "Materiales FDM para elegir con criterio",
     support:
-      "Hoy COMPARO3D trabaja con impresión FDM. Esta guía te ayuda a entender rápido qué material suele convenir según el tipo de pieza y su uso real.",
+      "Esta guía te ayuda a entender rápido qué material suele convenir según el tipo de pieza y su uso real.",
     footnote:
       "La recomendación final puede ajustarse según geometría, tamaño, exigencia mecánica, terminación buscada y factibilidad de fabricación.",
   },
