@@ -31,7 +31,7 @@ const sectionCopy: Record<Audience, { eyebrow: string; headline: string; support
     eyebrow: "CASOS DE USO FRECUENTES",
     headline: "Qué tipo de piezas podés cotizar",
     support:
-      "Desde repuestos y accesorios útiles hasta makers, hobby y prototipos personales. La idea es que el usuario vea rápido que la plataforma sirve para casos reales.",
+      "Desde repuestos y accesorios útiles hasta makers, hobby y prototipos personales.",
   },
   empresa: {
     eyebrow: "TIPOS DE TRABAJO",
