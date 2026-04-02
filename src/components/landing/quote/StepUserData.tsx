@@ -389,32 +389,6 @@ export function StepUserData({
               </div>
             </div>
 
-            {/* ── Uso pieza y Tolerancia ────────────────────────────────────── */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
-                  Uso de la pieza
-                </label>
-                <input
-                  value={data.usoPieza}
-                  onChange={(e) => onChange("usoPieza", e.target.value)}
-                  className={inputClass}
-                  placeholder="Ej: prototipo, producción final"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
-                  Tolerancia / precisión
-                </label>
-                <input
-                  value={data.tolerancia}
-                  onChange={(e) => onChange("tolerancia", e.target.value)}
-                  className={inputClass}
-                  placeholder="Ej: ±0.2mm"
-                />
-              </div>
-            </div>
 
             {/* ── Observaciones ─────────────────────────────────────────────── */}
             <div>
