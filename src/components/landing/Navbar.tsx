@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import logoWhite from "@/assets/logo-white.png";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -9,8 +10,8 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-hero/95 backdrop-blur-md border-b border-hero-muted/10">
       <div className="container flex items-center justify-between h-16">
-        <a href="#" className="font-display text-xl font-bold text-hero-foreground tracking-tight">
-          COMPARO<span className="text-gradient-primary">3D</span>
+        <a href="#">
+          <img src={logoWhite} alt="COMPARO3D" className="h-8" />
         </a>
 
         <div className="hidden md:flex items-center gap-8">
