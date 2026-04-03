@@ -1,12 +1,12 @@
+import logoWhite from "@/assets/logo-white.png";
+
 const Footer = () => {
   return (
     <footer className="bg-hero border-t border-hero-muted/10 py-12">
       <div className="container">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
-            <span className="font-display text-lg font-bold text-hero-foreground">
-              COMPARO<span className="text-gradient-primary">3D</span>
-            </span>
+            <img src={logoWhite} alt="COMPARO3D" className="h-8" />
             <p className="mt-3 text-sm text-hero-muted leading-relaxed">
               La plataforma argentina para cotizar y comparar impresión 3D.
             </p>
