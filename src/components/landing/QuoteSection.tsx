@@ -215,9 +215,6 @@ const QuoteSection = () => {
 
         {/* Header */}
         <div className="mx-auto mb-8 max-w-3xl text-center md:mb-10">
-          <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.16em] text-primary md:text-[13px]">
-            {isEmpresa ? "INICIÁ TU REQUERIMIENTO" : "EMPEZÁ AHORA"}
-          </p>
           <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
             {isEmpresa ? "Solicitá tu propuesta" : "Pedí tu cotización"}
           </h2>
