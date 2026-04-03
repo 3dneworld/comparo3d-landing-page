@@ -86,9 +86,6 @@ const HowItWorks = () => {
     <section id="como-funciona" className="bg-background py-14 md:py-18">
       <div className="container max-w-7xl">
         <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary md:text-xs">
-            {copy.eyebrow}
-          </p>
           <h2 className="text-3xl font-bold leading-tight text-foreground md:text-4xl">
             {copy.title}
           </h2>
