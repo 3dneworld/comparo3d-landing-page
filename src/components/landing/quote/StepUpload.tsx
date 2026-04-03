@@ -74,9 +74,6 @@ export function StepUpload({
           )}
 
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-            <span className="rounded-full border border-primary/12 bg-primary/[0.06] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">
-              Solo STL
-            </span>
             <span className="rounded-full border border-border bg-background px-3 py-1 text-[11px] font-medium text-muted-foreground">
               1 archivo por cotización
             </span>
