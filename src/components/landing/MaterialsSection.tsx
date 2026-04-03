@@ -186,9 +186,6 @@ const MaterialsSection = () => {
     <section id="materiales" className="bg-muted/50 py-14 md:py-18">
       <div className="container">
         <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
-          <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.16em] text-primary md:text-[13px]">
-            {copy.eyebrow}
-          </p>
 
           <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
             {copy.headline}
