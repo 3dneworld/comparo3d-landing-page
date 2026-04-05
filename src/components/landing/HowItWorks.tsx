@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Upload, ClipboardList, BarChart3, PackageCheck, FileStack, ShieldCheck } from "lucide-react";
+import { Upload, Check, BarChart3, Truck, FileStack, ShieldCheck } from "lucide-react";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 
 interface StepItem {
@@ -40,13 +40,13 @@ const stepsByAudience: Record<Audience, StepItem[]> = {
       step: "Paso 3",
       title: "Elegí la mejor",
       desc: "Seleccionás la opción para vos sin perder tiempo buscando por tu cuenta en cada proveedor.",
-      icon: ClipboardList,
+      icon: Check,
     },
     {
       step: "Paso 4",
       title: "Recibí tu pieza",
       desc: "Se coordina producción y entrega para cerrar el pedido con seguimiento claro.",
-      icon: PackageCheck,
+      icon: Truck,
     },
   ],
   empresa: [
@@ -72,7 +72,7 @@ const stepsByAudience: Record<Audience, StepItem[]> = {
       step: "Paso 4",
       title: "Coordinamos producción y entrega",
       desc: "Ejecutamos el pedido con seguimiento consolidado y, si aplica, producción paralela coordinada.",
-      icon: PackageCheck,
+      icon: Truck,
     },
   ],
 };
