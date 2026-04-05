@@ -219,11 +219,7 @@ const MaterialsSection = () => {
                     <h3 className="mt-4 text-[30px] font-bold tracking-tight text-foreground md:text-[32px]">
                       {material.name}
                     </h3>
-                  </div>
-
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border bg-background/85 text-primary">
-                    <Layers3 size={24} strokeWidth={2.1} />
-                  </div>
+                </div>
                 </div>
               </div>
 
