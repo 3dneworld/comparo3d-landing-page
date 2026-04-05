@@ -99,7 +99,7 @@ const TrustStrip = () => {
             <article
               key={item.label}
               className={[
-                "flex items-start gap-4 rounded-2xl p-5 md:p-6 transition-all duration-200",
+              "flex items-center gap-5 rounded-2xl p-5 md:p-6 transition-all duration-200",
                 item.priority
                   ? "border border-primary/18 bg-primary/[0.045] shadow-[0_12px_28px_-22px_hsl(var(--primary)/0.28)]"
                   : "border border-border bg-background hover:border-primary/10",
@@ -107,18 +107,18 @@ const TrustStrip = () => {
             >
               <div
                 className={[
-                  "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl",
+                  "flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl",
                   item.priority ? "bg-primary/14" : "bg-primary/8",
                 ].join(" ")}
               >
                 <item.icon
-                  size={26}
+                  size={34}
                   strokeWidth={item.priority ? 2.2 : 2.05}
                   className={item.priority ? "text-primary" : "text-primary/80"}
                 />
               </div>
 
-              <div className="min-w-0 pt-0.5">
+              <div className="min-w-0">
                 <h3
                   className={[
                     "text-[18px] font-semibold leading-[1.2] md:text-[20px]",
