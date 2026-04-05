@@ -114,7 +114,7 @@ const TrustStrip = () => {
                 <item.icon
                   size={80}
                   strokeWidth={item.priority ? 2.2 : 2.05}
-                  className={item.priority ? "text-primary" : "text-primary/80"}
+                  className={`${item.priority ? "text-primary" : "text-primary/80"} h-[80px] w-[80px]`}
                 />
               </div>
 
