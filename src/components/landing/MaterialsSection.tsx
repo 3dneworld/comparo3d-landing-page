@@ -228,7 +228,7 @@ const MaterialsSection = () => {
                     <img
                       src={material.image}
                       alt={material.name}
-                      className="h-[108px] w-auto shrink-0 object-contain drop-shadow-md -mr-4"
+                      className="h-[119px] w-auto shrink-0 object-contain drop-shadow-md -mr-8"
                     />
                   )}
                 </div>
