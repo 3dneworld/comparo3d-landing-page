@@ -1,5 +1,6 @@
 import { Info, Droplets, Sparkles, ShieldCheck, Layers3, Wrench } from "lucide-react";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
+import plaImg from "@/assets/materials/PLA.png";
 
 interface MaterialCard {
   name: string;
@@ -11,6 +12,7 @@ interface MaterialCard {
   flexibility: string;
   resistance: string;
   gradientClass: string;
+  image?: string;
 }
 
 const sectionCopy: Record<Audience, { eyebrow: string; headline: string; support: string; footnote: string }> = {
@@ -44,6 +46,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       flexibility: "Baja",
       resistance: "Media",
       gradientClass: "from-primary/[0.12] via-background to-primary/[0.03]",
+      image: plaImg,
     },
     {
       name: "PETG",
@@ -112,6 +115,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       flexibility: "Baja",
       resistance: "Media",
       gradientClass: "from-primary/[0.12] via-background to-primary/[0.03]",
+      image: plaImg,
     },
     {
       name: "PETG",
@@ -219,7 +223,14 @@ const MaterialsSection = () => {
                     <h3 className="mt-4 text-[30px] font-bold tracking-tight text-foreground md:text-[32px]">
                       {material.name}
                     </h3>
-                </div>
+                  </div>
+                  {material.image && (
+                    <img
+                      src={material.image}
+                      alt={material.name}
+                      className="h-20 w-auto shrink-0 object-contain drop-shadow-md"
+                    />
+                  )}
                 </div>
               </div>
 
