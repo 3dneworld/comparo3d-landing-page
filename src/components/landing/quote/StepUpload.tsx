@@ -68,7 +68,7 @@ export function StepUpload({
                 Arrastrá tu STL acá o hacé clic para seleccionarlo
               </p>
               <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-                Formato aceptado hoy: STL.
+                Formato aceptado: STL.
               </p>
             </>
           )}
