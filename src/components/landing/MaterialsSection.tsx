@@ -1,6 +1,7 @@
 import { Info, Droplets, Sparkles, ShieldCheck, Layers3, Wrench } from "lucide-react";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import plaImg from "@/assets/materials/PLA.png";
+import petgImg from "@/assets/materials/PETG.png";
 
 interface MaterialCard {
   name: string;
@@ -58,6 +59,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       flexibility: "Media",
       resistance: "Media / Alta",
       gradientClass: "from-accent/[0.10] via-background to-accent/[0.03]",
+      image: petgImg,
     },
     {
       name: "ABS",
@@ -127,6 +129,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       flexibility: "Media",
       resistance: "Media / Alta",
       gradientClass: "from-accent/[0.10] via-background to-accent/[0.03]",
+      image: petgImg,
     },
     {
       name: "ABS",
