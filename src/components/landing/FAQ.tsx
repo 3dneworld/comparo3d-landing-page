@@ -97,7 +97,7 @@ const FAQ = () => {
   const { audience } = useAudience();
   const copy = sectionCopy[audience];
   const faqs = useMemo(() => faqsByAudience[audience], [audience]);
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
     <section id="faq" className="bg-background py-14 md:py-18">
