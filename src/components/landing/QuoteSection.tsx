@@ -354,7 +354,7 @@ const QuoteSection = () => {
                     <s.icon size={17} />
                   </div>
                   <span
-                    className={`mt-2 text-[11px] font-medium uppercase tracking-[0.08em] ${
+                    className={`mt-2 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.08em] ${
                       isActive ? "text-primary" : "text-muted-foreground"
                     }`}
                   >
