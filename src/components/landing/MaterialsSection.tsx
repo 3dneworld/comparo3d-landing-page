@@ -3,6 +3,7 @@ import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import plaImg from "@/assets/materials/PLA.png";
 import petgImg from "@/assets/materials/PETG.png";
 import absImg from "@/assets/materials/ABS.png";
+import tpuImg from "@/assets/materials/TPU.png";
 
 interface MaterialCard {
   name: string;
@@ -84,6 +85,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       flexibility: "Alta",
       resistance: "Media",
       gradientClass: "from-accent/[0.12] via-background to-accent/[0.04]",
+      image: tpuImg,
     },
     {
       name: "Nylon",
@@ -155,6 +157,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       flexibility: "Alta",
       resistance: "Media",
       gradientClass: "from-accent/[0.12] via-background to-accent/[0.04]",
+      image: tpuImg,
     },
     {
       name: "Nylon",
