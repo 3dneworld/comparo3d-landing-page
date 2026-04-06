@@ -5,6 +5,7 @@ import petgImg from "@/assets/materials/PETG.png";
 import absImg from "@/assets/materials/ABS.png";
 import tpuImg from "@/assets/materials/TPU.png";
 import nylonImg from "@/assets/materials/Nylon.png";
+import pcImg from "@/assets/materials/PC.png";
 
 interface MaterialCard {
   name: string;
@@ -110,6 +111,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       flexibility: "Baja",
       resistance: "Muy alta",
       gradientClass: "from-accent/[0.09] via-background to-accent/[0.02]",
+      image: pcImg,
     },
   ],
   empresa: [
@@ -183,6 +185,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       flexibility: "Baja",
       resistance: "Muy alta",
       gradientClass: "from-accent/[0.09] via-background to-accent/[0.02]",
+      image: pcImg,
     },
   ],
 };
