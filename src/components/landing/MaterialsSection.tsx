@@ -4,6 +4,7 @@ import plaImg from "@/assets/materials/PLA.png";
 import petgImg from "@/assets/materials/PETG.png";
 import absImg from "@/assets/materials/ABS.png";
 import tpuImg from "@/assets/materials/TPU.png";
+import nylonImg from "@/assets/materials/Nylon.png";
 
 interface MaterialCard {
   name: string;
@@ -97,6 +98,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       flexibility: "Media",
       resistance: "Alta",
       gradientClass: "from-primary/[0.08] via-background to-primary/[0.02]",
+      image: nylonImg,
     },
     {
       name: "Policarbonato",
@@ -169,6 +171,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       flexibility: "Media",
       resistance: "Alta",
       gradientClass: "from-primary/[0.08] via-background to-primary/[0.02]",
+      image: nylonImg,
     },
     {
       name: "Policarbonato",
