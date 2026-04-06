@@ -2,6 +2,7 @@ import { Info, Droplets, Sparkles, ShieldCheck, Layers3, Wrench } from "lucide-r
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import plaImg from "@/assets/materials/PLA.png";
 import petgImg from "@/assets/materials/PETG.png";
+import absImg from "@/assets/materials/ABS.png";
 
 interface MaterialCard {
   name: string;
@@ -71,6 +72,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       flexibility: "Baja",
       resistance: "Alta",
       gradientClass: "from-primary/[0.10] via-background to-primary/[0.02]",
+      image: absImg,
     },
     {
       name: "TPU",
@@ -141,6 +143,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       flexibility: "Baja",
       resistance: "Alta",
       gradientClass: "from-primary/[0.10] via-background to-primary/[0.02]",
+      image: absImg,
     },
     {
       name: "TPU",
