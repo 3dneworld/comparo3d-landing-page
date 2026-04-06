@@ -98,6 +98,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       flexibility: "Media",
       resistance: "Alta",
       gradientClass: "from-primary/[0.08] via-background to-primary/[0.02]",
+      image: nylonImg,
     },
     {
       name: "Policarbonato",
@@ -170,6 +171,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       flexibility: "Media",
       resistance: "Alta",
       gradientClass: "from-primary/[0.08] via-background to-primary/[0.02]",
+      image: nylonImg,
     },
     {
       name: "Policarbonato",
