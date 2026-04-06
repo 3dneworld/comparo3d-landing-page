@@ -4,6 +4,7 @@ import plaImg from "@/assets/materials/PLA.png";
 import petgImg from "@/assets/materials/PETG.png";
 import absImg from "@/assets/materials/ABS.png";
 import tpuImg from "@/assets/materials/TPU.png";
+import nylonImg from "@/assets/materials/Nylon.png";
 
 interface MaterialCard {
   name: string;
