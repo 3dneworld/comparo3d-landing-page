@@ -273,13 +273,15 @@ const MaterialsSection = () => {
                     return (
                       <div
                         key={property.label}
-                        className="rounded-xl border border-border bg-muted/40 px-3 py-3 text-center"
+                        className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-3 py-3"
                       >
-                        <div className="mb-2 flex items-center justify-center text-primary/80">
+                        <div className="flex shrink-0 items-center text-primary/80">
                           <Icon size={16} strokeWidth={2.1} />
                         </div>
-                        <p className="text-[11px] leading-none text-muted-foreground">{property.label}</p>
-                        <p className="mt-2 text-[12px] font-semibold leading-tight text-foreground">{value}</p>
+                        <div>
+                          <p className="text-[11px] leading-none text-muted-foreground">{property.label}</p>
+                          <p className="mt-1 text-[12px] font-semibold leading-tight text-foreground">{value}</p>
+                        </div>
                       </div>
                     );
                   })}
