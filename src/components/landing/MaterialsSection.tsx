@@ -275,10 +275,10 @@ const MaterialsSection = () => {
                         key={property.label}
                         className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-3 py-3"
                       >
-                        <div className="flex shrink-0 items-center text-primary/80">
+                        <div className="flex shrink-0 items-center justify-center self-center text-primary/80">
                           <Icon size={25} strokeWidth={2.1} />
                         </div>
-                        <div>
+                        <div className="flex flex-col justify-center">
                           <p className="text-[11px] leading-none text-muted-foreground">{property.label}</p>
                           <p className="mt-1 text-[12px] font-semibold leading-tight text-foreground">{value}</p>
                         </div>
