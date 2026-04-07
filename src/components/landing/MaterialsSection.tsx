@@ -230,8 +230,8 @@ const MaterialsSection = () => {
                   }}
                 />
 
-                 <div className={`absolute inset-x-6 flex items-center justify-between gap-4 ${material.name === "ABS" ? "top-2" : "top-5"}`}>
-                    <div className={material.name === "ABS" ? "-mt-1" : undefined}>
+                <div className="absolute inset-x-6 top-5 flex items-center justify-between gap-4">
+                   <div>
                      <span className="inline-flex items-center rounded-full border border-border bg-background/90 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
                        {material.bestFor}
                      </span>
@@ -243,7 +243,7 @@ const MaterialsSection = () => {
                      <img
                        src={material.image}
                        alt={material.name}
-                        className={`w-auto shrink-0 object-contain drop-shadow-md ${material.name === "ABS" ? "h-[130px] -mt-[28px]" : material.name === "Nylon" ? "h-[140px] -mt-[20px]" : "h-[100px]"}`}
+                       className={`w-auto shrink-0 object-contain drop-shadow-md ${material.name === "ABS" ? "h-[130px] -mt-[15px]" : material.name === "Nylon" ? "h-[140px] -mt-[20px]" : "h-[100px]"}`}
                      />
                    )}
                  </div>
