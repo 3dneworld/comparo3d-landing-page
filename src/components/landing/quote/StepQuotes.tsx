@@ -9,6 +9,7 @@ interface StepQuotesProps {
   quotes: QuoteOption[];
   sessionId: string;
   onSelectQuote: (quoteOptionUid: string) => void;
+  onRetry: () => void;
   onBack: () => void;
 }
 
@@ -102,6 +103,7 @@ export function StepQuotes({
   quotes,
   sessionId,
   onSelectQuote,
+  onRetry,
   onBack,
 }: StepQuotesProps) {
   return (
@@ -141,6 +143,12 @@ export function StepQuotes({
           {error && !isProcessing && (
             <div className="mt-5 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
               <p className="text-[13px] text-destructive">{error}</p>
+              <button
+                onClick={onRetry}
+                className="mt-3 rounded-lg bg-primary/10 px-4 py-2 text-[13px] font-semibold text-primary transition-colors hover:bg-primary/15"
+              >
+                Reintentar
+              </button>
             </div>
           )}
 

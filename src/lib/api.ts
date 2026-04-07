@@ -5,12 +5,22 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "https://api.3dneworld.com";
 
+// Log de diagnóstico — visible en Console al cargar la app
+console.log(
+  `[API] Base URL: ${API_BASE_URL}`,
+  API_BASE_URL.includes("localhost") ? "✓ LOCAL" : "⚠ PRODUCCION"
+);
+
 export interface ApiError {
   success: false;
   error: string;
   details?: string;
   field?: string;
   needs_reupload?: boolean;
+  status?: string;
+  message?: string;
+  slicing_status?: string;
+  http_status?: number;
 }
 
 export interface UploadResponse {
@@ -119,9 +129,7 @@ export async function initDraft(payload: {
   cantidad: string;
   project_details?: string;
   color_acabado?: string;
-  uso_pieza?: string;
   urgencia?: string;
-  tolerancia?: string;
   observaciones?: string;
   infill?: string;
   layer_height?: string;
@@ -146,24 +154,35 @@ export async function initDraft(payload: {
 export async function getQuoteOptions(
   sessionId: string
 ): Promise<QuoteOptionsResponse | QuoteOptionsProcessing | ApiError> {
-  const res = await fetch(`${API_BASE_URL}/api/quotes/${sessionId}/options`);
-  const data = await res.json();
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/quotes/${sessionId}/options`);
+    const data = await res.json();
 
-  if (res.status === 202) {
-    return {
-      success: false,
-      status: "processing",
-      slicing_status: data.slicing_status || "processing",
-      message: data.message || "Procesando...",
-      eta_seconds: data.eta_seconds || 5,
-    };
+    if (res.status === 202 || (data?.success === false && data?.status === "processing")) {
+      return {
+        success: false,
+        status: "processing",
+        slicing_status: data.slicing_status || "processing",
+        message: data.message || "Procesando...",
+        eta_seconds: data.eta_seconds || 5,
+      };
+    }
+
+    if (!res.ok || !data.success) {
+      return {
+        success: false,
+        error: data.error || data.message || "Error obteniendo cotizaciones",
+        status: data.status,
+        message: data.message,
+        slicing_status: data.slicing_status,
+        http_status: res.status,
+      };
+    }
+
+    return data as QuoteOptionsResponse;
+  } catch {
+    return { success: false, error: "No se pudo conectar con el servidor. Verificá tu conexión." };
   }
-
-  if (!res.ok || !data.success) {
-    return { success: false, error: data.error || "Error obteniendo cotizaciones" };
-  }
-
-  return data as QuoteOptionsResponse;
 }
 
 /** Aceptar una cotización y obtener order_id. */
@@ -184,8 +203,43 @@ export async function acceptQuote(
   return data as AcceptQuoteResponse;
 }
 
+export interface ThumbnailResponse {
+  success: true;
+  thumbnail_base64: string;
+  source: "cache" | "regenerated";
+  stl_source?: string;
+}
+
+/** Obtener thumbnail del STL de una sesión (desde cache o regenerado en backend). */
+export async function getThumbnail(
+  sessionId: string
+): Promise<ThumbnailResponse | ApiError> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/quotes/${sessionId}/thumbnail`);
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return {
+        success: false,
+        error: data.error || "Thumbnail no disponible",
+        needs_reupload: Boolean(data.needs_reupload),
+        http_status: res.status,
+      };
+    }
+    return data as ThumbnailResponse;
+  } catch {
+    return { success: false, error: "Error de conexión al obtener thumbnail" };
+  }
+}
+
 export function isApiError(r: unknown): r is ApiError {
-  return typeof r === "object" && r !== null && (r as ApiError).success === false;
+  if (typeof r !== "object" || r === null) return false;
+  const candidate = r as ApiError | QuoteOptionsProcessing;
+  return (
+    candidate.success === false &&
+    candidate.status !== "processing" &&
+    (typeof (candidate as ApiError).error === "string" ||
+      typeof (candidate as ApiError).message === "string")
+  );
 }
 
 // ─── Shipping ────────────────────────────────────────────────────────────────

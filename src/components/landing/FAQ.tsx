@@ -12,13 +12,13 @@ const sectionCopy: Record<Audience, { eyebrow: string; title: string; support: s
     eyebrow: "PREGUNTAS FRECUENTES",
     title: "Lo que necesitás saber antes de cotizar",
     support:
-      "Respuestas claras para particulares: qué podés subir, cuánto tarda y cómo funciona la comparación de opciones.",
+      "Respuestas claras para particulares: qué podés subir, cuánto tarda, cómo funciona la comparación y qué esperar del proceso.",
   },
   empresa: {
     eyebrow: "PREGUNTAS FRECUENTES",
     title: "Respuestas para compras y coordinación B2B",
     support:
-      "Información puntual para empresas sobre propuestas, facturación, confidencialidad, seguimiento y coordinación operativa.",
+      "Información puntual para empresas sobre propuesta consolidada, facturación, confidencialidad, seguimiento y coordinación operativa.",
   },
 };
 
@@ -100,18 +100,23 @@ const FAQ = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section id="faq" className="bg-background py-14 md:py-18">
+    <section id="faq" className="bg-background py-12 md:py-16">
       <div className="container max-w-5xl">
-        <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
-          <h2 className="text-3xl font-bold leading-tight text-foreground md:text-4xl">
+        <div className="mx-auto mb-8 max-w-3xl text-center md:mb-10">
+          <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.16em] text-primary md:text-[13px]">
+            {copy.eyebrow}
+          </p>
+
+          <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
             {copy.title}
           </h2>
-          <p className="mx-auto mt-4 max-w-3xl text-[15px] leading-relaxed text-muted-foreground md:text-[17px]">
+
+          <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
             {copy.support}
           </p>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {faqs.map((faq, index) => {
             const isOpen = openIndex === index;
 
@@ -121,7 +126,7 @@ const FAQ = () => {
                 className={[
                   "overflow-hidden rounded-2xl border bg-card transition-all duration-200",
                   isOpen
-                    ? "border-primary/20 bg-primary/[0.03] shadow-[0_10px_30px_-18px_hsl(var(--primary)/0.28)]"
+                    ? "border-primary/22 bg-primary/[0.035] shadow-[0_12px_32px_-20px_hsl(var(--primary)/0.26)]"
                     : "border-border hover:border-primary/12 hover:bg-muted/20",
                 ].join(" ")}
               >
@@ -129,9 +134,9 @@ const FAQ = () => {
                   type="button"
                   aria-expanded={isOpen}
                   onClick={() => setOpenIndex(isOpen ? null : index)}
-                  className="flex w-full items-start justify-between gap-4 px-5 py-5 text-left md:px-6 md:py-5"
+                  className="flex w-full items-start justify-between gap-4 px-5 py-5 text-left md:px-7 md:py-6"
                 >
-                  <span className="pr-4 text-[15px] font-semibold leading-snug text-foreground md:text-base">
+                  <span className="pr-4 text-[16px] font-semibold leading-[1.45] text-foreground md:text-[17px]">
                     {faq.q}
                   </span>
 
@@ -148,9 +153,9 @@ const FAQ = () => {
                 </button>
 
                 {isOpen && (
-                  <div className="px-5 pb-5 md:px-6 md:pb-6">
+                  <div className="px-5 pb-5 md:px-7 md:pb-6">
                     <div className="mb-4 h-px bg-border" />
-                    <p className="text-sm leading-relaxed text-muted-foreground md:text-[15px]">
+                    <p className="text-[15px] leading-[1.75] text-muted-foreground md:text-[16px]">
                       {faq.a}
                     </p>
                   </div>

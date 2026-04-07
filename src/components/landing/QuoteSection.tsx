@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Upload,
   User,
@@ -16,7 +16,7 @@ import { StepUserData } from "./quote/StepUserData";
 import { StepQuotes } from "./quote/StepQuotes";
 import { StepCheckout } from "./quote/StepCheckout";
 import { StepConfirmation } from "./quote/StepConfirmation";
-import { QuoteOption } from "@/lib/api";
+import { QuoteOption, getThumbnail, isApiError } from "@/lib/api";
 
 const STORAGE_KEY      = "comparo3d_quote";
 const MP_BANNER_KEY    = "comparo3d_mp_banner";
@@ -33,9 +33,8 @@ interface QuoteData {
   colorAcabado: string;
   infill: string;
   alturaCapa: string;
-  usoPieza: string;
-  tolerancia: string;
   observaciones: string;
+  thumbnailUrl: string;  // ← persiste el thumbnail en localStorage para restaurar sesión
   step: number;
   sessionId: string;
   tempName: string;
@@ -47,8 +46,7 @@ const defaultData: QuoteData = {
   nombre: "", email: "", telefono: "", ubicacion: "",
   material: "PLA", cantidad: "1", detalles: "", fileName: "",
   colorAcabado: "", infill: "20%", alturaCapa: "0.2mm",
-  usoPieza: "", tolerancia: "",
-  observaciones: "", step: 1, sessionId: "", tempName: "",
+  observaciones: "", thumbnailUrl: "", step: 1, sessionId: "", tempName: "",
   stlSha256: "", updatedAt: "",
 };
 
@@ -83,6 +81,10 @@ const QuoteSection = () => {
 
   const [data, setDataRaw] = useState<QuoteData>(() => loadSaved() ?? defaultData);
   const [hasSaved, setHasSaved] = useState(() => !!loadSaved());
+  const [isCheckingSavedSession, setIsCheckingSavedSession] = useState(() => {
+    const saved = loadSaved();
+    return Boolean(saved?.step && saved.step > 1 && saved.sessionId);
+  });
   /** Cotización elegida por el usuario (Paso 3 → 4). No se persiste en localStorage. */
   const [selectedQuote, setSelectedQuote] = useState<QuoteOption | null>(null);
   /** Banner de retorno desde MercadoPago */
@@ -133,12 +135,20 @@ const QuoteSection = () => {
     localStorage.removeItem(STORAGE_KEY);
     setDataRaw(defaultData);
     setHasSaved(false);
+    setIsCheckingSavedSession(false);
   };
+
+  // ── Ref para no iniciar el polling dos veces para la misma sesión ──
+  const polledSessionRef = useRef<string>("");
+  // ── Ref para no pedir el thumbnail dos veces para la misma sesión ──
+  const thumbnailFetchedRef = useRef<string>("");
+  // ── Ref para validar una sesión restaurada una sola vez contra el backend ──
+  const restoredSessionCheckedRef = useRef<string>("");
 
   // --- Callbacks para el hook ---
   const handleSessionIdReady = useCallback(
-    (sessionId: string, tempName: string, stlSha256: string) => {
-      setData({ sessionId, tempName, stlSha256 });
+    (sessionId: string, tempName: string, stlSha256: string, thumbnailUrl: string | null) => {
+      setData({ sessionId, tempName, stlSha256, thumbnailUrl: thumbnailUrl || "" });
     },
     []
   );
@@ -153,6 +163,87 @@ const QuoteSection = () => {
     onSessionIdReady: handleSessionIdReady,
     onQuotesReady: handleQuotesReady,
   });
+
+  // ── Validar sesión restaurada y recuperar thumbnail desde backend ──
+  useEffect(() => {
+    const isRestoredSession = hasSaved && data.step > 1 && !!data.sessionId;
+    const conditions = {
+      stepOk:          data.step >= 2,
+      sessionOk:       !!data.sessionId,
+      restoredOk:      !isRestoredSession || restoredSessionCheckedRef.current !== data.sessionId,
+      refOk:           isRestoredSession || thumbnailFetchedRef.current !== data.sessionId,
+      noFlowThumb:     !flow.thumbnailUrl,
+      noDataThumb:     !data.thumbnailUrl,
+      hasSaved,
+      step:            data.step,
+      sessionId:       data.sessionId,
+      refCurrent:      thumbnailFetchedRef.current,
+      flowThumbLen:    flow.thumbnailUrl?.length ?? 0,
+      dataThumbLen:    data.thumbnailUrl?.length ?? 0,
+    };
+    console.log("[THUMB] useEffect thumbnail fired —", conditions);
+
+    if (
+      conditions.stepOk &&
+      conditions.sessionOk &&
+      conditions.restoredOk &&
+      conditions.refOk &&
+      (isRestoredSession || (conditions.noFlowThumb && conditions.noDataThumb))
+    ) {
+      if (isRestoredSession) restoredSessionCheckedRef.current = data.sessionId;
+      thumbnailFetchedRef.current = data.sessionId;
+      console.log("[THUMB] Validando/fetch thumbnail del backend para session:", data.sessionId);
+      getThumbnail(data.sessionId).then((result) => {
+        if (!isApiError(result) && result.thumbnail_base64) {
+          console.log("[THUMB] Thumbnail recibido del backend — source:", result.source, "len:", result.thumbnail_base64.length);
+          setData({ thumbnailUrl: result.thumbnail_base64 });
+          if (isRestoredSession) setIsCheckingSavedSession(false);
+        } else {
+          console.warn("[THUMB] Thumbnail no disponible en backend:", isApiError(result) ? (result as { error: string }).error : "sin thumbnail_base64");
+          if (isApiError(result) && (result.needs_reupload || result.http_status === 404)) {
+            localStorage.removeItem(STORAGE_KEY);
+            restoredSessionCheckedRef.current = "";
+            thumbnailFetchedRef.current = "";
+            polledSessionRef.current = "";
+            setHasSaved(false);
+            setIsCheckingSavedSession(false);
+            setDataRaw(defaultData);
+            flow.setError("No pudimos recuperar el STL de la sesión guardada. Por favor subí el archivo nuevamente.");
+          } else if (isRestoredSession) {
+            setIsCheckingSavedSession(false);
+          }
+        }
+      }).catch((err) => {
+        console.error("[THUMB] Error inesperado en getThumbnail:", err);
+        if (isRestoredSession) setIsCheckingSavedSession(false);
+      });
+    } else {
+      console.log("[THUMB] Sin fetch — condición no cumplida (ver arriba)");
+      if (!isRestoredSession) setIsCheckingSavedSession(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.step, data.sessionId, hasSaved]);
+
+  // ── Auto-iniciar polling cuando se llega al step 3 (incluso restaurando desde localStorage) ──
+  useEffect(() => {
+    console.log("[POLL] useEffect polling fired —", {
+      step: data.step,
+      sessionId: data.sessionId,
+      refCurrent: polledSessionRef.current,
+      willPoll: !isCheckingSavedSession && data.step === 3 && !!data.sessionId && polledSessionRef.current !== data.sessionId,
+    });
+    if (
+      !isCheckingSavedSession &&
+      data.step === 3 &&
+      data.sessionId &&
+      polledSessionRef.current !== data.sessionId
+    ) {
+      polledSessionRef.current = data.sessionId;
+      console.log("[POLL] Arrancando polling para session:", data.sessionId);
+      flow.startPollingOptions();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.step, data.sessionId, isCheckingSavedSession]);
 
   // --- Handlers de cada step ---
   const handleStep1Continue = async () => {
@@ -174,6 +265,11 @@ const QuoteSection = () => {
 
   const handleStep2Continue = async () => {
     if (!data.nombre || !data.email || !data.material || !data.cantidad) {
+      flow.setError(
+        !data.material
+          ? "Seleccioná un material para continuar."
+          : "Completá los campos obligatorios (nombre, email y material) para continuar."
+      );
       return;
     }
     // "ASESORAR" → "PLA" para el backend (el usuario elige "No estoy seguro")
@@ -188,16 +284,13 @@ const QuoteSection = () => {
       cantidad: data.cantidad,
       project_details: data.detalles,
       color_acabado: data.colorAcabado,
-      uso_pieza: data.usoPieza,
-      tolerancia: data.tolerancia,
       observaciones: data.observaciones,
       infill: data.infill || "20%",
       layer_height: data.alturaCapa || "0.2mm",
       stl_sha256: data.stlSha256,
     });
     if (ok) {
-      goToStep(3);
-      flow.startPollingOptions();
+      goToStep(3); // el useEffect de polling detecta step=3 y arranca automáticamente
     }
   };
 
@@ -308,7 +401,16 @@ const QuoteSection = () => {
         )}
 
         {/* Banner de sesión guardada */}
-        {hasSaved && data.step > 1 && (
+        {isCheckingSavedSession && (
+          <div className="mb-5 rounded-2xl border border-primary/20 bg-primary/[0.05] p-4">
+            <p className="text-sm font-medium text-foreground">Validando cotización guardada...</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Estamos comprobando que el STL todavía esté disponible para continuar.
+            </p>
+          </div>
+        )}
+
+        {hasSaved && !isCheckingSavedSession && data.step > 1 && (
           <div className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/[0.05] p-4">
             <div>
               <p className="text-sm font-medium text-foreground">
@@ -372,7 +474,15 @@ const QuoteSection = () => {
 
         {/* Step content */}
         <div className="rounded-2xl border border-border bg-card p-5 shadow-card md:p-6">
-          {data.step === 1 && (
+          {isCheckingSavedSession ? (
+            <div className="flex flex-col items-center gap-3 py-10 text-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              <p className="text-[15px] font-medium text-foreground">Validando sesión guardada...</p>
+              <p className="max-w-md text-[13px] leading-relaxed text-muted-foreground">
+                Si el STL ya no está disponible en el backend, te vamos a pedir que lo subas nuevamente.
+              </p>
+            </div>
+          ) : data.step === 1 && (
             <StepUpload
               fileName={data.fileName}
               isLoading={flow.isLoading}
@@ -386,18 +496,17 @@ const QuoteSection = () => {
             />
           )}
 
-          {data.step === 2 && (
+          {!isCheckingSavedSession && data.step === 2 && (
             <StepUserData
               data={{
                 nombre: data.nombre, email: data.email, telefono: data.telefono,
                 ubicacion: data.ubicacion, material: data.material, cantidad: data.cantidad,
                 detalles: data.detalles, colorAcabado: data.colorAcabado,
                 infill: data.infill, alturaCapa: data.alturaCapa,
-                usoPieza: data.usoPieza,
-                tolerancia: data.tolerancia, observaciones: data.observaciones,
+                observaciones: data.observaciones,
               }}
               fileName={data.fileName}
-              thumbnailUrl={flow.thumbnailUrl}
+              thumbnailUrl={flow.thumbnailUrl || data.thumbnailUrl || null}
               isEmpresa={isEmpresa}
               isLoading={flow.isLoading}
               progressMessage={flow.progressMessage}
@@ -408,7 +517,7 @@ const QuoteSection = () => {
             />
           )}
 
-          {data.step === 3 && (
+          {!isCheckingSavedSession && data.step === 3 && (
             <StepQuotes
               isEmpresa={isEmpresa}
               isProcessing={flow.isProcessing}
@@ -417,6 +526,11 @@ const QuoteSection = () => {
               quotes={flow.quotes}
               sessionId={data.sessionId}
               onSelectQuote={handleSelectQuote}
+              onRetry={() => {
+                flow.clearError();
+                polledSessionRef.current = ""; // permite reiniciar el polling
+                flow.startPollingOptions();
+              }}
               onBack={() => {
                 flow.clearError();
                 goToStep(2);
@@ -424,7 +538,7 @@ const QuoteSection = () => {
             />
           )}
 
-          {data.step === 4 && (
+          {!isCheckingSavedSession && data.step === 4 && (
             <StepCheckout
               selectedQuote={
                 selectedQuote ?? {
@@ -450,7 +564,7 @@ const QuoteSection = () => {
             />
           )}
 
-          {data.step === 5 && (
+          {!isCheckingSavedSession && data.step === 5 && (
             <StepConfirmation
               isEmpresa={isEmpresa}
               sessionId={data.sessionId}

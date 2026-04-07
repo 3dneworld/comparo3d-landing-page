@@ -48,8 +48,6 @@ interface FormState {
   colorAcabado: string;
   infill: string;
   alturaCapa: string;
-  usoPieza: string;
-  tolerancia: string;
   observaciones: string;
 }
 
@@ -377,7 +375,6 @@ export function StepUserData({
                 </p>
               </div>
             </div>
-
 
             {/* ── Observaciones ─────────────────────────────────────────────── */}
             <div>

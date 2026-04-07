@@ -40,7 +40,7 @@ export interface QuoteFlowState {
 interface UseQuoteFlowOptions {
   sessionId: string;
   tempName: string;
-  onSessionIdReady: (sessionId: string, tempName: string, sha256: string) => void;
+  onSessionIdReady: (sessionId: string, tempName: string, sha256: string, thumbnailUrl: string | null) => void;
   onQuotesReady: (quotes: QuoteOption[]) => void;
 }
 
@@ -111,7 +111,7 @@ export function useQuoteFlow({
         return false;
       }
 
-      onSessionIdReady(result.session_id, result.temp_name, result.stl_sha256 || "");
+      onSessionIdReady(result.session_id, result.temp_name, result.stl_sha256 || "", result.thumbnail_base64 || null);
 
       setState((s) => ({
         ...s,
@@ -137,9 +137,7 @@ export function useQuoteFlow({
       cantidad: string;
       project_details?: string;
       color_acabado?: string;
-      uso_pieza?: string;
       urgencia?: string;
-      tolerancia?: string;
       observaciones?: string;
       infill?: string;
       layer_height?: string;
@@ -184,7 +182,11 @@ export function useQuoteFlow({
 
   /** Paso 3: Iniciar polling para obtener cotizaciones */
   const startPollingOptions = useCallback(() => {
-    if (!sessionId || !isMountedRef.current) return;
+    if (!sessionId || !isMountedRef.current) {
+      console.warn("[POLL] startPollingOptions ignorado — sessionId vacío o componente desmontado", { sessionId, mounted: isMountedRef.current });
+      return;
+    }
+    console.log("[POLL] Iniciando polling para session:", sessionId);
 
     setState((s) => ({
       ...s,
@@ -195,20 +197,41 @@ export function useQuoteFlow({
     }));
 
     const poll = async (attempt = 1) => {
+      if (!isMountedRef.current) {
+        console.log("[POLL] Componente desmontado — cancelando poll en intento", attempt);
+        return;
+      }
+
+      console.log(`[POLL] Intento #${attempt} para session: ${sessionId}`);
+      let result;
+      try {
+        result = await getQuoteOptions(sessionId);
+      } catch (fetchErr) {
+        console.error("[POLL] Error inesperado en getQuoteOptions:", fetchErr);
+        setError("Error de red obteniendo cotizaciones. Por favor intentá de nuevo.");
+        return;
+      }
+
       if (!isMountedRef.current) return;
 
-      const result = await getQuoteOptions(sessionId);
-
-      if (!isMountedRef.current) return;
+      console.log(`[POLL] Intento #${attempt} resultado:`, {
+        isApiError: isApiError(result),
+        success: (result as { success?: boolean }).success,
+        status: (result as { status?: string }).status,
+        slicing_status: (result as { slicing_status?: string }).slicing_status,
+        quotes_count: (result as { quotes?: unknown[] }).quotes?.length ?? 0,
+        error: (result as { error?: string }).error,
+      });
 
       if (isApiError(result)) {
-        setError("Error obteniendo cotizaciones. Por favor intentá de nuevo.");
+        console.error("[POLL] API error:", result.error, "| status:", result.status, "| message:", result.message);
+        setError(result.error || result.message || "Error obteniendo cotizaciones. Por favor intentá de nuevo.");
         return;
       }
 
       if (result.success === false && result.status === "processing") {
-        // Todavía procesando — seguir polling
         const delay = Math.min(2000 + attempt * 500, 5000);
+        console.log(`[POLL] Aún procesando — reintentando en ${delay}ms`);
         setState((s) => ({
           ...s,
           progressMessage: `Calculando cotizaciones${".".repeat((attempt % 3) + 1)}`,
@@ -218,6 +241,7 @@ export function useQuoteFlow({
       }
 
       if (result.success && result.quotes) {
+        console.log(`[POLL] Completado — ${result.quotes.length} cotizaciones recibidas`);
         setState((s) => ({
           ...s,
           isProcessing: false,
@@ -225,7 +249,13 @@ export function useQuoteFlow({
           progressMessage: "",
         }));
         onQuotesReady(result.quotes);
+        return;
       }
+
+      // Caso inesperado: success pero sin quotes, o slicing_status=error
+      console.warn("[POLL] Estado inesperado en respuesta:", result);
+      const errMsg = (result as { message?: string }).message || "Estado inesperado";
+      setError(errMsg);
     };
 
     poll();
@@ -271,6 +301,7 @@ export function useQuoteFlow({
   return {
     ...state,
     setStlFile,
+    setError,
     clearError,
     handleUploadStl,
     handleInitDraft,
