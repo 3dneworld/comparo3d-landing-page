@@ -39,6 +39,8 @@ interface QuoteData {
   sessionId: string;
   tempName: string;
   stlSha256: string;
+  selectedQuote: QuoteOption | null;
+  orderId: string;
   updatedAt: string;
 }
 
@@ -47,7 +49,7 @@ const defaultData: QuoteData = {
   material: "PLA", cantidad: "1", detalles: "", fileName: "",
   colorAcabado: "", infill: "20%", alturaCapa: "0.2mm",
   observaciones: "", thumbnailUrl: "", step: 1, sessionId: "", tempName: "",
-  stlSha256: "", updatedAt: "",
+  stlSha256: "", selectedQuote: null, orderId: "", updatedAt: "",
 };
 
 const stepLabels = [
@@ -62,7 +64,13 @@ function loadSaved(): QuoteData | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as QuoteData;
+    const parsed = JSON.parse(raw) as Partial<QuoteData>;
+    return {
+      ...defaultData,
+      ...parsed,
+      selectedQuote: parsed.selectedQuote ?? null,
+      orderId: parsed.orderId ?? "",
+    };
   } catch {
     return null;
   }
@@ -85,8 +93,8 @@ const QuoteSection = () => {
     const saved = loadSaved();
     return Boolean(saved?.step && saved.step > 1 && saved.sessionId);
   });
-  /** Cotización elegida por el usuario (Paso 3 → 4). No se persiste en localStorage. */
-  const [selectedQuote, setSelectedQuote] = useState<QuoteOption | null>(null);
+  /** Cotización elegida por el usuario (Paso 3 → 4), persistida para volver desde MercadoPago. */
+  const [selectedQuote, setSelectedQuote] = useState<QuoteOption | null>(() => data.selectedQuote ?? null);
   /** Banner de retorno desde MercadoPago */
   const [mpBanner, setMpBanner] = useState<{ type: "success" | "failure" | "pending"; orderId: string } | null>(null);
 
@@ -97,23 +105,32 @@ const QuoteSection = () => {
     const orderId = params.get("order_id");
 
     if (!payment || !orderId) return;
+    if (payment !== "success" && payment !== "failure" && payment !== "pending") return;
 
     // Limpiar URL sin recargar
     const cleanUrl = window.location.pathname;
     window.history.replaceState({}, "", cleanUrl);
 
-    if (payment === "success") {
-      // Ir directo a confirmación con el order_id recuperado
-      setDataRaw((prev) => {
-        const next = { ...prev, step: 5 };
-        saveData(next);
-        return next;
-      });
-      // Inyectar orderId en el flow hook si es posible (via estado local)
-      setMpBanner({ type: "success", orderId });
-    } else if (payment === "failure" || payment === "pending") {
-      setMpBanner({ type: payment as "failure" | "pending", orderId });
-    }
+    const saved = loadSaved();
+    const restoredQuote = saved?.selectedQuote ?? null;
+    if (restoredQuote) setSelectedQuote(restoredQuote);
+
+    setDataRaw((prev) => {
+      const next = {
+        ...prev,
+        selectedQuote: prev.selectedQuote ?? restoredQuote,
+        orderId,
+        step: payment === "success" ? 5 : 4,
+      };
+      saveData(next);
+      return next;
+    });
+    setHasSaved(true);
+    requestAnimationFrame(() => {
+      document.getElementById("cotizar")?.scrollIntoView({ block: "start" });
+    });
+
+    setMpBanner({ type: payment as "success" | "failure" | "pending", orderId });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -134,6 +151,8 @@ const QuoteSection = () => {
   const resetQuote = () => {
     localStorage.removeItem(STORAGE_KEY);
     setDataRaw(defaultData);
+    setSelectedQuote(null);
+    setMpBanner(null);
     setHasSaved(false);
     setIsCheckingSavedSession(false);
   };
@@ -163,6 +182,13 @@ const QuoteSection = () => {
     onSessionIdReady: handleSessionIdReady,
     onQuotesReady: handleQuotesReady,
   });
+
+  useEffect(() => {
+    if (flow.orderId && flow.orderId !== data.orderId) {
+      setData({ orderId: flow.orderId });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flow.orderId, data.orderId]);
 
   // ── Validar sesión restaurada y recuperar thumbnail desde backend ──
   useEffect(() => {
@@ -297,9 +323,16 @@ const QuoteSection = () => {
   const handleSelectQuote = async (quoteOptionUid: string) => {
     // Guardar la cotización elegida ANTES de llamar al backend para tenerla disponible en Paso 4
     const chosen = flow.quotes.find((q) => q.quote_option_uid === quoteOptionUid) ?? null;
+    if (!chosen) {
+      flow.setError("No pudimos identificar la cotización elegida. Por favor intentá nuevamente.");
+      return;
+    }
     setSelectedQuote(chosen);
-    const ok = await flow.handleAcceptQuote(quoteOptionUid);
-    if (ok) goToStep(4);
+    setData({ selectedQuote: chosen });
+    const orderId = await flow.handleAcceptQuote(quoteOptionUid);
+    if (orderId) {
+      setData((prev) => ({ ...prev, step: 4, selectedQuote: chosen, orderId }));
+    }
   };
 
   return (
@@ -541,7 +574,7 @@ const QuoteSection = () => {
           {!isCheckingSavedSession && data.step === 4 && (
             <StepCheckout
               selectedQuote={
-                selectedQuote ?? {
+                selectedQuote ?? data.selectedQuote ?? {
                   quote_option_uid: "",
                   provider_id: 0,
                   provider_name: "—",
@@ -553,7 +586,7 @@ const QuoteSection = () => {
                   trust_metrics: { score: 0, reviews_count: 0, on_time_pct: 0 },
                 }
               }
-              orderId={flow.orderId ?? ""}
+              orderId={flow.orderId || data.orderId || ""}
               sessionId={data.sessionId}
               isEmpresa={isEmpresa}
               isAccepting={flow.isLoading}
@@ -568,7 +601,7 @@ const QuoteSection = () => {
             <StepConfirmation
               isEmpresa={isEmpresa}
               sessionId={data.sessionId}
-              orderId={flow.orderId}
+              orderId={flow.orderId || data.orderId}
               isLoading={flow.isLoading}
               progressMessage={flow.progressMessage}
               onReset={resetQuote}

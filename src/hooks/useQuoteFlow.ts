@@ -263,11 +263,11 @@ export function useQuoteFlow({
 
   /** Paso 4: Aceptar una cotización */
   const handleAcceptQuote = useCallback(
-    async (quoteOptionUid: string): Promise<boolean> => {
-      if (!isMountedRef.current) return false;
+    async (quoteOptionUid: string): Promise<string | null> => {
+      if (!isMountedRef.current) return null;
       if (!sessionId) {
         setError("Sesión no inicializada.");
-        return false;
+        return null;
       }
 
       setState((s) => ({
@@ -279,11 +279,11 @@ export function useQuoteFlow({
 
       const result = await acceptQuote(sessionId, quoteOptionUid);
 
-      if (!isMountedRef.current) return false;
+      if (!isMountedRef.current) return null;
 
       if (isApiError(result)) {
         setError(`Error al confirmar: ${result.error}`);
-        return false;
+        return null;
       }
 
       setState((s) => ({
@@ -293,7 +293,7 @@ export function useQuoteFlow({
         progressMessage: "",
       }));
 
-      return true;
+      return result.order_id;
     },
     [sessionId]
   );

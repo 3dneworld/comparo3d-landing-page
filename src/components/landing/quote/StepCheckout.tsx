@@ -32,6 +32,11 @@ interface AddressForm {
   province: string;
 }
 
+interface PersistedCheckoutState {
+  address?: Partial<AddressForm>;
+  selectedMethodId?: string;
+}
+
 export interface StepCheckoutProps {
   selectedQuote: QuoteOption;
   orderId: string;
@@ -51,6 +56,9 @@ const defaultAddress: AddressForm = {
   postal_code: "",
   province: "",
 };
+
+const checkoutStorageKey = (sessionId: string, orderId: string) =>
+  `comparo3d_checkout_${sessionId}_${orderId}`;
 
 const METHOD_ICONS: Record<string, typeof Truck> = {
   retiro: Store,
@@ -168,6 +176,7 @@ export function StepCheckout({
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
+  const skipNextCheckoutSaveRef = useRef(false);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -176,6 +185,32 @@ export function StepCheckout({
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!sessionId || !orderId) return;
+    try {
+      const raw = localStorage.getItem(checkoutStorageKey(sessionId, orderId));
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as PersistedCheckoutState;
+      skipNextCheckoutSaveRef.current = true;
+      setAddress({ ...defaultAddress, ...(parsed.address ?? {}) });
+      setSelectedMethodId(parsed.selectedMethodId ?? "");
+    } catch {
+      // Ignore malformed checkout state and let the customer fill it again.
+    }
+  }, [sessionId, orderId]);
+
+  useEffect(() => {
+    if (!sessionId || !orderId) return;
+    if (skipNextCheckoutSaveRef.current) {
+      skipNextCheckoutSaveRef.current = false;
+      return;
+    }
+    localStorage.setItem(
+      checkoutStorageKey(sessionId, orderId),
+      JSON.stringify({ address, selectedMethodId })
+    );
+  }, [address, selectedMethodId, sessionId, orderId]);
 
   // Cargar métodos de envío al montar
   useEffect(() => {
