@@ -334,7 +334,7 @@ export function StepUserData({
               {/* Infill */}
               <div>
                 <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
-                  INFILL (RELLENO)
+                  RELLENO
                 </label>
                 <div className="relative">
                   <select
