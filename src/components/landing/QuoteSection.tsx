@@ -86,6 +86,9 @@ function saveData(data: QuoteData): void {
 const QuoteSection = () => {
   const { audience } = useAudience();
   const isEmpresa = audience === "empresa";
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const contentCardRef = useRef<HTMLDivElement | null>(null);
+  const restoredScrollKeyRef = useRef<string>("");
 
   const [data, setDataRaw] = useState<QuoteData>(() => loadSaved() ?? defaultData);
   const [hasSaved, setHasSaved] = useState(() => !!loadSaved());
@@ -156,6 +159,11 @@ const QuoteSection = () => {
     setHasSaved(false);
     setIsCheckingSavedSession(false);
   };
+
+  const scrollToActiveStep = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const target = contentCardRef.current ?? sectionRef.current ?? document.getElementById("cotizar");
+    target?.scrollIntoView({ behavior, block: "start" });
+  }, []);
 
   // ── Ref para no iniciar el polling dos veces para la misma sesión ──
   const polledSessionRef = useRef<string>("");
@@ -335,8 +343,23 @@ const QuoteSection = () => {
     }
   };
 
+  useEffect(() => {
+    if (isCheckingSavedSession) return;
+    if (!hasSaved || data.step <= 1) return;
+
+    const scrollKey = `${data.sessionId}:${data.step}`;
+    if (restoredScrollKeyRef.current === scrollKey) return;
+    restoredScrollKeyRef.current = scrollKey;
+
+    const timer = window.setTimeout(() => {
+      scrollToActiveStep("smooth");
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [data.sessionId, data.step, hasSaved, isCheckingSavedSession, scrollToActiveStep]);
+
   return (
-    <section id="cotizar" className="bg-muted/50 py-14 md:py-18">
+    <section id="cotizar" ref={sectionRef} className="bg-muted/50 py-14 md:py-18">
       <div className="container max-w-4xl">
 
         {/* Header */}
@@ -506,7 +529,7 @@ const QuoteSection = () => {
         </div>
 
         {/* Step content */}
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-card md:p-6">
+        <div ref={contentCardRef} className="rounded-2xl border border-border bg-card p-5 shadow-card md:p-6">
           {isCheckingSavedSession ? (
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
