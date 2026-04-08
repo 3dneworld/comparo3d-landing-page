@@ -72,6 +72,9 @@ const FALLBACK_METHODS: ShippingMethod[] = [
   { id: "paq_expreso", name: "PAQ.AR Expreso", eta_days: 2 },
 ];
 
+const formatRoundedArs = (value: number) =>
+  Math.round(Number(value) || 0).toLocaleString("es-AR");
+
 // ─── Sub-componente: card de método de envío ─────────────────────────────────
 
 function ShippingMethodCard({
@@ -142,7 +145,7 @@ function ShippingMethodCard({
         )}
         {isSelected && !isLoadingEstimate && estimatePrice !== null && (
           <p className="text-[15px] font-bold text-foreground">
-            {estimatePrice === 0 ? "Gratis" : `$${estimatePrice.toLocaleString("es-AR")}`}
+            {estimatePrice === 0 ? "Gratis" : `$${formatRoundedArs(estimatePrice)}`}
           </p>
         )}
         {isSelected && !isLoadingEstimate && estimatePrice === null && method.id !== "retiro" && (
@@ -287,7 +290,7 @@ export function StepCheckout({
   };
 
   // Totales para el resumen
-  const printPrice = selectedQuote.price_ars;
+  const printPrice = Math.round(selectedQuote.price_ars);
   const shippingPrice = estimatePrice ?? 0;
   const total = printPrice + shippingPrice;
   const totalIsPartial = !isRetiro && estimatePrice === null && !!selectedMethodId;
@@ -529,7 +532,7 @@ export function StepCheckout({
                   Impresión
                 </span>
                 <span className="text-[14px] font-semibold text-foreground">
-                  ${printPrice.toLocaleString("es-AR")}
+                  ${formatRoundedArs(printPrice)}
                 </span>
               </div>
 
@@ -544,7 +547,7 @@ export function StepCheckout({
                   ) : estimatePrice === 0 ? (
                     <span className="text-accent">Gratis</span>
                   ) : (
-                    `$${estimatePrice.toLocaleString("es-AR")}`
+                    `$${formatRoundedArs(estimatePrice)}`
                   )}
                 </span>
               </div>
@@ -561,7 +564,7 @@ export function StepCheckout({
                         desde{" "}
                       </span>
                     )}
-                    ${total.toLocaleString("es-AR")}
+                    ${formatRoundedArs(total)}
                   </span>
                 </div>
                 {totalIsPartial && (

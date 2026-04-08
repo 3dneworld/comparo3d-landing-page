@@ -13,6 +13,9 @@ interface StepQuotesProps {
   onBack: () => void;
 }
 
+const formatRoundedArs = (value: number) =>
+  Math.round(Number(value) || 0).toLocaleString("es-AR");
+
 function ProviderCard({
   option,
   isTop,
@@ -81,7 +84,7 @@ function ProviderCard({
         {/* Precio + CTA */}
         <div className="flex shrink-0 flex-col items-end gap-2">
           <p className="text-[20px] font-extrabold leading-tight text-foreground">
-            ${option.price_ars.toLocaleString("es-AR")}
+            ${formatRoundedArs(option.price_ars)}
           </p>
           <button
             onClick={onSelect}
