@@ -376,19 +376,6 @@ export function StepUserData({
               </div>
             </div>
 
-            {/* ── Observaciones ─────────────────────────────────────────────── */}
-            <div>
-              <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
-                Observaciones adicionales
-              </label>
-              <textarea
-                value={data.observaciones}
-                onChange={(e) => onChange("observaciones", e.target.value)}
-                rows={2}
-                className={`${inputClass} resize-none`}
-                placeholder="Cualquier detalle extra que nos ayude a cotizar mejor"
-              />
-            </div>
           </div>
         )}
       </div>
