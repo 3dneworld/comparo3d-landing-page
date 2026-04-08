@@ -12,6 +12,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
+import hogarImg from "@/assets/projects/hogar.png";
 
 interface ProjectCard {
   category: string;
@@ -24,6 +25,7 @@ interface ProjectCard {
   cues: string[];
   icon: LucideIcon;
   emphasis?: boolean;
+  image?: string;
 }
 
 const sectionCopy: Record<Audience, { eyebrow: string; headline: string; support: string }> = {
@@ -54,6 +56,7 @@ const projectCards: Record<Audience, ProjectCard[]> = {
       cues: ["uso cotidiano", "resolución rápida"],
       icon: Wrench,
       emphasis: true,
+      image: hogarImg,
     },
     {
       category: "Hogar",
@@ -236,6 +239,14 @@ const ProjectsGallery = () => {
                   </span>
 
                 </div>
+
+                {project.image && (
+                  <img
+                    src={project.image}
+                    alt={project.title}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 h-[100px] w-auto shrink-0 object-contain drop-shadow-md"
+                  />
+                )}
 
                 <div className="absolute bottom-5 left-5 right-5 flex flex-wrap gap-2">
                   {project.cues.map((cue) => (
