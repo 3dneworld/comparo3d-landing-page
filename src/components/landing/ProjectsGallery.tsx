@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import hogarImg from "@/assets/projects/hogar.png";
+import hobbyImg from "@/assets/projects/hobby.png";
 
 interface ProjectCard {
   category: string;
@@ -91,6 +92,7 @@ const projectCards: Record<Audience, ProjectCard[]> = {
       visualLabel: "Proyecto personal",
       cues: ["detalle", "personalización"],
       icon: Puzzle,
+      image: hobbyImg,
     },
     {
       category: "Personalizados",
