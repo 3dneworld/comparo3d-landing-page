@@ -7,7 +7,7 @@ interface StepUploadProps {
   progressMessage: string;
   error: string | null;
   onFileSelect: (file: File) => void;
-  onContinue: () => void;
+  onAutoUpload: (file: File) => void | Promise<void>;
 }
 
 export function StepUpload({
@@ -16,38 +16,51 @@ export function StepUpload({
   progressMessage,
   error,
   onFileSelect,
-  onContinue,
+  onAutoUpload,
 }: StepUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleSelectedFile = (file: File | undefined) => {
+    if (!file || isLoading) return;
+    onFileSelect(file);
+    void onAutoUpload(file);
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) onFileSelect(file);
+    handleSelectedFile(e.dataTransfer.files[0]);
   };
 
   return (
     <div>
       <div className="mb-5">
         <h3 className="text-[24px] font-semibold leading-tight text-foreground">
-          Subí tu archivo 3D
+          Subi tu archivo 3D
         </h3>
         <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
-          Un solo archivo por cotización. Si necesitás cotizar piezas distintas, generá
-          una cotización por cada una.
+          Un solo archivo por cotizacion. Si necesitas cotizar piezas distintas, genera
+          una cotizacion por cada una.
         </p>
       </div>
 
-      {/* Drag & drop zone */}
       <div
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        className={`cursor-pointer rounded-2xl border-2 border-dashed px-6 py-8 text-center transition-colors md:px-8 md:py-9 ${
-          isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+        onClick={() => {
+          if (!isLoading) fileInputRef.current?.click();
+        }}
+        className={`rounded-2xl border-2 border-dashed px-6 py-8 text-center transition-colors md:px-8 md:py-9 ${
+          isLoading
+            ? "cursor-wait opacity-85"
+            : isDragging
+            ? "cursor-pointer border-primary bg-primary/5"
+            : "cursor-pointer border-border hover:border-primary/50"
         }`}
       >
         <div className="mx-auto flex max-w-md flex-col items-center">
@@ -59,13 +72,13 @@ export function StepUpload({
             <>
               <p className="text-[16px] font-semibold text-foreground">{fileName}</p>
               <p className="mt-2 text-[13px] text-muted-foreground">
-                Archivo cargado. Hacé clic para cambiar.
+                Archivo detectado. Estamos procesandolo automaticamente.
               </p>
             </>
           ) : (
             <>
               <p className="text-[18px] font-semibold leading-snug text-foreground">
-                Arrastrá tu STL acá o hacé clic para seleccionarlo
+                Arrastra tu STL aca o hace clic para seleccionarlo
               </p>
               <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
                 Formato aceptado: STL.
@@ -75,7 +88,7 @@ export function StepUpload({
 
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
             <span className="rounded-full border border-border bg-background px-3 py-1 text-[11px] font-medium text-muted-foreground">
-              1 archivo por cotización
+              1 archivo por cotizacion
             </span>
           </div>
         </div>
@@ -84,15 +97,16 @@ export function StepUpload({
           ref={fileInputRef}
           type="file"
           accept=".stl"
+          disabled={isLoading}
           className="hidden"
           onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) onFileSelect(f);
+            const file = e.target.files?.[0];
+            handleSelectedFile(file);
+            e.currentTarget.value = "";
           }}
         />
       </div>
 
-      {/* Error manifold */}
       {error && (
         <div className="mt-4 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
           <p className="text-[13px] font-semibold text-destructive">Error en el archivo</p>
@@ -100,7 +114,6 @@ export function StepUpload({
         </div>
       )}
 
-      {/* Loading state */}
       {isLoading && (
         <div className="mt-4 flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -108,7 +121,6 @@ export function StepUpload({
         </div>
       )}
 
-      {/* Confidencialidad */}
       <div className="mt-4 rounded-2xl border border-primary/15 bg-primary/[0.04] px-4 py-3">
         <div className="flex items-start gap-3">
           <Lock size={16} className="mt-0.5 shrink-0 text-primary" />
@@ -118,19 +130,15 @@ export function StepUpload({
             </p>
             <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
               Tu archivo se mantiene confidencial y no se comparte fuera del proceso de
-              cotización.
+              cotizacion.
             </p>
           </div>
         </div>
       </div>
 
-      <button
-        onClick={onContinue}
-        disabled={isLoading}
-        className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary py-3 text-[15px] font-semibold text-primary-foreground shadow-cta transition-opacity hover:opacity-90 disabled:opacity-50"
-      >
-        {isLoading ? progressMessage : "Continuar"}
-      </button>
+      <p className="mt-5 text-center text-[13px] text-muted-foreground">
+        Apenas detectamos el STL, validamos la malla y avanzamos automaticamente.
+      </p>
     </div>
   );
 }

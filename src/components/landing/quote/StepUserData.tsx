@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Eye, CheckCircle2, MapPin } from "lucide-react";
 import modeloPreview from "@/assets/modelo-preview.png";
+import { toast } from "@/components/ui/sonner";
+import { TrimmedThumbnail } from "./TrimmedThumbnail";
 
 // ── Materiales ────────────────────────────────────────────────────────────────
 // "No estoy seguro" se muestra al usuario pero se envía "PLA" al backend
@@ -78,6 +80,7 @@ export function StepUserData({
 }: StepUserDataProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [colorCustom, setColorCustom] = useState("");
+  const thumbnailSrc = thumbnailUrl || modeloPreview;
 
   const inputClass =
     "w-full rounded-xl border border-input bg-background px-4 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring";
@@ -111,7 +114,7 @@ export function StepUserData({
     <div>
       {/* Preview archivo */}
       {fileName && (
-        <div className="mb-5 overflow-hidden rounded-2xl border border-border bg-muted/45">
+        <div className="mb-5 overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
           <div className="flex items-center gap-2 px-4 pt-3 pb-2">
             <Eye size={14} className="text-primary" />
             <p className="text-sm font-medium text-foreground">Vista previa del modelo</p>
@@ -119,12 +122,14 @@ export function StepUserData({
             <span className="text-xs font-medium text-accent">Cargado</span>
           </div>
           <div className="px-4 pb-4">
-            <div className="flex max-h-[300px] min-h-[220px] items-center justify-center overflow-hidden rounded-lg border border-border bg-background">
-              <img
-                src={thumbnailUrl || modeloPreview}
-                alt="Vista previa del modelo 3D"
-                className="max-h-[300px] w-full object-contain p-4"
-              />
+            <div className="flex justify-center">
+              <div className="inline-flex max-w-full overflow-hidden rounded-lg border border-slate-200 bg-white p-3">
+                <TrimmedThumbnail
+                  src={thumbnailSrc}
+                  alt="Vista previa del modelo 3D"
+                  className="block max-h-[320px] w-auto max-w-full object-contain"
+                />
+              </div>
             </div>
             <div className="mt-2 flex items-center justify-between gap-3">
               <p className="text-xs text-muted-foreground">{fileName}</p>
@@ -309,6 +314,9 @@ export function StepUserData({
                   onClick={() => {
                     setColorCustom("");
                     onChange("colorAcabado", "");
+                    toast("Especificiar en Detalles del proyecto", {
+                      duration: 2400,
+                    });
                   }}
                   className="flex flex-col items-center gap-1.5"
                 >

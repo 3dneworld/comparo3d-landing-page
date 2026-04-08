@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
-  ChevronDown,
+  BadgeCheck,
   FileText,
-  Hash,
   Loader2,
-  LocateFixed,
   MapPin,
   Minus,
-  Palette,
   Plus,
   Ruler,
   ShieldCheck,
@@ -16,6 +13,8 @@ import {
   Truck,
 } from "lucide-react";
 import { QuoteOption } from "@/lib/api";
+import { Switch } from "@/components/ui/switch";
+import { TrimmedThumbnail } from "./TrimmedThumbnail";
 
 type SortMode = "recommended" | "price" | "rating";
 
@@ -54,6 +53,29 @@ const clampQuantity = (value: number) => Math.min(500, Math.max(1, Math.round(va
 
 const getThumbnailSrc = (thumbnailUrl: string) =>
   thumbnailUrl.startsWith("data:") ? thumbnailUrl : `data:image/png;base64,${thumbnailUrl}`;
+
+function FilamentIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" className={className}>
+      <circle cx="26" cy="32" r="20" stroke="currentColor" strokeWidth="3" />
+      <circle cx="26" cy="32" r="8" stroke="currentColor" strokeWidth="3" />
+      <path
+        d="M34 18c8 3 14 11 16 20 1 4 1 8 0 12"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M41 14c9 4 16 13 18 24 1 5 1 10-1 15"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path d="M10 49h6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M45 27h6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 const getDeliveryDotClass = (days: number) => {
   if (days <= 3) return "bg-emerald-500";
@@ -230,7 +252,7 @@ function ProviderCard({
               <span className="flex items-center gap-1">
                 <span className={`h-2.5 w-2.5 rounded-full ${getDeliveryDotClass(option.delivery_days)}`} />
                 <Truck size={12} />
-                {option.delivery_days} {option.delivery_days === 1 ? "día" : "días"}
+                {option.delivery_days} {option.delivery_days === 1 ? "dia" : "dias"}
               </span>
 
               {option.is_certified && (
@@ -304,7 +326,6 @@ export function StepQuotes({
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [nearbyNotice, setNearbyNotice] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
-  const [isQtyEditorOpen, setIsQtyEditorOpen] = useState(false);
   const [draftQuantity, setDraftQuantity] = useState(clampQuantity(cantidad ?? 1));
 
   useEffect(() => {
@@ -323,12 +344,6 @@ export function StepQuotes({
   useEffect(() => {
     setDraftQuantity(clampQuantity(cantidad ?? 1));
   }, [cantidad]);
-
-  useEffect(() => {
-    if (isProcessing) {
-      setIsQtyEditorOpen(false);
-    }
-  }, [isProcessing]);
 
   const quotesWithDistance = useMemo<DisplayQuote[]>(
     () =>
@@ -361,7 +376,10 @@ export function StepQuotes({
     const compare = compareBySortMode(sortMode, next);
     next.sort((a, b) => {
       if (filterNearby && userLocation) {
-        return (a.distanceKm ?? Number.POSITIVE_INFINITY) - (b.distanceKm ?? Number.POSITIVE_INFINITY) || compare(a, b);
+        return (
+          (a.distanceKm ?? Number.POSITIVE_INFINITY) -
+            (b.distanceKm ?? Number.POSITIVE_INFINITY) || compare(a, b)
+        );
       }
       return compare(a, b);
     });
@@ -378,10 +396,11 @@ export function StepQuotes({
     ? `${Math.round(stlDimensions.x)}×${Math.round(stlDimensions.y)}×${Math.round(stlDimensions.z)} mm`
     : null;
 
-  const hasNearbyCoordinates = visibleQuotes.some((quote) => quote.distanceKm !== null);
+  const hasNearbyCoordinates = quotesWithDistance.some((quote) => quote.distanceKm !== null);
+  const quantityChanged = clampQuantity(draftQuantity) !== clampQuantity(cantidad ?? 1);
 
-  const requestNearby = () => {
-    if (filterNearby) {
+  const requestNearby = (shouldEnable: boolean) => {
+    if (!shouldEnable) {
       setFilterNearby(false);
       setNearbyNotice(null);
       return;
@@ -394,7 +413,7 @@ export function StepQuotes({
     }
 
     if (!navigator.geolocation) {
-      setNearbyNotice("Tu navegador no permite usar geolocalización.");
+      setNearbyNotice("Tu navegador no permite usar geolocalizacion.");
       return;
     }
 
@@ -409,7 +428,7 @@ export function StepQuotes({
         localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(location));
       },
       () => {
-        setNearbyNotice("No pudimos obtener tu ubicación. Revisá los permisos del navegador.");
+        setNearbyNotice("No pudimos obtener tu ubicacion. Revisa los permisos del navegador.");
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
@@ -419,41 +438,40 @@ export function StepQuotes({
   const submitQuantityUpdate = () => {
     const nextQuantity = clampQuantity(draftQuantity);
     if (nextQuantity === clampQuantity(cantidad ?? 1)) {
-      setIsQtyEditorOpen(false);
       return;
     }
 
     setDraftQuantity(nextQuantity);
-    setIsQtyEditorOpen(false);
     void onUpdateQuantity(nextQuantity);
   };
 
   return (
     <div>
-      <button
-        onClick={onBack}
-        disabled={isProcessing}
-        className="mb-4 flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-      >
-        <ArrowLeft size={14} />
-        Modificar pedido
-      </button>
-
       {thumbnailUrl && (
-        <div className="mb-5 flex justify-center">
-          <div className="rounded-xl border border-border bg-white p-3 shadow-sm">
-            <img
+        <div className="mb-6 flex justify-center">
+          <div className="inline-flex max-w-full overflow-hidden rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+            <TrimmedThumbnail
               src={getThumbnailSrc(thumbnailUrl)}
               alt="Vista previa de la pieza"
-              className="max-h-[280px] w-auto object-contain sm:max-h-[300px]"
+              className="block max-h-[280px] w-auto max-w-full object-contain sm:max-h-[320px]"
             />
           </div>
         </div>
       )}
 
-      <h3 className="text-[24px] font-semibold leading-tight text-foreground">
-        {isEmpresa ? "Propuesta en proceso" : "Cotizaciones disponibles"}
-      </h3>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-[24px] font-semibold leading-tight text-foreground">
+          {isEmpresa ? "Propuesta en proceso" : "Cotizaciones disponibles"}
+        </h3>
+        <button
+          onClick={onBack}
+          disabled={isProcessing}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+          aria-label="Volver"
+        >
+          <ArrowLeft size={16} />
+        </button>
+      </div>
 
       {isEmpresa ? (
         <div className="py-8 text-center">
@@ -461,118 +479,110 @@ export function StepQuotes({
             <FileText size={24} className="text-accent" />
           </div>
           <p className="mb-1 text-[15px] font-medium text-foreground">
-            Tu propuesta está siendo preparada
+            Tu propuesta esta siendo preparada
           </p>
           <p className="mx-auto max-w-md text-[13px] leading-relaxed text-muted-foreground">
-            Nuestro equipo está coordinando con proveedores verificados. Recibís la propuesta
-            consolidada en hasta 72 hs hábiles.
+            Nuestro equipo esta coordinando con proveedores verificados. Recibis la propuesta
+            consolidada en hasta 72 hs habiles.
           </p>
-          <p className="mt-4 text-center text-[11px] text-muted-foreground/60">Sesión {sessionId}</p>
+          <p className="mt-4 text-center text-[11px] text-muted-foreground/60">Sesion {sessionId}</p>
         </div>
       ) : (
         <>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap items-start gap-3">
             {material && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-3 py-1 text-[13px] text-foreground">
-                <Palette size={13} className="text-primary" />
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1.5 text-[13px] text-foreground">
+                <FilamentIcon className="h-[14px] w-[14px] text-primary" />
                 {material}
               </span>
             )}
 
             {dimensionsLabel && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-3 py-1 text-[13px] text-foreground">
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-3 py-1.5 text-[13px] text-foreground">
                 <Ruler size={13} className="text-primary" />
                 {dimensionsLabel}
               </span>
             )}
 
-            <button
-              onClick={() => setIsQtyEditorOpen((current) => !current)}
-              disabled={isProcessing}
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-3 py-1 text-[13px] text-foreground transition-colors hover:border-primary/30 disabled:opacity-50"
-            >
-              <Hash size={13} className="text-primary" />
-              {cantidad ?? 1} {(cantidad ?? 1) === 1 ? "pieza" : "piezas"}
-              <ChevronDown size={13} className={`transition-transform ${isQtyEditorOpen ? "rotate-180" : ""}`} />
-            </button>
-          </div>
-
-          {isQtyEditorOpen && (
-            <div className="mt-3 max-w-xs rounded-xl border border-border bg-background p-4 shadow-sm">
-              <p className="text-[14px] font-semibold text-foreground">Cantidad de piezas</p>
-              <div className="mt-3 flex items-center justify-center gap-3">
+            <div className="flex flex-col items-start">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-2 py-1 text-[13px] text-foreground">
                 <button
                   onClick={() => setDraftQuantity((current) => clampQuantity(current - 1))}
-                  className="rounded-lg border border-border p-2 text-foreground transition-colors hover:bg-muted"
+                  disabled={isProcessing}
+                  className="rounded-full p-1 text-foreground transition-colors hover:bg-background disabled:opacity-50"
+                  aria-label="Restar cantidad"
                 >
                   <Minus size={14} />
                 </button>
-                <input
-                  type="number"
-                  min={1}
-                  max={500}
-                  value={draftQuantity}
-                  onChange={(event) => setDraftQuantity(clampQuantity(Number(event.target.value)))}
-                  className="w-20 rounded-lg border border-input bg-background px-3 py-2 text-center text-[15px] font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
+                <span className="min-w-[68px] text-center font-semibold">
+                  {draftQuantity} {draftQuantity === 1 ? "pieza" : "piezas"}
+                </span>
                 <button
                   onClick={() => setDraftQuantity((current) => clampQuantity(current + 1))}
-                  className="rounded-lg border border-border p-2 text-foreground transition-colors hover:bg-muted"
+                  disabled={isProcessing}
+                  className="rounded-full border border-foreground/60 p-1 text-foreground transition-colors hover:bg-background disabled:opacity-50"
+                  aria-label="Sumar cantidad"
                 >
                   <Plus size={14} />
                 </button>
               </div>
-              <div className="mt-4 flex gap-2">
+
+              {quantityChanged && !isProcessing && (
                 <button
                   onClick={submitQuantityUpdate}
-                  className="flex-1 rounded-lg bg-primary px-3 py-2 text-[13px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                  className="mt-2 rounded-xl bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                 >
-                  Cotizar
+                  Actualizar
                 </button>
-                <button
-                  onClick={() => {
-                    setDraftQuantity(clampQuantity(cantidad ?? 1));
-                    setIsQtyEditorOpen(false);
-                  }}
-                  className="flex-1 rounded-lg border border-border px-3 py-2 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted"
-                >
-                  Cancelar
-                </button>
-              </div>
+              )}
             </div>
-          )}
 
-          <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-muted/30 px-3 py-3">
-            <button
-              onClick={() => setFilterCertified((current) => !current)}
-              className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors ${
-                filterCertified
-                  ? "bg-emerald-500 text-white"
-                  : "bg-background text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <ShieldCheck size={14} />
-              Solo certificados
-            </button>
+            <div className="flex flex-wrap items-center gap-4 md:ml-auto">
+              <label className="inline-flex items-center gap-2 text-[13px] font-medium text-foreground">
+                <BadgeCheck size={16} className="text-emerald-500" />
+                <span>Solo certificados</span>
+                <Switch checked={filterCertified} onCheckedChange={setFilterCertified} />
+              </label>
 
-            <button
-              onClick={requestNearby}
-              className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors ${
-                filterNearby
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-background text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {isLocating ? <Loader2 size={14} className="animate-spin" /> : <LocateFixed size={14} />}
-              Cerca mío
-            </button>
+              <label className="inline-flex items-center gap-2 text-[13px] font-medium text-foreground">
+                {isLocating ? (
+                  <Loader2 size={14} className="animate-spin text-primary" />
+                ) : (
+                  <MapPin size={16} className="text-red-500" fill="currentColor" stroke="white" strokeWidth={1.7} />
+                )}
+                <span>Cerca mio</span>
+                <Switch
+                  checked={filterNearby}
+                  disabled={isLocating}
+                  onCheckedChange={(checked) => requestNearby(checked)}
+                />
+              </label>
+            </div>
           </div>
 
           {(nearbyNotice || (filterNearby && userLocation && !hasNearbyCoordinates)) && (
             <p className="mt-2 text-[12px] text-muted-foreground">
-              {nearbyNotice || "No encontramos proveedores con coordenadas públicas para ordenar por cercanía."}
+              {nearbyNotice || "No encontramos proveedores con coordenadas publicas para ordenar por cercania."}
             </p>
           )}
+
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <SortButton
+              active={sortMode === "recommended"}
+              label="Recomendado"
+              onClick={() => setSortMode("recommended")}
+            />
+            <SortButton
+              active={sortMode === "price"}
+              label="Precio"
+              onClick={() => setSortMode("price")}
+            />
+            <SortButton
+              active={sortMode === "rating"}
+              label="Rating"
+              onClick={() => setSortMode("rating")}
+            />
+          </div>
 
           {isProcessing && (
             <div className="mt-6 flex flex-col items-center gap-4 py-8">
@@ -597,36 +607,16 @@ export function StepQuotes({
           )}
 
           {!isProcessing && visibleQuotes.length > 0 && (
-            <>
-              <div className="mt-6 space-y-3">
-                {visibleQuotes.map((quote) => (
-                  <ProviderCard
-                    key={quote.quote_option_uid}
-                    option={quote}
-                    isBestPrice={lowestVisiblePrice !== null && quote.price_ars === lowestVisiblePrice}
-                    onSelect={() => onSelectQuote(quote.quote_option_uid)}
-                  />
-                ))}
-              </div>
-
-              <div className="mt-5 flex flex-wrap items-center gap-2">
-                <SortButton
-                  active={sortMode === "recommended"}
-                  label="Recomendado"
-                  onClick={() => setSortMode("recommended")}
+            <div className="mt-6 space-y-3">
+              {visibleQuotes.map((quote) => (
+                <ProviderCard
+                  key={quote.quote_option_uid}
+                  option={quote}
+                  isBestPrice={lowestVisiblePrice !== null && quote.price_ars === lowestVisiblePrice}
+                  onSelect={() => onSelectQuote(quote.quote_option_uid)}
                 />
-                <SortButton
-                  active={sortMode === "price"}
-                  label="Precio"
-                  onClick={() => setSortMode("price")}
-                />
-                <SortButton
-                  active={sortMode === "rating"}
-                  label="Rating"
-                  onClick={() => setSortMode("rating")}
-                />
-              </div>
-            </>
+              ))}
+            </div>
           )}
 
           {!isProcessing && !error && visibleQuotes.length === 0 && (
@@ -634,22 +624,14 @@ export function StepQuotes({
               <p className="text-[14px] text-muted-foreground">
                 {quotes.length > 0
                   ? "No quedaron proveedores para los filtros seleccionados."
-                  : "No se encontraron cotizaciones disponibles. Por favor intentá de nuevo."}
+                  : "No se encontraron cotizaciones disponibles. Por favor intenta de nuevo."}
               </p>
             </div>
           )}
 
-          <p className="mt-4 text-center text-[11px] text-muted-foreground/60">Sesión {sessionId}</p>
+          <p className="mt-4 text-center text-[11px] text-muted-foreground/60">Sesion {sessionId}</p>
         </>
       )}
-
-      <button
-        onClick={onBack}
-        disabled={isProcessing}
-        className="mt-6 rounded-xl border border-border px-5 py-3 text-[14px] font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
-      >
-        Atrás
-      </button>
     </div>
   );
 }

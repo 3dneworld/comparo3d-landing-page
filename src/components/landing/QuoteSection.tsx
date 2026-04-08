@@ -322,6 +322,14 @@ const QuoteSection = () => {
     }
   };
 
+  const handleStep1AutoUpload = async (file: File) => {
+    const ok = await flow.handleUploadStl(file, data.sessionId || undefined);
+    if (ok) {
+      setData({ fileName: file.name });
+      goToStep(2);
+    }
+  };
+
   const handleStep2Continue = async () => {
     if (!data.nombre || !data.email || !data.cantidad) {
       flow.setError(
@@ -515,16 +523,6 @@ const QuoteSection = () => {
               </button>
               </div>
             </div>
-
-            {data.thumbnailUrl && (
-              <div className="mt-3 flex justify-center">
-                <img
-                  src={data.thumbnailUrl.startsWith("data:") ? data.thumbnailUrl : `data:image/png;base64,${data.thumbnailUrl}`}
-                  alt="Pieza guardada"
-                  className="max-h-[200px] w-auto rounded-lg object-contain"
-                />
-              </div>
-            )}
           </div>
         )}
 
@@ -585,7 +583,7 @@ const QuoteSection = () => {
                 flow.setStlFile(file);
                 updateField("fileName", file.name);
               }}
-              onContinue={handleStep1Continue}
+              onAutoUpload={handleStep1AutoUpload}
             />
           )}
 
