@@ -235,15 +235,6 @@ const ProjectsGallery = () => {
                     {project.visualLabel}
                   </span>
 
-                  <div
-                    className={`flex h-14 w-14 items-center justify-center rounded-2xl border backdrop-blur-sm ${
-                      project.emphasis
-                        ? "border-primary/15 bg-primary/10 text-primary"
-                        : "border-border bg-background/80 text-foreground/70"
-                    }`}
-                  >
-                    <project.icon size={28} strokeWidth={2.1} />
-                  </div>
                 </div>
 
                 <div className="absolute bottom-5 left-5 right-5 flex flex-wrap gap-2">
