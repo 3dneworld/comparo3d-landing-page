@@ -246,7 +246,7 @@ export function StepUserData({
           onChange={(e) => onChange("detalles", e.target.value)}
           rows={3}
           className={`${inputClass} resize-none`}
-          placeholder="Contanos qué necesitás..."
+          placeholder={`Uso de la pieza:\nCaracterísticas: Rozamiento / Exposición al sol / Flexibilidad / Resistencia a temperatura, etc`}
         />
       </div>
 
