@@ -20,6 +20,7 @@ import { QuoteOption, getThumbnail, isApiError } from "@/lib/api";
 
 const STORAGE_KEY      = "comparo3d_quote";
 const MP_BANNER_KEY    = "comparo3d_mp_banner";
+const VALID_MATERIALS = new Set(["PLA", "ASESORAR", "ABS", "PETG", "Nylon", "TPU"]);
 
 interface QuoteData {
   nombre: string;
@@ -65,9 +66,19 @@ function loadSaved(): QuoteData | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<QuoteData>;
+    const normalizedMaterial =
+      typeof parsed.material === "string" && VALID_MATERIALS.has(parsed.material)
+        ? parsed.material
+        : defaultData.material;
+    const normalizedCantidad =
+      typeof parsed.cantidad === "string" && parsed.cantidad.trim() !== ""
+        ? parsed.cantidad
+        : defaultData.cantidad;
     return {
       ...defaultData,
       ...parsed,
+      material: normalizedMaterial,
+      cantidad: normalizedCantidad,
       selectedQuote: parsed.selectedQuote ?? null,
       orderId: parsed.orderId ?? "",
     };
@@ -198,6 +209,20 @@ const QuoteSection = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flow.orderId, data.orderId]);
 
+  useEffect(() => {
+    const updates: Partial<QuoteData> = {};
+    if (flow.material && flow.material !== data.material) {
+      updates.material = flow.material;
+    }
+    if (flow.cantidad !== null && String(flow.cantidad) !== data.cantidad) {
+      updates.cantidad = String(flow.cantidad);
+    }
+    if (Object.keys(updates).length > 0) {
+      setData(updates);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flow.material, flow.cantidad, data.material, data.cantidad]);
+
   // ── Validar sesión restaurada y recuperar thumbnail desde backend ──
   useEffect(() => {
     const isRestoredSession = hasSaved && data.step > 1 && !!data.sessionId;
@@ -298,16 +323,16 @@ const QuoteSection = () => {
   };
 
   const handleStep2Continue = async () => {
-    if (!data.nombre || !data.email || !data.material || !data.cantidad) {
+    if (!data.nombre || !data.email || !data.cantidad) {
       flow.setError(
-        !data.material
-          ? "Seleccioná un material para continuar."
-          : "Completá los campos obligatorios (nombre, email y material) para continuar."
+        "Completá los campos obligatorios (nombre, email y cantidad) para continuar."
       );
       return;
     }
-    // "ASESORAR" → "PLA" para el backend (el usuario elige "No estoy seguro")
-    const materialParaBackend = data.material === "ASESORAR" ? "PLA" : data.material;
+    // El dropdown siempre debería tener valor; si una sesión vieja guardó material vacío,
+    // forzamos PLA para mantener compatibilidad y evitar un falso error de validación.
+    const normalizedMaterial = VALID_MATERIALS.has(data.material) ? data.material : "PLA";
+    const materialParaBackend = normalizedMaterial === "ASESORAR" ? "PLA" : normalizedMaterial;
 
     const ok = await flow.handleInitDraft({
       client_name: data.nombre,
@@ -467,14 +492,15 @@ const QuoteSection = () => {
         )}
 
         {hasSaved && !isCheckingSavedSession && data.step > 1 && (
-          <div className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/[0.05] p-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                Encontramos una cotización empezada
-              </p>
-              <p className="text-xs text-muted-foreground">Sesión {data.sessionId}</p>
-            </div>
-            <div className="flex gap-2">
+          <div className="mb-5 rounded-2xl border border-primary/20 bg-primary/[0.05] p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Encontramos una cotización empezada
+                </p>
+                <p className="text-[11px] text-muted-foreground/70">Sesión {data.sessionId}</p>
+              </div>
+              <div className="flex gap-2">
               <button
                 onClick={resetQuote}
                 className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
@@ -487,7 +513,18 @@ const QuoteSection = () => {
               >
                 Continuar
               </button>
+              </div>
             </div>
+
+            {data.thumbnailUrl && (
+              <div className="mt-3 flex justify-center">
+                <img
+                  src={data.thumbnailUrl.startsWith("data:") ? data.thumbnailUrl : `data:image/png;base64,${data.thumbnailUrl}`}
+                  alt="Pieza guardada"
+                  className="max-h-[200px] w-auto rounded-lg object-contain"
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -581,7 +618,18 @@ const QuoteSection = () => {
               error={flow.error}
               quotes={flow.quotes}
               sessionId={data.sessionId}
+              thumbnailUrl={flow.thumbnailUrl || data.thumbnailUrl || null}
+              material={flow.material || data.material || null}
+              cantidad={flow.cantidad ?? (data.cantidad ? Number(data.cantidad) : null)}
+              stlDimensions={flow.stlDimensions}
               onSelectQuote={handleSelectQuote}
+              onUpdateQuantity={async (newQty) => {
+                const ok = await flow.handleUpdateQuantity(newQty);
+                if (ok) {
+                  setSelectedQuote(null);
+                  setData({ cantidad: String(newQty), selectedQuote: null, orderId: "" });
+                }
+              }}
               onRetry={() => {
                 flow.clearError();
                 polledSessionRef.current = ""; // permite reiniciar el polling
@@ -604,6 +652,10 @@ const QuoteSection = () => {
                   provider_score: 0,
                   provider_tier: "",
                   provider_location: "",
+                  logo_url: "",
+                  is_certified: false,
+                  provider_lat: null,
+                  provider_lng: null,
                   price_ars: 0,
                   delivery_days: 0,
                   trust_metrics: { score: 0, reviews_count: 0, on_time_pct: 0 },

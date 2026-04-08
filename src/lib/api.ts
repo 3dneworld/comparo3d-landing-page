@@ -58,8 +58,12 @@ export interface QuoteOption {
   provider_score: number;
   provider_tier: string;
   provider_location: string;
+  provider_lat?: number | null;
+  provider_lng?: number | null;
   price_ars: number;
   delivery_days: number;
+  logo_url: string;
+  is_certified: boolean;
   trust_metrics: {
     score: number;
     reviews_count: number;
@@ -73,7 +77,20 @@ export interface QuoteOptionsResponse {
   quote_uid: string;
   slicing_status: "completed";
   total_time_minutes: number;
+  material: string;
+  cantidad: number;
+  stl_dimensions: { x: number; y: number; z: number } | null;
+  infill: string;
+  layer_height: string;
   quotes: QuoteOption[];
+}
+
+export interface UpdateQuantityResponse {
+  success: true;
+  session_id: string;
+  cantidad: number;
+  slicing_status: string;
+  message: string;
 }
 
 export interface QuoteOptionsProcessing {
@@ -182,6 +199,33 @@ export async function getQuoteOptions(
     return data as QuoteOptionsResponse;
   } catch {
     return { success: false, error: "No se pudo conectar con el servidor. Verificá tu conexión." };
+  }
+}
+
+/** Re-cotizar la sesión con una nueva cantidad de piezas. */
+export async function updateQuantity(
+  sessionId: string,
+  cantidad: number
+): Promise<UpdateQuantityResponse | ApiError> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/quotes/${sessionId}/update-quantity`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cantidad }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return {
+        success: false,
+        error: data.error || data.message || "Error actualizando la cantidad",
+        field: data.field,
+        needs_reupload: Boolean(data.needs_reupload),
+        http_status: res.status,
+      };
+    }
+    return data as UpdateQuantityResponse;
+  } catch {
+    return { success: false, error: "No se pudo conectar con el servidor para recalcular la cotización." };
   }
 }
 

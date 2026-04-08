@@ -15,6 +15,7 @@ import {
   initDraft,
   isApiError,
   QuoteOption,
+  updateQuantity,
   uploadStl,
 } from "@/lib/api";
 
@@ -35,6 +36,10 @@ export interface QuoteFlowState {
   stlFile: File | null;
   /** Thumbnail base64 del STL subido (data:image/png;base64,...) */
   thumbnailUrl: string | null;
+  /** Metadata devuelta por /options */
+  material: string | null;
+  cantidad: number | null;
+  stlDimensions: { x: number; y: number; z: number } | null;
 }
 
 interface UseQuoteFlowOptions {
@@ -59,6 +64,9 @@ export function useQuoteFlow({
     orderId: null,
     stlFile: null,
     thumbnailUrl: null,
+    material: null,
+    cantidad: null,
+    stlDimensions: null,
   });
 
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -187,6 +195,7 @@ export function useQuoteFlow({
       return;
     }
     console.log("[POLL] Iniciando polling para session:", sessionId);
+    if (pollRef.current) clearTimeout(pollRef.current);
 
     setState((s) => ({
       ...s,
@@ -246,6 +255,9 @@ export function useQuoteFlow({
           ...s,
           isProcessing: false,
           quotes: result.quotes,
+          material: result.material,
+          cantidad: result.cantidad,
+          stlDimensions: result.stl_dimensions,
           progressMessage: "",
         }));
         onQuotesReady(result.quotes);
@@ -261,7 +273,44 @@ export function useQuoteFlow({
     poll();
   }, [sessionId, onQuotesReady]);
 
-  /** Paso 4: Aceptar una cotización */
+  /** Paso 3: Actualizar cantidad y relanzar el calculo */
+  const handleUpdateQuantity = useCallback(
+    async (newCantidad: number): Promise<boolean> => {
+      if (!isMountedRef.current) return false;
+      if (!sessionId) {
+        setError("Sesion no inicializada.");
+        return false;
+      }
+
+      setState((s) => ({
+        ...s,
+        isProcessing: true,
+        error: null,
+        quotes: [],
+        progressMessage: "Recalculando cotizaciones...",
+      }));
+
+      const result = await updateQuantity(sessionId, newCantidad);
+
+      if (!isMountedRef.current) return false;
+
+      if (isApiError(result)) {
+        setError(result.error || "No se pudo actualizar la cantidad.");
+        return false;
+      }
+
+      setState((s) => ({
+        ...s,
+        cantidad: result.cantidad,
+      }));
+
+      startPollingOptions();
+      return true;
+    },
+    [sessionId, startPollingOptions]
+  );
+
+  /** Paso 4: Aceptar una cotizaciÃ³n */
   const handleAcceptQuote = useCallback(
     async (quoteOptionUid: string): Promise<string | null> => {
       if (!isMountedRef.current) return null;
@@ -306,6 +355,7 @@ export function useQuoteFlow({
     handleUploadStl,
     handleInitDraft,
     startPollingOptions,
+    handleUpdateQuantity,
     handleAcceptQuote,
   };
 }

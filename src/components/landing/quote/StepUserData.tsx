@@ -119,11 +119,11 @@ export function StepUserData({
             <span className="text-xs font-medium text-accent">Cargado</span>
           </div>
           <div className="px-4 pb-4">
-            <div className="flex h-36 items-center justify-center overflow-hidden rounded-lg border border-border bg-background">
+            <div className="flex max-h-[300px] min-h-[220px] items-center justify-center overflow-hidden rounded-lg border border-border bg-background">
               <img
                 src={thumbnailUrl || modeloPreview}
                 alt="Vista previa del modelo 3D"
-                className="h-full w-full object-contain p-4"
+                className="max-h-[300px] w-full object-contain p-4"
               />
             </div>
             <div className="mt-2 flex items-center justify-between gap-3">
@@ -205,7 +205,7 @@ export function StepUserData({
           <label className="mb-1.5 block text-[14px] font-semibold text-foreground">Material *</label>
           <div className="relative">
             <select
-              value={data.material}
+              value={data.material || "PLA"}
               onChange={(e) => onChange("material", e.target.value)}
               className={selectClass}
             >
