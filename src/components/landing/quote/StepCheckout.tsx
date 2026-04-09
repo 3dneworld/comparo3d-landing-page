@@ -289,42 +289,62 @@ export function StepCheckout({
   }, [address.province, address.province_id, provinces]);
 
   useEffect(() => {
-    if (!address.province_id || address.city.trim().length < 2) {
+    if (!address.province_id) {
       setLocalities([]);
+      setLoadingLocalities(false);
       return;
     }
 
-    if (localityDebounceRef.current) clearTimeout(localityDebounceRef.current);
-    localityDebounceRef.current = setTimeout(async () => {
-      if (!isMountedRef.current) return;
+    let cancelled = false;
+    void (async () => {
       setLoadingLocalities(true);
       const result = await searchAddressLocalities({
         province_id: address.province_id,
-        q: address.city.trim(),
-        max: 8,
+        max: 5000,
       });
-      if (!isMountedRef.current) return;
-      if (!isApiError(result)) {
-        setLocalities(result.items);
-      } else {
-        setLocalities([]);
-      }
-      setLoadingLocalities(false);
-    }, 250);
-  }, [address.city, address.province_id]);
+      if (!isMountedRef.current || cancelled) return;
 
-  useEffect(() => {
-    if (!localities.length) return;
-    const match = localities.find(
-      (item) => item.name.toLowerCase() === address.city.trim().toLowerCase()
-    );
-    if (!match) return;
-    setAddress((current) => ({
-      ...current,
-      city: match.name,
-      locality_id: match.id,
-    }));
-  }, [address.city, localities]);
+      if (isApiError(result)) {
+        setLocalities([]);
+        setLoadingLocalities(false);
+        return;
+      }
+
+      setLocalities(result.items);
+      setLoadingLocalities(false);
+
+      setAddress((current) => {
+        if (current.locality_id) {
+          const selected = result.items.find((item) => item.id === current.locality_id);
+          if (selected) {
+            return {
+              ...current,
+              city: selected.name,
+            };
+          }
+        }
+
+        if (current.city.trim()) {
+          const match = result.items.find(
+            (item) => item.name.toLowerCase() === current.city.trim().toLowerCase()
+          );
+          if (match) {
+            return {
+              ...current,
+              city: match.name,
+              locality_id: match.id,
+            };
+          }
+        }
+
+        return current;
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [address.province_id]);
 
   const isRetiro = selectedMethodId === "retiro";
 
@@ -408,6 +428,17 @@ export function StepCheckout({
       locality_id: "",
     }));
     setLocalities([]);
+    setAddressValidation(null);
+    setCheckoutError(null);
+  };
+
+  const handleLocalityChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const locality = localities.find((item) => item.id === event.target.value);
+    setAddress((current) => ({
+      ...current,
+      city: locality?.name ?? "",
+      locality_id: locality?.id ?? "",
+    }));
     setAddressValidation(null);
     setCheckoutError(null);
   };
@@ -647,7 +678,7 @@ export function StepCheckout({
                   />
                 </div>
 
-                <div className="sm:col-span-2">
+                <div>
                   <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
                     Piso / Depto <span className="font-normal text-muted-foreground">(opcional)</span>
                   </label>
@@ -660,48 +691,6 @@ export function StepCheckout({
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
-                    Localidad
-                  </label>
-                  <input
-                    value={address.city}
-                    onChange={setField("city")}
-                    list={`checkout-localities-${orderId}`}
-                    className="w-full rounded-xl border border-input bg-background px-4 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder={address.province_id ? "Busca tu localidad" : "Primero elige provincia"}
-                    autoComplete="address-level2"
-                    disabled={!address.province_id}
-                  />
-                  <datalist id={`checkout-localities-${orderId}`}>
-                    {localities.map((item) => (
-                      <option key={item.id} value={item.name} label={item.display_name} />
-                    ))}
-                  </datalist>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    {loadingLocalities
-                      ? "Buscando localidades oficiales..."
-                      : selectedLocality
-                        ? selectedLocality.display_name
-                        : "Usamos el nomenclador oficial de Argentina para evitar ambiguedades."}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
-                    Codigo Postal
-                  </label>
-                  <input
-                    value={address.postal_code}
-                    onChange={setField("postal_code")}
-                    inputMode="numeric"
-                    maxLength={8}
-                    className="w-full rounded-xl border border-input bg-background px-4 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Ej: 1425"
-                    autoComplete="postal-code"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
                   <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
                     Provincia
                   </label>
@@ -718,6 +707,51 @@ export function StepCheckout({
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
+                    Localidad
+                  </label>
+                  <select
+                    value={address.locality_id}
+                    onChange={handleLocalityChange}
+                    className="w-full rounded-xl border border-input bg-background px-4 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    disabled={!address.province_id || loadingLocalities}
+                  >
+                    <option value="">
+                      {!address.province_id
+                        ? "Primero selecciona una provincia"
+                        : loadingLocalities
+                          ? "Cargando localidades..."
+                          : "Selecciona una localidad"}
+                    </option>
+                    {localities.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.display_name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {selectedLocality
+                      ? selectedLocality.display_name
+                      : "Mostramos solo localidades oficiales de la provincia elegida."}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
+                    Codigo Postal
+                  </label>
+                  <input
+                    value={address.postal_code}
+                    onChange={setField("postal_code")}
+                    inputMode="numeric"
+                    maxLength={8}
+                    className="w-full rounded-xl border border-input bg-background px-4 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="Ej: 1425"
+                    autoComplete="postal-code"
+                  />
                 </div>
 
                 <div className="sm:col-span-2">
