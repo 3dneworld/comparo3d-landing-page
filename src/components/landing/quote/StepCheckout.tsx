@@ -1,10 +1,7 @@
-/**
- * StepCheckout.tsx — Paso 4: Dirección de envío + método + resumen + pago MP
- * FASE 10
- */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   AlertCircle,
+  Check,
   CreditCard,
   Loader2,
   MapPin,
@@ -13,23 +10,30 @@ import {
   Truck,
 } from "lucide-react";
 import {
+  getAddressProvinces,
+  normalizeAddress,
+  searchAddressLocalities,
   createCheckout,
   getShippingEstimate,
   getShippingMethods,
   isApiError,
-  ShippingMethod,
+  type AddressLocality,
+  type AddressProvince,
+  type NormalizeAddressResponse,
   type QuoteOption,
+  type ShippingMethod,
 } from "@/lib/api";
-
-// ─── Tipos internos ──────────────────────────────────────────────────────────
+import { TrimmedThumbnail } from "./TrimmedThumbnail";
 
 interface AddressForm {
   street: string;
   number: string;
   floor: string;
   city: string;
+  locality_id: string;
   postal_code: string;
   province: string;
+  province_id: string;
 }
 
 interface PersistedCheckoutState {
@@ -43,19 +47,27 @@ export interface StepCheckoutProps {
   sessionId: string;
   isEmpresa: boolean;
   isAccepting?: boolean;
+  cantidad?: number | null;
+  thumbnailUrl?: string | null;
   onBack: () => void;
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const defaultAddress: AddressForm = {
   street: "",
   number: "",
   floor: "",
   city: "",
+  locality_id: "",
   postal_code: "",
   province: "",
+  province_id: "",
 };
+
+interface AddressValidationState {
+  validated: boolean;
+  normalized: NormalizeAddressResponse["normalized"];
+  validation: NormalizeAddressResponse["validation"];
+}
 
 const checkoutStorageKey = (sessionId: string, orderId: string) =>
   `comparo3d_checkout_${sessionId}_${orderId}`;
@@ -67,30 +79,45 @@ const METHOD_ICONS: Record<string, typeof Truck> = {
 };
 
 const FALLBACK_METHODS: ShippingMethod[] = [
-  { id: "retiro", name: "Retiro en punto acordado", eta_days: 0 },
-  { id: "paq_clasico", name: "PAQ.AR Clásico", eta_days: 5 },
+  { id: "retiro", name: "Retiro en oficinas del proveedor", eta_days: 0 },
+  { id: "paq_clasico", name: "PAQ.AR Clasico", eta_days: 5 },
   { id: "paq_expreso", name: "PAQ.AR Expreso", eta_days: 2 },
 ];
 
 const formatRoundedArs = (value: number) =>
   Math.round(Number(value) || 0).toLocaleString("es-AR");
 
-// ─── Sub-componente: card de método de envío ─────────────────────────────────
+const formatEstimatedDate = (days: number) => {
+  const baseDate = new Date();
+  baseDate.setDate(baseDate.getDate() + Math.max(0, days));
+  return new Intl.DateTimeFormat("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(baseDate);
+};
 
 function ShippingMethodCard({
   method,
   isSelected,
   estimatePrice,
   isLoadingEstimate,
+  pickupReadyLabel,
   onSelect,
 }: {
   method: ShippingMethod;
   isSelected: boolean;
   estimatePrice: number | null;
   isLoadingEstimate: boolean;
+  pickupReadyLabel: string;
   onSelect: () => void;
 }) {
   const Icon = METHOD_ICONS[method.id] ?? Truck;
+  const isPickup = method.id === "retiro";
+  const title = isPickup ? "Retiro en oficinas del proveedor" : method.name;
+  const subtitle = isPickup
+    ? `Fecha estimada: ${pickupReadyLabel}`
+    : `${method.eta_days} dias habiles`;
 
   return (
     <label
@@ -124,39 +151,30 @@ function ShippingMethodCard({
             isSelected ? "text-foreground" : "text-foreground/80"
           }`}
         >
-          {method.name}
+          {title}
         </p>
-        {method.eta_days > 0 && (
-          <p className="text-[12px] text-muted-foreground">
-            {method.eta_days} días hábiles
-          </p>
-        )}
-        {method.eta_days === 0 && (
-          <p className="text-[12px] text-muted-foreground">
-            A coordinar con el proveedor
-          </p>
-        )}
+        <p className="text-[12px] text-muted-foreground">{subtitle}</p>
       </div>
 
-      {/* Precio estimado (solo cuando está seleccionado) */}
       <div className="shrink-0 text-right">
-        {isSelected && isLoadingEstimate && (
+        {isSelected && isLoadingEstimate && !isPickup && (
           <Loader2 size={14} className="animate-spin text-muted-foreground" />
         )}
-        {isSelected && !isLoadingEstimate && estimatePrice !== null && (
+        {isSelected && isPickup && (
+          <p className="text-[15px] font-bold text-foreground">Pick up Cliente</p>
+        )}
+        {isSelected && !isPickup && !isLoadingEstimate && estimatePrice !== null && (
           <p className="text-[15px] font-bold text-foreground">
-            {estimatePrice === 0 ? "Gratis" : `$${formatRoundedArs(estimatePrice)}`}
+            ${formatRoundedArs(estimatePrice)}
           </p>
         )}
-        {isSelected && !isLoadingEstimate && estimatePrice === null && method.id !== "retiro" && (
-          <p className="text-[12px] text-muted-foreground">—</p>
+        {isSelected && !isPickup && !isLoadingEstimate && estimatePrice === null && (
+          <p className="text-[12px] text-muted-foreground">-</p>
         )}
       </div>
     </label>
   );
 }
-
-// ─── Componente principal ────────────────────────────────────────────────────
 
 export function StepCheckout({
   selectedQuote,
@@ -164,20 +182,28 @@ export function StepCheckout({
   sessionId,
   isEmpresa,
   isAccepting = false,
+  cantidad = 1,
+  thumbnailUrl = null,
   onBack,
 }: StepCheckoutProps) {
   const [address, setAddress] = useState<AddressForm>(defaultAddress);
+  const [provinces, setProvinces] = useState<AddressProvince[]>([]);
+  const [localities, setLocalities] = useState<AddressLocality[]>([]);
   const [methods, setMethods] = useState<ShippingMethod[]>([]);
   const [selectedMethodId, setSelectedMethodId] = useState("");
   const [estimatePrice, setEstimatePrice] = useState<number | null>(null);
   const [estimateEta, setEstimateEta] = useState<number | null>(null);
-
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingLocalities, setLoadingLocalities] = useState(false);
+  const [normalizingAddress, setNormalizingAddress] = useState(false);
   const [loadingMethods, setLoadingMethods] = useState(false);
   const [loadingEstimate, setLoadingEstimate] = useState(false);
   const [creatingCheckout, setCreatingCheckout] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [addressValidation, setAddressValidation] = useState<AddressValidationState | null>(null);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const estimateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
   const skipNextCheckoutSaveRef = useRef(false);
 
@@ -185,7 +211,8 @@ export function StepCheckout({
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (estimateDebounceRef.current) clearTimeout(estimateDebounceRef.current);
+      if (localityDebounceRef.current) clearTimeout(localityDebounceRef.current);
     };
   }, []);
 
@@ -197,11 +224,17 @@ export function StepCheckout({
       const parsed = JSON.parse(raw) as PersistedCheckoutState;
       skipNextCheckoutSaveRef.current = true;
       setAddress({ ...defaultAddress, ...(parsed.address ?? {}) });
-      setSelectedMethodId(parsed.selectedMethodId ?? "");
+      setSelectedMethodId(parsed.selectedMethodId ?? "retiro");
     } catch {
-      // Ignore malformed checkout state and let the customer fill it again.
+      setSelectedMethodId("retiro");
     }
   }, [sessionId, orderId]);
+
+  useEffect(() => {
+    if (!methods.some((method) => method.id === "retiro")) return;
+    if (selectedMethodId) return;
+    setSelectedMethodId("retiro");
+  }, [methods, selectedMethodId]);
 
   useEffect(() => {
     if (!sessionId || !orderId) return;
@@ -215,43 +248,112 @@ export function StepCheckout({
     );
   }, [address, selectedMethodId, sessionId, orderId]);
 
-  // Cargar métodos de envío al montar
   useEffect(() => {
     const load = async () => {
+      setLoadingProvinces(true);
+      const provinceResult = await getAddressProvinces();
+      if (isMountedRef.current) {
+        if (!isApiError(provinceResult)) {
+          setProvinces(provinceResult.items);
+        }
+        setLoadingProvinces(false);
+      }
+
       setLoadingMethods(true);
       const result = await getShippingMethods();
       if (!isMountedRef.current) return;
-      setMethods(isApiError(result) ? FALLBACK_METHODS : result.methods);
+
+      const nextMethods = isApiError(result) ? FALLBACK_METHODS : result.methods;
+      setMethods(nextMethods);
       setLoadingMethods(false);
     };
-    load();
+
+    void load();
   }, []);
+
+  useEffect(() => {
+    if (!provinces.length) return;
+    if (address.province_id) return;
+    if (!address.province.trim()) return;
+
+    const provinceMatch = provinces.find(
+      (item) => item.name.toLowerCase() === address.province.trim().toLowerCase()
+    );
+    if (!provinceMatch) return;
+
+    setAddress((current) => ({
+      ...current,
+      province: provinceMatch.name,
+      province_id: provinceMatch.id,
+    }));
+  }, [address.province, address.province_id, provinces]);
+
+  useEffect(() => {
+    if (!address.province_id || address.city.trim().length < 2) {
+      setLocalities([]);
+      return;
+    }
+
+    if (localityDebounceRef.current) clearTimeout(localityDebounceRef.current);
+    localityDebounceRef.current = setTimeout(async () => {
+      if (!isMountedRef.current) return;
+      setLoadingLocalities(true);
+      const result = await searchAddressLocalities({
+        province_id: address.province_id,
+        q: address.city.trim(),
+        max: 8,
+      });
+      if (!isMountedRef.current) return;
+      if (!isApiError(result)) {
+        setLocalities(result.items);
+      } else {
+        setLocalities([]);
+      }
+      setLoadingLocalities(false);
+    }, 250);
+  }, [address.city, address.province_id]);
+
+  useEffect(() => {
+    if (!localities.length) return;
+    const match = localities.find(
+      (item) => item.name.toLowerCase() === address.city.trim().toLowerCase()
+    );
+    if (!match) return;
+    setAddress((current) => ({
+      ...current,
+      city: match.name,
+      locality_id: match.id,
+    }));
+  }, [address.city, localities]);
 
   const isRetiro = selectedMethodId === "retiro";
 
-  // Calcular estimación de envío (debounced 600ms)
-  // Solo cuando hay método seleccionado + CP válido + no es retiro
   useEffect(() => {
     if (!selectedMethodId || isRetiro) {
       setEstimatePrice(isRetiro ? 0 : null);
       setEstimateEta(null);
       return;
     }
+
     if (address.postal_code.length < 4) {
       setEstimatePrice(null);
+      setEstimateEta(null);
       return;
     }
 
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
+    if (estimateDebounceRef.current) clearTimeout(estimateDebounceRef.current);
+    estimateDebounceRef.current = setTimeout(async () => {
       if (!isMountedRef.current) return;
       setLoadingEstimate(true);
+
       const result = await getShippingEstimate({
         method_id: selectedMethodId,
         postal_code: address.postal_code,
         province: address.province || undefined,
       });
+
       if (!isMountedRef.current) return;
+
       if (!isApiError(result)) {
         setEstimatePrice(result.price);
         setEstimateEta(result.eta_days);
@@ -259,28 +361,126 @@ export function StepCheckout({
         setEstimatePrice(null);
         setEstimateEta(null);
       }
+
       setLoadingEstimate(false);
     }, 600);
-  }, [selectedMethodId, address.postal_code, address.province, isRetiro]);
+  }, [address.postal_code, address.province, isRetiro, selectedMethodId]);
 
-  // Validación del formulario
   const isFormValid = useMemo(() => {
     if (!selectedMethodId) return false;
     if (isRetiro) return true;
+
     return (
       address.street.trim().length > 0 &&
       address.number.trim().length > 0 &&
       address.city.trim().length > 0 &&
       address.postal_code.length >= 4 &&
-      address.province.trim().length > 0
+      address.province.trim().length > 0 &&
+      Boolean(addressValidation?.validated)
     );
-  }, [address, selectedMethodId, isRetiro]);
+  }, [address, addressValidation?.validated, isRetiro, selectedMethodId]);
 
   const setField =
     (field: keyof AddressForm) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setAddress((prev) => ({ ...prev, [field]: e.target.value }));
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const rawValue = event.target.value;
+      const nextValue =
+        field === "postal_code"
+          ? rawValue.toUpperCase().replace(/\s+/g, "")
+          : rawValue;
+
+      setAddress((current) => ({
+        ...current,
+        [field]: nextValue,
+        ...(field === "city" ? { locality_id: "" } : {}),
+      }));
+      setAddressValidation(null);
+      setCheckoutError(null);
     };
+
+  const handleProvinceChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const province = provinces.find((item) => item.id === event.target.value);
+    setAddress((current) => ({
+      ...current,
+      province: province?.name ?? "",
+      province_id: province?.id ?? "",
+      city: "",
+      locality_id: "",
+    }));
+    setLocalities([]);
+    setAddressValidation(null);
+    setCheckoutError(null);
+  };
+
+  const handleNormalizeAddress = async () => {
+    if (normalizingAddress) return;
+    if (!address.street.trim() || !address.number.trim() || !address.city.trim() || !address.postal_code.trim() || !address.province.trim()) {
+      setCheckoutError("Completa calle, numero, localidad, provincia y codigo postal para validar la direccion.");
+      return;
+    };
+
+    setNormalizingAddress(true);
+    setCheckoutError(null);
+
+    const result = await normalizeAddress({
+      street: address.street,
+      number: address.number,
+      floor: address.floor || undefined,
+      locality: address.city,
+      locality_id: address.locality_id || undefined,
+      province: address.province,
+      province_id: address.province_id || undefined,
+      postal_code: address.postal_code,
+    });
+
+    if (!isMountedRef.current) return;
+
+    if (isApiError(result)) {
+      setCheckoutError(result.error || "No pudimos validar la direccion.");
+      setAddressValidation(null);
+      setNormalizingAddress(false);
+      return;
+    }
+
+    setAddress({
+      street: result.normalized.street_name,
+      number: result.normalized.street_number,
+      floor: address.floor,
+      city: result.normalized.locality_name,
+      locality_id: result.normalized.locality_id,
+      postal_code: result.normalized.postal_code,
+      province: result.normalized.province_name,
+      province_id: result.normalized.province_id,
+    });
+    setAddressValidation({
+      validated: result.validated,
+      normalized: result.normalized,
+      validation: result.validation,
+    });
+    setCheckoutError(null);
+    setLocalities((current) => {
+      if (current.some((item) => item.id === result.normalized.locality_id)) {
+        return current;
+      }
+      return result.normalized.locality_id
+        ? [
+            {
+              id: result.normalized.locality_id,
+              name: result.normalized.locality_name,
+              municipality_id: "",
+              municipality_name: result.normalized.municipality_name,
+              department_id: "",
+              department_name: result.normalized.department_name,
+              province_id: result.normalized.province_id,
+              province_name: result.normalized.province_name,
+              display_name: result.normalized.full_address,
+            },
+            ...current,
+          ]
+        : current;
+    });
+    setNormalizingAddress(false);
+  };
 
   const handleMethodSelect = (methodId: string) => {
     setSelectedMethodId(methodId);
@@ -289,19 +489,24 @@ export function StepCheckout({
     setCheckoutError(null);
   };
 
-  // Totales para el resumen
   const printPrice = Math.round(selectedQuote.price_ars);
   const shippingPrice = estimatePrice ?? 0;
   const total = printPrice + shippingPrice;
   const totalIsPartial = !isRetiro && estimatePrice === null && !!selectedMethodId;
-
-  const selectedMethod = methods.find((m) => m.id === selectedMethodId);
+  const selectedMethod = methods.find((method) => method.id === selectedMethodId);
+  const selectedLocality = localities.find((item) => item.id === address.locality_id) ?? null;
   const deliveryDays = estimateEta ?? selectedMethod?.eta_days ?? selectedQuote.delivery_days;
-
-  // ─── Handler de pago ────────────────────────────────────────────────────────
+  const quantityLabel = `${cantidad ?? 1} ${(cantidad ?? 1) === 1 ? "pieza" : "piezas"}`;
+  const pickupReadyLabel = formatEstimatedDate(Math.max(1, selectedQuote.delivery_days || 0));
+  const thumbnailSrc = thumbnailUrl
+    ? thumbnailUrl.startsWith("data:")
+      ? thumbnailUrl
+      : `data:image/png;base64,${thumbnailUrl}`
+    : null;
 
   const handlePay = async () => {
     if (!isFormValid || creatingCheckout) return;
+
     setCreatingCheckout(true);
     setCheckoutError(null);
 
@@ -320,6 +525,8 @@ export function StepCheckout({
               city: address.city,
               postal_code: address.postal_code,
               province: address.province,
+              locality_id: address.locality_id || undefined,
+              province_id: address.province_id || undefined,
             },
       },
     });
@@ -327,87 +534,89 @@ export function StepCheckout({
     if (!isMountedRef.current) return;
 
     if (isApiError(result)) {
-      setCheckoutError(
-        result.error || "Error al iniciar el pago. Por favor intentá de nuevo."
-      );
+      setCheckoutError(result.error || "Error al iniciar el pago. Por favor intenta de nuevo.");
       setCreatingCheckout(false);
       return;
     }
 
-    // Redirigir a MercadoPago
     window.location.href = result.init_point;
   };
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
-
-  // Estado intermedio: acceptQuote aún en curso
   if (isAccepting) {
     return (
       <div className="flex flex-col items-center gap-4 py-12">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p className="text-[15px] font-medium text-foreground">
-          Confirmando tu selección...
-        </p>
+        <p className="text-[15px] font-medium text-foreground">Confirmando tu seleccion...</p>
       </div>
     );
   }
 
   return (
     <div>
-      {/* Encabezado */}
       <div className="mb-6">
         <h3 className="text-[24px] font-semibold leading-tight text-foreground">
-          {isEmpresa ? "Completar pedido" : "Datos de envío y pago"}
+          {isEmpresa ? "Completar pedido" : "Datos de envio y pago"}
         </h3>
         <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
           {isEmpresa
-            ? "Elegí cómo querés recibir tu pedido y confirmá el pago."
-            : "Elegí el método de envío, completá los datos y pasá al pago."}
+            ? "Elegi como queres recibir tu pedido y confirma el pago."
+            : "Elegi el metodo de envio, completa los datos y pasa al pago."}
         </p>
       </div>
 
-      {/* Layout: form izquierda, resumen derecha */}
+      {thumbnailSrc && (
+        <div className="mb-6 flex justify-center">
+          <div className="w-full max-w-[288px] rounded-2xl border border-border bg-white p-4 shadow-sm">
+            <TrimmedThumbnail
+              src={thumbnailSrc}
+              alt="Vista previa de la pieza"
+              className="mx-auto block max-h-[220px] w-auto max-w-full object-contain"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-6 md:grid-cols-[1fr_288px]">
-
-        {/* ── Columna izquierda: método + dirección ── */}
         <div className="space-y-6">
-
-          {/* Método de envío */}
           <div>
-            <p className="mb-3 text-[14px] font-semibold text-foreground">
-              Método de envío
-            </p>
+            <p className="mb-3 text-[14px] font-semibold text-foreground">Metodo de envio</p>
 
             {loadingMethods ? (
               <div className="flex items-center gap-2 py-4 text-muted-foreground">
                 <Loader2 size={16} className="animate-spin" />
-                <span className="text-[14px]">Cargando métodos...</span>
+                <span className="text-[14px]">Cargando metodos...</span>
               </div>
             ) : (
               <div className="space-y-2">
-                {methods.map((m) => (
+                {methods.map((method) => (
                   <ShippingMethodCard
-                    key={m.id}
-                    method={m}
-                    isSelected={selectedMethodId === m.id}
-                    estimatePrice={selectedMethodId === m.id ? estimatePrice : null}
-                    isLoadingEstimate={
-                      selectedMethodId === m.id && loadingEstimate
-                    }
-                    onSelect={() => handleMethodSelect(m.id)}
+                    key={method.id}
+                    method={method}
+                    isSelected={selectedMethodId === method.id}
+                    estimatePrice={selectedMethodId === method.id ? estimatePrice : null}
+                    isLoadingEstimate={selectedMethodId === method.id && loadingEstimate}
+                    pickupReadyLabel={pickupReadyLabel}
+                    onSelect={() => handleMethodSelect(method.id)}
                   />
                 ))}
               </div>
             )}
           </div>
 
-          {/* Dirección de entrega (solo para envío a domicilio) */}
           {selectedMethodId && !isRetiro && (
             <div>
               <div className="mb-3 flex items-center gap-2">
                 <MapPin size={15} className="text-primary" />
-                <p className="text-[14px] font-semibold text-foreground">
-                  Dirección de entrega
+                <p className="text-[14px] font-semibold text-foreground">Direccion de entrega</p>
+              </div>
+
+              <div className="mb-4 rounded-xl border border-border bg-muted/35 px-4 py-3">
+                <p className="text-[13px] font-medium text-foreground">
+                  Para PAQ.AR necesitamos una direccion sin ambiguedades.
+                </p>
+                <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                  Elegi la provincia, selecciona una localidad valida y luego confirma calle +
+                  altura para dejar la direccion normalizada antes del pago.
                 </p>
               </div>
 
@@ -427,7 +636,7 @@ export function StepCheckout({
 
                 <div>
                   <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
-                    Número
+                    Numero
                   </label>
                   <input
                     value={address.number}
@@ -440,35 +649,46 @@ export function StepCheckout({
 
                 <div className="sm:col-span-2">
                   <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
-                    Piso / Depto{" "}
-                    <span className="font-normal text-muted-foreground">
-                      (opcional)
-                    </span>
+                    Piso / Depto <span className="font-normal text-muted-foreground">(opcional)</span>
                   </label>
                   <input
                     value={address.floor}
                     onChange={setField("floor")}
                     className="w-full rounded-xl border border-input bg-background px-4 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Ej: 3° B"
+                    placeholder="Ej: 3 B"
                   />
                 </div>
 
                 <div>
                   <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
-                    Ciudad
+                    Localidad
                   </label>
                   <input
                     value={address.city}
                     onChange={setField("city")}
+                    list={`checkout-localities-${orderId}`}
                     className="w-full rounded-xl border border-input bg-background px-4 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Tu ciudad"
+                    placeholder={address.province_id ? "Busca tu localidad" : "Primero elige provincia"}
                     autoComplete="address-level2"
+                    disabled={!address.province_id}
                   />
+                  <datalist id={`checkout-localities-${orderId}`}>
+                    {localities.map((item) => (
+                      <option key={item.id} value={item.name} label={item.display_name} />
+                    ))}
+                  </datalist>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {loadingLocalities
+                      ? "Buscando localidades oficiales..."
+                      : selectedLocality
+                        ? selectedLocality.display_name
+                        : "Usamos el nomenclador oficial de Argentina para evitar ambiguedades."}
+                  </p>
                 </div>
 
                 <div>
                   <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
-                    Código Postal
+                    Codigo Postal
                   </label>
                   <input
                     value={address.postal_code}
@@ -485,30 +705,82 @@ export function StepCheckout({
                   <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
                     Provincia
                   </label>
-                  <input
-                    value={address.province}
-                    onChange={setField("province")}
+                  <select
+                    value={address.province_id}
+                    onChange={handleProvinceChange}
                     className="w-full rounded-xl border border-input bg-background px-4 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Ej: Buenos Aires"
-                    autoComplete="address-level1"
-                  />
+                    disabled={loadingProvinces}
+                  >
+                    <option value="">{loadingProvinces ? "Cargando provincias..." : "Selecciona una provincia"}</option>
+                    {provinces.map((province) => (
+                      <option key={province.id} value={province.id}>
+                        {province.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
+                <div className="sm:col-span-2">
+                  <button
+                    type="button"
+                    onClick={handleNormalizeAddress}
+                    disabled={normalizingAddress}
+                    className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/[0.06] px-4 py-3 text-[14px] font-semibold text-primary transition-colors hover:bg-primary/[0.1] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {normalizingAddress ? (
+                      <>
+                        <Loader2 size={15} className="animate-spin" />
+                        Validando direccion...
+                      </>
+                    ) : (
+                      <>
+                        <Check size={15} />
+                        Validar y normalizar direccion
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {addressValidation && (
+                  <div
+                    className={`sm:col-span-2 rounded-xl border px-4 py-3 ${
+                      addressValidation.validation.correo_status === "validated"
+                        ? "border-emerald-200 bg-emerald-50"
+                        : "border-amber-200 bg-amber-50"
+                    }`}
+                  >
+                    <p className="text-[13px] font-semibold text-foreground">
+                      {addressValidation.validation.correo_status === "validated"
+                        ? "Direccion validada"
+                        : "Direccion estructurada"}
+                    </p>
+                    <p className="mt-1 text-[12px] text-muted-foreground">
+                      {addressValidation.normalized.full_address}
+                    </p>
+                    <p className="mt-1 text-[12px] text-muted-foreground">
+                      {addressValidation.validation.message}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Retiro: aviso de coordinación */}
           {isRetiro && selectedMethodId && (
             <div className="rounded-xl border border-border bg-muted/40 px-4 py-3">
-              <p className="text-[14px] leading-relaxed text-muted-foreground">
-                Coordinamos el punto y horario de retiro con el proveedor. Te
-                avisamos por email cuando esté listo.
-              </p>
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-background">
+                  <Check size={18} className="text-emerald-500" />
+                </div>
+                <p className="pt-1 text-[14px] leading-relaxed text-muted-foreground">
+                  Coordinamos el punto y horario de retiro con el proveedor. Te avisamos por
+                  email cuando este listo.
+                </p>
+              </div>
             </div>
           )}
         </div>
 
-        {/* ── Columna derecha: resumen + botón de pago ── */}
         <div>
           <div className="rounded-2xl border border-border bg-muted/35 p-5">
             <p className="mb-4 text-[13px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -516,48 +788,41 @@ export function StepCheckout({
             </p>
 
             <div className="space-y-3">
-              {/* Proveedor */}
               <div className="flex items-start justify-between gap-3">
-                <span className="text-[14px] text-muted-foreground">
-                  Proveedor
-                </span>
+                <span className="text-[14px] text-muted-foreground">Proveedor</span>
                 <span className="max-w-[140px] text-right text-[14px] font-medium text-foreground">
                   {selectedQuote.provider_name}
                 </span>
               </div>
 
-              {/* Impresión */}
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-[14px] text-muted-foreground">
-                  Impresión
-                </span>
+              <div className="flex items-start justify-between gap-3">
+                <div className="text-[14px] text-muted-foreground">
+                  <p>Impresion 3D</p>
+                  <p>{quantityLabel}</p>
+                </div>
                 <span className="text-[14px] font-semibold text-foreground">
                   ${formatRoundedArs(printPrice)}
                 </span>
               </div>
 
-              {/* Envío */}
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[14px] text-muted-foreground">Envío</span>
+                <span className="text-[14px] text-muted-foreground">Envio</span>
                 <span className="text-[14px] font-semibold text-foreground">
                   {loadingEstimate ? (
                     <Loader2 size={14} className="animate-spin text-muted-foreground" />
+                  ) : isRetiro ? (
+                    "Pick up Cliente"
                   ) : estimatePrice === null ? (
-                    <span className="text-muted-foreground">—</span>
-                  ) : estimatePrice === 0 ? (
-                    <span className="text-accent">Gratis</span>
+                    <span className="text-muted-foreground">-</span>
                   ) : (
                     `$${formatRoundedArs(estimatePrice)}`
                   )}
                 </span>
               </div>
 
-              {/* Total */}
               <div className="border-t border-border pt-3">
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-[15px] font-semibold text-foreground">
-                    Total
-                  </span>
+                  <span className="text-[15px] font-semibold text-foreground">Total</span>
                   <span className="text-[22px] font-extrabold leading-tight text-foreground">
                     {totalIsPartial && (
                       <span className="mr-0.5 text-[16px] font-medium text-muted-foreground">
@@ -569,27 +834,20 @@ export function StepCheckout({
                 </div>
                 {totalIsPartial && (
                   <p className="mt-1 text-right text-[11px] text-muted-foreground">
-                    Completá el CP para calcular el envío exacto
+                    Completa el CP para calcular el envio exacto
                   </p>
                 )}
               </div>
 
-              {/* Entrega estimada + referencia */}
               <div className="space-y-1 border-t border-border pt-3">
-                {deliveryDays !== null && deliveryDays !== undefined && deliveryDays > 0 && (
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[12px] text-muted-foreground">
-                      Entrega estimada
-                    </span>
-                    <span className="text-[12px] font-medium text-foreground">
-                      {deliveryDays} días hábiles
-                    </span>
-                  </div>
-                )}
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-[12px] text-muted-foreground">
-                    Referencia
+                  <span className="text-[12px] text-muted-foreground">Entrega estimada</span>
+                  <span className="text-[12px] font-medium text-foreground">
+                    {isRetiro ? pickupReadyLabel : `${deliveryDays} dias habiles`}
                   </span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[12px] text-muted-foreground">Referencia</span>
                   <span className="font-mono text-[12px] font-medium text-foreground">
                     {orderId}
                   </span>
@@ -597,20 +855,13 @@ export function StepCheckout({
               </div>
             </div>
 
-            {/* Error de checkout */}
             {checkoutError && (
               <div className="mt-4 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-3">
-                <AlertCircle
-                  size={14}
-                  className="mt-0.5 shrink-0 text-destructive"
-                />
-                <p className="text-[13px] leading-snug text-destructive">
-                  {checkoutError}
-                </p>
+                <AlertCircle size={14} className="mt-0.5 shrink-0 text-destructive" />
+                <p className="text-[13px] leading-snug text-destructive">{checkoutError}</p>
               </div>
             )}
 
-            {/* Botón de pago */}
             <button
               onClick={handlePay}
               disabled={!isFormValid || creatingCheckout}
@@ -630,19 +881,18 @@ export function StepCheckout({
             </button>
 
             <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
-              Serás redirigido a la plataforma segura de MercadoPago
+              Seras redirigido a la plataforma segura de MercadoPago
             </p>
           </div>
         </div>
       </div>
 
-      {/* Botón Atrás */}
       <button
         onClick={onBack}
         disabled={creatingCheckout}
         className="mt-6 rounded-xl border border-border px-5 py-3 text-[14px] font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
       >
-        Atrás
+        Atras
       </button>
     </div>
   );

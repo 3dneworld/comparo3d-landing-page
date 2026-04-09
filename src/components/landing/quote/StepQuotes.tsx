@@ -12,7 +12,7 @@ import {
   Star,
   Truck,
 } from "lucide-react";
-import { QuoteOption } from "@/lib/api";
+import { geocodeAddress, isApiError, QuoteOption } from "@/lib/api";
 import { Switch } from "@/components/ui/switch";
 import { TrimmedThumbnail } from "./TrimmedThumbnail";
 
@@ -45,6 +45,30 @@ interface DisplayQuote extends QuoteOption {
 }
 
 const LOCATION_STORAGE_KEY = "comparo3d_location";
+const LOCATION_ADDRESS_STORAGE_KEY = "comparo3d_location_address";
+
+interface NearbyAddressForm {
+  street: string;
+  number: string;
+  floor: string;
+  city: string;
+  postal_code: string;
+  province: string;
+}
+
+type NearbyNotice =
+  | { type: "address-help"; message: string }
+  | { type: "plain"; message: string }
+  | null;
+
+const defaultNearbyAddress: NearbyAddressForm = {
+  street: "",
+  number: "",
+  floor: "",
+  city: "",
+  postal_code: "",
+  province: "",
+};
 
 const formatRoundedArs = (value: number) =>
   Math.round(Number(value) || 0).toLocaleString("es-AR");
@@ -293,10 +317,10 @@ function SortButton({
   return (
     <button
       onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+      className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
         active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-background text-muted-foreground hover:border-primary/30 hover:text-foreground"
+          ? "border-primary/70 bg-primary/10 text-primary"
+          : "border-transparent bg-transparent text-muted-foreground hover:border-primary/20 hover:text-foreground"
       }`}
     >
       {label}
@@ -324,9 +348,21 @@ export function StepQuotes({
   const [filterCertified, setFilterCertified] = useState(false);
   const [filterNearby, setFilterNearby] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
-  const [nearbyNotice, setNearbyNotice] = useState<string | null>(null);
+  const [nearbyNotice, setNearbyNotice] = useState<NearbyNotice>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [draftQuantity, setDraftQuantity] = useState(clampQuantity(cantidad ?? 1));
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const [addressForm, setAddressForm] = useState<NearbyAddressForm>(() => {
+    try {
+      const raw = localStorage.getItem(LOCATION_ADDRESS_STORAGE_KEY);
+      if (!raw) return defaultNearbyAddress;
+      const parsed = JSON.parse(raw) as Partial<NearbyAddressForm>;
+      return { ...defaultNearbyAddress, ...parsed };
+    } catch {
+      return defaultNearbyAddress;
+    }
+  });
 
   useEffect(() => {
     try {
@@ -340,6 +376,10 @@ export function StepQuotes({
       // ignore malformed persisted location
     }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(LOCATION_ADDRESS_STORAGE_KEY, JSON.stringify(addressForm));
+  }, [addressForm]);
 
   useEffect(() => {
     setDraftQuantity(clampQuantity(cantidad ?? 1));
@@ -403,6 +443,7 @@ export function StepQuotes({
     if (!shouldEnable) {
       setFilterNearby(false);
       setNearbyNotice(null);
+      setShowAddressForm(false);
       return;
     }
 
@@ -413,7 +454,11 @@ export function StepQuotes({
     }
 
     if (!navigator.geolocation) {
-      setNearbyNotice("Tu navegador no permite usar geolocalizacion.");
+      setNearbyNotice({
+        type: "address-help",
+        message:
+          "No pudimos obtener tu ubicacion. Con tu domicilio podemos darte los proveedores mas cercanos a vos.",
+      });
       return;
     }
 
@@ -425,14 +470,69 @@ export function StepQuotes({
         setUserLocation(location);
         setFilterNearby(true);
         setIsLocating(false);
+        setShowAddressForm(false);
         localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(location));
       },
       () => {
-        setNearbyNotice("No pudimos obtener tu ubicacion. Revisa los permisos del navegador.");
+        setNearbyNotice({
+          type: "address-help",
+          message:
+            "No pudimos obtener tu ubicacion. Con tu domicilio podemos darte los proveedores mas cercanos a vos.",
+        });
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
     );
+  };
+
+  const handleAddressFieldChange =
+    (field: keyof NearbyAddressForm) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      setAddressForm((current) => ({ ...current, [field]: event.target.value }));
+    };
+
+  const handleAddressSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isSavingAddress) return;
+
+    if (
+      !addressForm.street.trim() ||
+      !addressForm.number.trim() ||
+      !addressForm.city.trim() ||
+      !addressForm.postal_code.trim() ||
+      !addressForm.province.trim()
+    ) {
+      setNearbyNotice({
+        type: "plain",
+        message: "Completa calle, numero, ciudad, codigo postal y provincia para ubicar tu domicilio.",
+      });
+      return;
+    }
+
+    setIsSavingAddress(true);
+    setNearbyNotice(null);
+
+    const result = await geocodeAddress({
+      street: addressForm.street,
+      number: addressForm.number,
+      floor: addressForm.floor || undefined,
+      city: addressForm.city,
+      postal_code: addressForm.postal_code,
+      province: addressForm.province,
+    });
+
+    if (isApiError(result)) {
+      setNearbyNotice({ type: "plain", message: result.error });
+      setIsSavingAddress(false);
+      return;
+    }
+
+    const location = { lat: result.lat, lng: result.lng };
+    setUserLocation(location);
+    setFilterNearby(true);
+    setShowAddressForm(false);
+    setNearbyNotice(null);
+    setIsSavingAddress(false);
+    localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(location));
   };
 
   const submitQuantityUpdate = () => {
@@ -561,28 +661,131 @@ export function StepQuotes({
           </div>
 
           {(nearbyNotice || (filterNearby && userLocation && !hasNearbyCoordinates)) && (
-            <p className="mt-2 text-[12px] text-muted-foreground">
-              {nearbyNotice || "No encontramos proveedores con coordenadas publicas para ordenar por cercania."}
-            </p>
-          )}
+            <div className="mt-2 space-y-3">
+              {nearbyNotice && (
+                <p className="text-[12px] text-muted-foreground">
+                  {nearbyNotice.type === "address-help" ? (
+                    <>
+                      No pudimos obtener tu ubicacion. Con{" "}
+                      <button
+                        type="button"
+                        onClick={() => setShowAddressForm((current) => !current)}
+                        className="font-medium text-primary underline underline-offset-2 transition-colors hover:text-primary/80"
+                      >
+                        tu domicilio
+                      </button>{" "}
+                      podemos darte los proveedores mas cercanos a vos.
+                    </>
+                  ) : (
+                    nearbyNotice.message
+                  )}
+                </p>
+              )}
 
-          <div className="mt-6 flex flex-wrap items-center gap-2">
-            <SortButton
-              active={sortMode === "recommended"}
-              label="Recomendado"
-              onClick={() => setSortMode("recommended")}
-            />
-            <SortButton
-              active={sortMode === "price"}
-              label="Precio"
-              onClick={() => setSortMode("price")}
-            />
-            <SortButton
-              active={sortMode === "rating"}
-              label="Rating"
-              onClick={() => setSortMode("rating")}
-            />
-          </div>
+              {!nearbyNotice && filterNearby && userLocation && !hasNearbyCoordinates && (
+                <p className="text-[12px] text-muted-foreground">
+                  No encontramos proveedores con coordenadas publicas para ordenar por cercania.
+                </p>
+              )}
+
+              {showAddressForm && (
+                <form
+                  onSubmit={handleAddressSubmit}
+                  className="rounded-2xl border border-border bg-muted/30 p-4"
+                >
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-[13px] font-semibold text-foreground">
+                        Calle
+                      </label>
+                      <input
+                        value={addressForm.street}
+                        onChange={handleAddressFieldChange("street")}
+                        className="w-full rounded-xl border border-input bg-background px-4 py-3 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="Nombre de la calle"
+                        autoComplete="street-address"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[13px] font-semibold text-foreground">
+                        Numero
+                      </label>
+                      <input
+                        value={addressForm.number}
+                        onChange={handleAddressFieldChange("number")}
+                        className="w-full rounded-xl border border-input bg-background px-4 py-3 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="Nro. de puerta"
+                        autoComplete="address-line2"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="mb-1.5 block text-[13px] font-semibold text-foreground">
+                        Piso / Depto <span className="font-normal text-muted-foreground">(opcional)</span>
+                      </label>
+                      <input
+                        value={addressForm.floor}
+                        onChange={handleAddressFieldChange("floor")}
+                        className="w-full rounded-xl border border-input bg-background px-4 py-3 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="Ej: 3 B"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[13px] font-semibold text-foreground">
+                        Ciudad
+                      </label>
+                      <input
+                        value={addressForm.city}
+                        onChange={handleAddressFieldChange("city")}
+                        className="w-full rounded-xl border border-input bg-background px-4 py-3 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="Tu ciudad"
+                        autoComplete="address-level2"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-[13px] font-semibold text-foreground">
+                        Codigo Postal
+                      </label>
+                      <input
+                        value={addressForm.postal_code}
+                        onChange={handleAddressFieldChange("postal_code")}
+                        className="w-full rounded-xl border border-input bg-background px-4 py-3 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="Ej: 1425"
+                        autoComplete="postal-code"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="mb-1.5 block text-[13px] font-semibold text-foreground">
+                        Provincia
+                      </label>
+                      <input
+                        value={addressForm.province}
+                        onChange={handleAddressFieldChange("province")}
+                        className="w-full rounded-xl border border-input bg-background px-4 py-3 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="Ej: Buenos Aires"
+                        autoComplete="address-level1"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={isSavingAddress}
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+                    >
+                      {isSavingAddress && <Loader2 size={14} className="animate-spin" />}
+                      Usar este domicilio
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
 
           {isProcessing && (
             <div className="mt-6 flex flex-col items-center gap-4 py-8">
@@ -616,6 +819,26 @@ export function StepQuotes({
                   onSelect={() => onSelectQuote(quote.quote_option_uid)}
                 />
               ))}
+
+              <div className="flex justify-end pt-1">
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/70 px-2 py-1 text-[11px] text-muted-foreground">
+                  <SortButton
+                    active={sortMode === "recommended"}
+                    label="Recomendado"
+                    onClick={() => setSortMode("recommended")}
+                  />
+                  <SortButton
+                    active={sortMode === "price"}
+                    label="Precio"
+                    onClick={() => setSortMode("price")}
+                  />
+                  <SortButton
+                    active={sortMode === "rating"}
+                    label="Rating"
+                    onClick={() => setSortMode("rating")}
+                  />
+                </div>
+              </div>
             </div>
           )}
 

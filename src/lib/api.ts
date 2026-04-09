@@ -314,6 +314,83 @@ export interface ShippingEstimateResponse {
   currency: string;
 }
 
+export interface AddressProvince {
+  id: string;
+  name: string;
+  correo_code: string;
+}
+
+export interface AddressLocality {
+  id: string;
+  name: string;
+  municipality_id: string;
+  municipality_name: string;
+  department_id: string;
+  department_name: string;
+  province_id: string;
+  province_name: string;
+  display_name: string;
+}
+
+export interface GeocodeAddressRequest {
+  street: string;
+  number: string;
+  floor?: string;
+  city: string;
+  postal_code: string;
+  province: string;
+}
+
+export interface GeocodeAddressResponse {
+  success: true;
+  lat: number;
+  lng: number;
+  display_name?: string;
+}
+
+export interface NormalizeAddressRequest {
+  street: string;
+  number: string;
+  floor?: string;
+  locality: string;
+  locality_id?: string;
+  province: string;
+  province_id?: string;
+  postal_code: string;
+}
+
+export interface NormalizeAddressResponse {
+  success: true;
+  validated: boolean;
+  normalized: {
+    street_name: string;
+    street_number: string;
+    locality_name: string;
+    locality_id: string;
+    municipality_name: string;
+    department_name: string;
+    province_id: string;
+    province_name: string;
+    correo_province_code: string;
+    postal_code_input: string;
+    postal_code: string;
+    correo_cpa?: string;
+    address_line1: string;
+    address_line2: string;
+    full_address: string;
+    lat?: number | null;
+    lng?: number | null;
+  };
+  validation: {
+    georef_status: string;
+    correo_status: string;
+    correo_configured: boolean;
+    source: string;
+    message: string;
+    correo_summary?: Record<string, unknown>;
+  };
+}
+
 /** Obtener métodos de envío disponibles. */
 export async function getShippingMethods(): Promise<ShippingMethodsResponse | ApiError> {
   try {
@@ -350,6 +427,107 @@ export async function getShippingEstimate(
 
 // ─── Checkout (MercadoPago) ──────────────────────────────────────────────────
 
+export async function geocodeAddress(
+  request: GeocodeAddressRequest
+): Promise<GeocodeAddressResponse | ApiError> {
+  try {
+    const q = [
+      `${request.street} ${request.number}`.trim(),
+      request.floor?.trim(),
+      request.city.trim(),
+      request.postal_code.trim(),
+      request.province.trim(),
+      "Argentina",
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    const params = new URLSearchParams({
+      format: "jsonv2",
+      limit: "1",
+      countrycodes: "ar",
+      q,
+    });
+
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+      headers: { Accept: "application/json" },
+    });
+    const data = await res.json();
+
+    if (!res.ok || !Array.isArray(data) || data.length === 0) {
+      return { success: false, error: "No pudimos ubicar ese domicilio. Revisa los datos e intenta de nuevo." };
+    }
+
+    const first = data[0] as { lat?: string; lon?: string; display_name?: string };
+    const lat = Number(first.lat);
+    const lng = Number(first.lon);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return { success: false, error: "No pudimos convertir ese domicilio en una ubicacion valida." };
+    }
+
+    return { success: true, lat, lng, display_name: first.display_name };
+  } catch {
+    return { success: false, error: "No se pudo validar tu domicilio en este momento." };
+  }
+}
+
+export async function getAddressProvinces(): Promise<{ success: true; items: AddressProvince[] } | ApiError> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/address/provinces`);
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || "Error al obtener provincias" };
+    }
+    return data as { success: true; items: AddressProvince[] };
+  } catch {
+    return { success: false, error: "Error de conexión al obtener provincias" };
+  }
+}
+
+export async function searchAddressLocalities(params: {
+  province_id?: string;
+  province?: string;
+  q?: string;
+  max?: number;
+}): Promise<{ success: true; items: AddressLocality[] } | ApiError> {
+  try {
+    const query = new URLSearchParams();
+    if (params.province_id) query.set("province_id", params.province_id);
+    if (params.province) query.set("province", params.province);
+    if (params.q) query.set("q", params.q);
+    if (typeof params.max === "number") query.set("max", String(params.max));
+
+    const res = await fetch(`${API_BASE_URL}/api/address/localities?${query.toString()}`);
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || "Error al buscar localidades" };
+    }
+    return data as { success: true; items: AddressLocality[] };
+  } catch {
+    return { success: false, error: "Error de conexión al buscar localidades" };
+  }
+}
+
+export async function normalizeAddress(
+  request: NormalizeAddressRequest
+): Promise<NormalizeAddressResponse | ApiError> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/address/normalize`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || "No pudimos validar la dirección" };
+    }
+    return data as NormalizeAddressResponse;
+  } catch {
+    return { success: false, error: "Error de conexión al validar la dirección" };
+  }
+}
+
 export interface CheckoutAddress {
   street: string;
   number: string;
@@ -357,6 +535,8 @@ export interface CheckoutAddress {
   city: string;
   postal_code: string;
   province: string;
+  locality_id?: string;
+  province_id?: string;
 }
 
 export interface CreateCheckoutRequest {

@@ -663,6 +663,8 @@ const QuoteSection = () => {
               sessionId={data.sessionId}
               isEmpresa={isEmpresa}
               isAccepting={flow.isLoading}
+              cantidad={flow.cantidad ?? (data.cantidad ? Number(data.cantidad) : 1)}
+              thumbnailUrl={flow.thumbnailUrl || data.thumbnailUrl || null}
               onBack={() => {
                 flow.clearError();
                 goToStep(3);
