@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import {
   getAddressProvinces,
+  getPostalLocalityCandidates,
   normalizeAddress,
   searchAddressLocalities,
   createCheckout,
@@ -96,6 +97,11 @@ const formatEstimatedDate = (days: number) => {
     year: "numeric",
   }).format(baseDate);
 };
+
+const getPostalDigits = (value: string) => value.replace(/\D/g, "").slice(0, 4);
+
+const buildPostalCode = (provinceCode: string, digits: string) =>
+  provinceCode ? `${provinceCode}${digits}` : "";
 
 function ShippingMethodCard({
   method,
@@ -188,6 +194,7 @@ export function StepCheckout({
 }: StepCheckoutProps) {
   const [address, setAddress] = useState<AddressForm>(defaultAddress);
   const [provinces, setProvinces] = useState<AddressProvince[]>([]);
+  const [allLocalities, setAllLocalities] = useState<AddressLocality[]>([]);
   const [localities, setLocalities] = useState<AddressLocality[]>([]);
   const [methods, setMethods] = useState<ShippingMethod[]>([]);
   const [selectedMethodId, setSelectedMethodId] = useState("");
@@ -206,6 +213,9 @@ export function StepCheckout({
   const localityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
   const skipNextCheckoutSaveRef = useRef(false);
+  const selectedProvince = provinces.find((item) => item.id === address.province_id) ?? null;
+  const postalPrefix = selectedProvince?.correo_code ?? "";
+  const postalDigits = getPostalDigits(address.postal_code);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -290,6 +300,7 @@ export function StepCheckout({
 
   useEffect(() => {
     if (!address.province_id) {
+      setAllLocalities([]);
       setLocalities([]);
       setLoadingLocalities(false);
       return;
@@ -305,11 +316,13 @@ export function StepCheckout({
       if (!isMountedRef.current || cancelled) return;
 
       if (isApiError(result)) {
+        setAllLocalities([]);
         setLocalities([]);
         setLoadingLocalities(false);
         return;
       }
 
+      setAllLocalities(result.items);
       setLocalities(result.items);
       setLoadingLocalities(false);
 
@@ -337,6 +350,14 @@ export function StepCheckout({
           }
         }
 
+        if (result.items.length === 1) {
+          return {
+            ...current,
+            city: result.items[0].name,
+            locality_id: result.items[0].id,
+          };
+        }
+
         return current;
       });
     })();
@@ -345,6 +366,52 @@ export function StepCheckout({
       cancelled = true;
     };
   }, [address.province_id]);
+
+  useEffect(() => {
+    if (!address.province_id) return;
+    if (!allLocalities.length) {
+      setLocalities([]);
+      return;
+    }
+
+    if (postalDigits.length !== 4) {
+      setLocalities(allLocalities);
+      setAddress((current) => {
+        if (!current.locality_id) return current;
+        return allLocalities.some((item) => item.id === current.locality_id)
+          ? current
+          : { ...current, city: "", locality_id: "" };
+      });
+      return;
+    }
+
+    if (localityDebounceRef.current) clearTimeout(localityDebounceRef.current);
+    localityDebounceRef.current = setTimeout(async () => {
+      const result = await getPostalLocalityCandidates({
+        province_id: address.province_id,
+        postal_code: address.postal_code,
+      });
+      if (!isMountedRef.current) return;
+
+      const nextLocalities =
+        !isApiError(result) && result.items.length > 0 ? result.items : allLocalities;
+      setLocalities(nextLocalities);
+      setAddress((current) => {
+        const selected = nextLocalities.find((item) => item.id === current.locality_id);
+        if (selected) {
+          return { ...current, city: selected.name };
+        }
+        if (nextLocalities.length === 1) {
+          return {
+            ...current,
+            city: nextLocalities[0].name,
+            locality_id: nextLocalities[0].id,
+          };
+        }
+        return { ...current, city: "", locality_id: "" };
+      });
+    }, 250);
+  }, [address.postal_code, address.province_id, allLocalities, postalDigits.length]);
 
   const isRetiro = selectedMethodId === "retiro";
 
@@ -355,7 +422,7 @@ export function StepCheckout({
       return;
     }
 
-    if (address.postal_code.length < 4) {
+    if (postalDigits.length < 4) {
       setEstimatePrice(null);
       setEstimateEta(null);
       return;
@@ -384,7 +451,7 @@ export function StepCheckout({
 
       setLoadingEstimate(false);
     }, 600);
-  }, [address.postal_code, address.province, isRetiro, selectedMethodId]);
+  }, [address.postal_code, address.province, isRetiro, postalDigits.length, selectedMethodId]);
 
   const isFormValid = useMemo(() => {
     if (!selectedMethodId) return false;
@@ -394,29 +461,36 @@ export function StepCheckout({
       address.street.trim().length > 0 &&
       address.number.trim().length > 0 &&
       address.city.trim().length > 0 &&
-      address.postal_code.length >= 4 &&
+      postalDigits.length === 4 &&
       address.province.trim().length > 0 &&
       Boolean(addressValidation?.validated)
     );
-  }, [address, addressValidation?.validated, isRetiro, selectedMethodId]);
+  }, [address, addressValidation?.validated, isRetiro, postalDigits.length, selectedMethodId]);
 
   const setField =
     (field: keyof AddressForm) =>
     (event: ChangeEvent<HTMLInputElement>) => {
       const rawValue = event.target.value;
-      const nextValue =
-        field === "postal_code"
-          ? rawValue.toUpperCase().replace(/\s+/g, "")
-          : rawValue;
-
       setAddress((current) => ({
         ...current,
-        [field]: nextValue,
+        [field]: rawValue,
         ...(field === "city" ? { locality_id: "" } : {}),
       }));
       setAddressValidation(null);
       setCheckoutError(null);
     };
+
+  const handlePostalDigitsChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const digits = getPostalDigits(event.target.value);
+    setAddress((current) => ({
+      ...current,
+      postal_code: buildPostalCode(postalPrefix, digits),
+      city: digits.length === 4 ? current.city : "",
+      locality_id: digits.length === 4 ? current.locality_id : "",
+    }));
+    setAddressValidation(null);
+    setCheckoutError(null);
+  };
 
   const handleProvinceChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const province = provinces.find((item) => item.id === event.target.value);
@@ -426,7 +500,9 @@ export function StepCheckout({
       province_id: province?.id ?? "",
       city: "",
       locality_id: "",
+      postal_code: "",
     }));
+    setAllLocalities([]);
     setLocalities([]);
     setAddressValidation(null);
     setCheckoutError(null);
@@ -646,8 +722,8 @@ export function StepCheckout({
                   Para PAQ.AR necesitamos una direccion sin ambiguedades.
                 </p>
                 <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-                  Elegi la provincia, selecciona una localidad valida y luego confirma calle +
-                  altura para dejar la direccion normalizada antes del pago.
+                  La provincia fija la letra del CPA. Luego completas los 4 digitos, elegis la
+                  localidad sugerida y confirmas calle + altura antes del pago.
                 </p>
               </div>
 
@@ -728,14 +804,16 @@ export function StepCheckout({
                     </option>
                     {localities.map((item) => (
                       <option key={item.id} value={item.id}>
-                        {item.display_name}
+                        {item.name}
                       </option>
                     ))}
                   </select>
                   <p className="mt-1 text-[11px] text-muted-foreground">
                     {selectedLocality
                       ? selectedLocality.display_name
-                      : "Mostramos solo localidades oficiales de la provincia elegida."}
+                      : postalDigits.length === 4
+                        ? "Filtramos las localidades compatibles con el CPA cuando Correo Argentino lo define."
+                        : "Mostramos solo localidades oficiales de la provincia elegida."}
                   </p>
                 </div>
 
@@ -743,15 +821,26 @@ export function StepCheckout({
                   <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
                     Codigo Postal
                   </label>
-                  <input
-                    value={address.postal_code}
-                    onChange={setField("postal_code")}
-                    inputMode="numeric"
-                    maxLength={8}
-                    className="w-full rounded-xl border border-input bg-background px-4 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Ej: 1425"
-                    autoComplete="postal-code"
-                  />
+                  <div className="flex max-w-[220px] overflow-hidden rounded-xl border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
+                    <span className="flex min-w-[52px] items-center justify-center border-r border-input bg-muted px-3 text-[15px] font-semibold text-foreground">
+                      {postalPrefix || "-"}
+                    </span>
+                    <input
+                      value={postalDigits}
+                      onChange={handlePostalDigitsChange}
+                      inputMode="numeric"
+                      maxLength={4}
+                      disabled={!postalPrefix}
+                      className="w-full bg-transparent px-4 py-3 text-[15px] text-foreground focus:outline-none disabled:cursor-not-allowed disabled:text-muted-foreground"
+                      placeholder={postalPrefix ? "1043" : "Primero selecciona provincia"}
+                      autoComplete="postal-code"
+                    />
+                  </div>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {postalPrefix
+                      ? `La letra ${postalPrefix} queda fijada por la provincia elegida.`
+                      : "Primero selecciona la provincia para fijar la letra oficial del CPA."}
+                  </p>
                 </div>
 
                 <div className="sm:col-span-2">

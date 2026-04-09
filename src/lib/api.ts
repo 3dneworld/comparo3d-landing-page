@@ -509,6 +509,28 @@ export async function searchAddressLocalities(params: {
   }
 }
 
+export async function getPostalLocalityCandidates(params: {
+  province_id?: string;
+  province?: string;
+  postal_code: string;
+}): Promise<{ success: true; items: AddressLocality[] } | ApiError> {
+  try {
+    const query = new URLSearchParams();
+    if (params.province_id) query.set("province_id", params.province_id);
+    if (params.province) query.set("province", params.province);
+    query.set("postal_code", params.postal_code);
+
+    const res = await fetch(`${API_BASE_URL}/api/address/postal-candidates?${query.toString()}`);
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || "Error al sugerir localidades por codigo postal" };
+    }
+    return data as { success: true; items: AddressLocality[] };
+  } catch {
+    return { success: false, error: "Error de conexión al sugerir localidades por codigo postal" };
+  }
+}
+
 export async function normalizeAddress(
   request: NormalizeAddressRequest
 ): Promise<NormalizeAddressResponse | ApiError> {
