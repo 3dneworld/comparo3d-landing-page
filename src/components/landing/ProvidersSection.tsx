@@ -1,3 +1,6 @@
+import AnimateOnScroll from "@/components/AnimateOnScroll";
+import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
+
 const providers = [
   { name: "PAL",      logo: "/logos/PAL.png"        },
   { name: "Piscobot", logo: "/logos/Piscobot.png"    },
@@ -10,17 +13,20 @@ const ProvidersSection = () => {
   return (
     <section className="py-12 md:py-16 bg-background">
       <div className="container">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-            Red de proveedores evaluados
-          </h2>
-          <p className="mt-2 text-sm md:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Trabajamos con proveedores seleccionados por capacidad técnica, materiales, cumplimiento y calidad.
-          </p>
-        </div>
+        <AnimateOnScroll variant="fade-up">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+              Red de proveedores evaluados
+            </h2>
+            <p className="mt-2 text-sm md:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+              Trabajamos con proveedores seleccionados por capacidad técnica, materiales, cumplimiento y calidad.
+            </p>
+          </div>
+        </AnimateOnScroll>
 
-        <div className="flex flex-wrap justify-center gap-4 md:gap-5 max-w-4xl mx-auto">
+        <StaggerChildren staggerDelay={0.08} className="flex flex-wrap justify-center gap-4 md:gap-5 max-w-4xl mx-auto">
           {providers.map((p) => (
+            <StaggerItem key={p.name}>
             <div
               key={p.name}
               className="flex flex-col items-center rounded-xl border border-border bg-card p-4 md:p-5 w-[calc(50%-8px)] sm:w-[calc(33.333%-14px)] md:w-[calc(20%-16px)] min-w-[130px] max-w-[180px]"
@@ -35,8 +41,9 @@ const ProvidersSection = () => {
               </div>
               <span className="text-sm font-semibold text-foreground text-center">{p.name}</span>
             </div>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerChildren>
       </div>
     </section>
   );

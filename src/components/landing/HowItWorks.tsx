@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { Upload, Check, BarChart3, Truck, FileStack, ShieldCheck } from "lucide-react";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
+import AnimateOnScroll from "@/components/AnimateOnScroll";
+import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
 
 interface StepItem {
   step: string;
@@ -85,17 +87,20 @@ const HowItWorks = () => {
   return (
     <section id="como-funciona" className="bg-background py-14 md:py-18">
       <div className="container max-w-7xl">
-        <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
-          <h2 className="text-3xl font-bold leading-tight text-foreground md:text-4xl">
-            {copy.title}
-          </h2>
-          <p className="mx-auto mt-4 max-w-3xl text-[15px] leading-relaxed text-muted-foreground md:text-[17px]">
-            {copy.support}
-          </p>
-        </div>
+        <AnimateOnScroll variant="fade-up">
+          <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
+            <h2 className="text-3xl font-bold leading-tight text-foreground md:text-4xl">
+              {copy.title}
+            </h2>
+            <p className="mx-auto mt-4 max-w-3xl text-[15px] leading-relaxed text-muted-foreground md:text-[17px]">
+              {copy.support}
+            </p>
+          </div>
+        </AnimateOnScroll>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 xl:gap-5">
+        <StaggerChildren staggerDelay={0.12} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 xl:gap-5">
           {steps.map((step) => (
+            <StaggerItem key={step.title}>
             <article
               key={step.title}
               className="group relative flex min-h-[250px] flex-col rounded-2xl border border-border bg-card px-5 py-5 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/18 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.22)] md:px-6 md:py-6"
@@ -118,8 +123,9 @@ const HowItWorks = () => {
                 {step.desc}
               </p>
             </article>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerChildren>
       </div>
     </section>
   );

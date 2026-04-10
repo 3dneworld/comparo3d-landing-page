@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
+import AnimateOnScroll from "@/components/AnimateOnScroll";
+import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
 
 interface FAQItem {
   q: string;
@@ -102,25 +104,28 @@ const FAQ = () => {
   return (
     <section id="faq" className="bg-background py-12 md:py-16">
       <div className="container max-w-5xl">
-        <div className="mx-auto mb-8 max-w-3xl text-center md:mb-10">
-          <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.16em] text-primary md:text-[13px]">
-            {copy.eyebrow}
-          </p>
+        <AnimateOnScroll variant="fade-up">
+          <div className="mx-auto mb-8 max-w-3xl text-center md:mb-10">
+            <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.16em] text-primary md:text-[13px]">
+              {copy.eyebrow}
+            </p>
 
-          <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
-            {copy.title}
-          </h2>
+            <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
+              {copy.title}
+            </h2>
 
-          <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
-            {copy.support}
-          </p>
-        </div>
+            <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
+              {copy.support}
+            </p>
+          </div>
+        </AnimateOnScroll>
 
-        <div className="space-y-4">
+        <StaggerChildren staggerDelay={0.08} className="space-y-4">
           {faqs.map((faq, index) => {
             const isOpen = openIndex === index;
 
             return (
+              <StaggerItem key={faq.q}>
               <div
                 key={faq.q}
                 className={[
@@ -161,9 +166,11 @@ const FAQ = () => {
                   </div>
                 )}
               </div>
+              </div>
+              </StaggerItem>
             );
           })}
-        </div>
+        </StaggerChildren>
       </div>
     </section>
   );

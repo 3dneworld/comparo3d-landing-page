@@ -1,6 +1,8 @@
 import { ShieldCheck, Lock, Truck, BarChart3, Layers, Users } from "lucide-react";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import type { LucideIcon } from "lucide-react";
+import AnimateOnScroll from "@/components/AnimateOnScroll";
+import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
 
 interface TrustCard {
   icon: LucideIcon;
@@ -83,19 +85,22 @@ const TrustStrip = () => {
   return (
     <section className="border-y border-border bg-card py-12 md:py-16">
       <div className="container">
-        <div className="mx-auto mb-8 max-w-3xl text-center md:mb-10">
+        <AnimateOnScroll variant="fade-up">
+          <div className="mx-auto mb-8 max-w-3xl text-center md:mb-10">
 
-          <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
-            {header.headline}
-          </h2>
+            <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
+              {header.headline}
+            </h2>
 
-          <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
-            {header.support}
-          </p>
-        </div>
+            <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
+              {header.support}
+            </p>
+          </div>
+        </AnimateOnScroll>
 
-        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+        <StaggerChildren className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
           {items.map((item) => (
+            <StaggerItem key={item.label}>
             <article
               key={item.label}
               className={[
@@ -133,8 +138,9 @@ const TrustStrip = () => {
                 </p>
               </div>
             </article>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerChildren>
       </div>
     </section>
   );

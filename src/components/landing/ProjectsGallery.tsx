@@ -1,4 +1,6 @@
 import type { LucideIcon } from "lucide-react";
+import AnimateOnScroll from "@/components/AnimateOnScroll";
+import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
 import {
   Cpu,
   Factory,
@@ -197,19 +199,22 @@ const ProjectsGallery = () => {
   return (
     <section className="bg-background py-14 md:py-18">
       <div className="container">
-        <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
+        <AnimateOnScroll variant="fade-up">
+          <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
 
-          <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
-            {copy.headline}
-          </h2>
+            <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
+              {copy.headline}
+            </h2>
 
-          <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
-            {copy.support}
-          </p>
-        </div>
+            <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
+              {copy.support}
+            </p>
+          </div>
+        </AnimateOnScroll>
 
-        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <StaggerChildren staggerDelay={0.1} className="mx-auto grid max-w-6xl grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
           {cards.map((project) => (
+            <StaggerItem key={project.title}>
             <article
               key={project.title}
               className="group overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/14 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.18)]"
@@ -284,8 +289,9 @@ const ProjectsGallery = () => {
                 </div>
               </div>
             </article>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerChildren>
       </div>
     </section>
   );

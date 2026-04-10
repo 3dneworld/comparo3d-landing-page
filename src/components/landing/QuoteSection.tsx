@@ -10,6 +10,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useAudience } from "@/contexts/AudienceContext";
+import AnimateOnScroll from "@/components/AnimateOnScroll";
+import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
 import { useQuoteFlow } from "@/hooks/useQuoteFlow";
 import { StepUpload } from "./quote/StepUpload";
 import { StepUserData } from "./quote/StepUserData";
@@ -396,60 +398,68 @@ const QuoteSection = () => {
       <div className="container max-w-4xl">
 
         {/* Header */}
-        <div className="mx-auto mb-8 max-w-3xl text-center md:mb-10">
-          <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
-            {isEmpresa ? "Solicitá tu propuesta" : "Pedí tu cotización"}
-          </h2>
-          <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
-            {isEmpresa
-              ? "Ordená el requerimiento, cargá el archivo y dejá listo el pedido para recibir una propuesta consolidada."
-              : "Cargá tu STL, completá los datos y compará opciones reales sin perder tiempo buscando proveedor por proveedor."}
-          </p>
-        </div>
+        <AnimateOnScroll variant="fade-up">
+          <div className="mx-auto mb-8 max-w-3xl text-center md:mb-10">
+            <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
+              {isEmpresa ? "Solicitá tu propuesta" : "Pedí tu cotización"}
+            </h2>
+            <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
+              {isEmpresa
+                ? "Ordená el requerimiento, cargá el archivo y dejá listo el pedido para recibir una propuesta consolidada."
+                : "Cargá tu STL, completá los datos y compará opciones reales sin perder tiempo buscando proveedor por proveedor."}
+            </p>
+          </div>
+        </AnimateOnScroll>
 
         {/* Info cards */}
-        <div className="mx-auto mb-7 grid max-w-3xl grid-cols-1 gap-3 md:mb-8 md:grid-cols-3">
-          <div className="rounded-2xl border border-border bg-card px-4 py-3 text-left">
-            <div className="flex items-center gap-2 text-primary">
-              <Files size={16} />
-              <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Archivo</span>
+        <StaggerChildren staggerDelay={0.1} className="mx-auto mb-7 grid max-w-3xl grid-cols-1 gap-3 md:mb-8 md:grid-cols-3">
+          <StaggerItem>
+            <div className="rounded-2xl border border-border bg-card px-4 py-3 text-left">
+              <div className="flex items-center gap-2 text-primary">
+                <Files size={16} />
+                <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Archivo</span>
+              </div>
+              <p className="mt-2 text-[14px] font-medium leading-snug text-foreground">
+                1 archivo por cotización
+              </p>
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                Varias copias de la misma pieza, sí. Piezas distintas, por separado.
+              </p>
             </div>
-            <p className="mt-2 text-[14px] font-medium leading-snug text-foreground">
-              1 archivo por cotización
-            </p>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-              Varias copias de la misma pieza, sí. Piezas distintas, por separado.
-            </p>
-          </div>
+          </StaggerItem>
 
-          <div className="rounded-2xl border border-primary/15 px-4 py-3 text-left bg-card">
-            <div className="flex items-center gap-2 text-primary">
-              <Upload size={16} />
-              <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Formato</span>
+          <StaggerItem>
+            <div className="rounded-2xl border border-primary/15 px-4 py-3 text-left bg-card">
+              <div className="flex items-center gap-2 text-primary">
+                <Upload size={16} />
+                <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Formato</span>
+              </div>
+              <p className="mt-2 text-[14px] font-medium leading-snug text-foreground">
+                STL
+              </p>
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                La experiencia actual está pensada para STL y cotización automática.
+              </p>
             </div>
-            <p className="mt-2 text-[14px] font-medium leading-snug text-foreground">
-              STL
-            </p>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-              La experiencia actual está pensada para STL y cotización automática.
-            </p>
-          </div>
+          </StaggerItem>
 
-          <div className="rounded-2xl border border-border bg-card px-4 py-3 text-left">
-            <div className="flex items-center gap-2 text-primary">
-              <ShieldCheck size={16} />
-              <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Respuesta</span>
+          <StaggerItem>
+            <div className="rounded-2xl border border-border bg-card px-4 py-3 text-left">
+              <div className="flex items-center gap-2 text-primary">
+                <ShieldCheck size={16} />
+                <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Respuesta</span>
+              </div>
+              <p className="mt-2 text-[14px] font-medium leading-snug text-foreground">
+                {isEmpresa ? "Propuesta en hasta 72 hs hábiles" : "Cotizaciones en minutos"}
+              </p>
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                {isEmpresa
+                  ? "Coordinamos proveedores verificados y consolidamos la propuesta."
+                  : "Comparás opciones reales sin salir a buscar talleres por tu cuenta."}
+              </p>
             </div>
-            <p className="mt-2 text-[14px] font-medium leading-snug text-foreground">
-              {isEmpresa ? "Propuesta en hasta 72 hs hábiles" : "Cotizaciones en minutos"}
-            </p>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-              {isEmpresa
-                ? "Coordinamos proveedores verificados y consolidamos la propuesta."
-                : "Comparás opciones reales sin salir a buscar talleres por tu cuenta."}
-            </p>
-          </div>
-        </div>
+          </StaggerItem>
+        </StaggerChildren>
 
         {/* Banner de retorno desde MercadoPago */}
         {mpBanner && (

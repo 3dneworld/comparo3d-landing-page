@@ -1,9 +1,11 @@
 import logoWhite from "@/assets/logo-white.png";
+import AnimateOnScroll from "@/components/AnimateOnScroll";
 
 const Footer = () => {
   return (
     <footer className="bg-hero border-t border-hero-muted/10 py-12">
       <div className="container">
+        <AnimateOnScroll variant="fade-up" delay={0.1}>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
             <img src={logoWhite} alt="COMPARO3D" className="h-8" />
@@ -33,6 +35,7 @@ const Footer = () => {
             </ul>
           </div>
         </div>
+        </AnimateOnScroll>
         <div className="mt-10 pt-6 border-t border-hero-muted/10 text-center">
           <p className="text-xs text-hero-muted">© {new Date().getFullYear()} COMPARO3D. Todos los derechos reservados.</p>
         </div>
