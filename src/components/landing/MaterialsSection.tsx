@@ -204,7 +204,7 @@ const MaterialsSection = () => {
   const materials = materialsByAudience[audience];
 
   return (
-    <section id="materiales" className="bg-muted/50 py-14 md:py-18">
+    <section id="materiales" className="bg-muted/50 py-16 md:py-24">
       <div className="container">
         <AnimateOnScroll variant="fade-up">
           <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
@@ -248,11 +248,13 @@ const MaterialsSection = () => {
                      </h3>
                    </div>
                    {material.image && (
-                     <img
-                       src={material.image}
-                       alt={material.name}
-                       className={`w-auto shrink-0 object-contain drop-shadow-md ${material.name === "ABS" ? "h-[130px] -mt-[15px]" : material.name === "Nylon" ? "h-[140px] -mt-[20px]" : "h-[100px]"}`}
-                     />
+                     <div className="flex h-[110px] w-[110px] shrink-0 items-center justify-center">
+                       <img
+                         src={material.image}
+                         alt={material.name}
+                         className="max-h-full max-w-full object-contain drop-shadow-md"
+                       />
+                     </div>
                    )}
                  </div>
               </div>

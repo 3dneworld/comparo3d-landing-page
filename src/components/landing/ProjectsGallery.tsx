@@ -197,7 +197,7 @@ const ProjectsGallery = () => {
   const cards = projectCards[audience];
 
   return (
-    <section className="bg-background py-14 md:py-18">
+    <section className="bg-background py-16 md:py-24">
       <div className="container">
         <AnimateOnScroll variant="fade-up">
           <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">

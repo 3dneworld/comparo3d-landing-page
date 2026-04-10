@@ -29,12 +29,21 @@ const Hero = () => {
 
   return (
     <section className="relative bg-gradient-dark pt-28 pb-20 md:pt-36 md:pb-28 overflow-hidden">
-      {/* Subtle grid pattern */}
-      <div
+      {/* Subtle grid pattern with parallax */}
+      <motion.div
         className="absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0z' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E\")"
-        }} />
+        }}
+        animate={{
+          backgroundPosition: ["0px 0px", "40px 40px"],
+        }}
+        transition={{
+          duration: 20,
+          repeat: Infinity,
+          ease: "linear",
+        }}
+      />
       
 
       <div className="container relative z-10">

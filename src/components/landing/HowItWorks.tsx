@@ -85,7 +85,7 @@ const HowItWorks = () => {
   const steps = useMemo(() => stepsByAudience[audience], [audience]);
 
   return (
-    <section id="como-funciona" className="bg-background py-14 md:py-18">
+    <section id="como-funciona" className="bg-background py-16 md:py-24">
       <div className="container max-w-7xl">
         <AnimateOnScroll variant="fade-up">
           <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">

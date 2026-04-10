@@ -394,7 +394,7 @@ const QuoteSection = () => {
   }, [data.sessionId, data.step, hasSaved, isCheckingSavedSession, scrollToActiveStep]);
 
   return (
-    <section id="cotizar" ref={sectionRef} className="bg-muted/50 py-14 md:py-18">
+    <section id="cotizar" ref={sectionRef} className="bg-muted/50 py-16 md:py-24">
       <div className="container max-w-4xl">
 
         {/* Header */}

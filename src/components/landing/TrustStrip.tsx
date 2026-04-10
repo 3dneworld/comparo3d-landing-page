@@ -83,7 +83,7 @@ const TrustStrip = () => {
   const items = cards[audience];
 
   return (
-    <section className="border-y border-border bg-card py-12 md:py-16">
+    <section className="border-y border-border bg-card py-16 md:py-24">
       <div className="container">
         <AnimateOnScroll variant="fade-up">
           <div className="mx-auto mb-8 max-w-3xl text-center md:mb-10">

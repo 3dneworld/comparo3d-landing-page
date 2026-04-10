@@ -103,7 +103,7 @@ const FAQ = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section id="faq" className="bg-background py-12 md:py-16">
+    <section id="faq" className="bg-background py-16 md:py-24">
       <div className="container max-w-5xl">
         <AnimateOnScroll variant="fade-up">
           <div className="mx-auto mb-8 max-w-3xl text-center md:mb-10">

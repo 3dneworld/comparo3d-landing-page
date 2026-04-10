@@ -11,7 +11,7 @@ const providers = [
 
 const ProvidersSection = () => {
   return (
-    <section className="py-12 md:py-16 bg-background">
+    <section className="py-16 md:py-24 bg-background">
       <div className="container">
         <AnimateOnScroll variant="fade-up">
           <div className="text-center mb-8">
