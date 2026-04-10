@@ -15,10 +15,10 @@ const ProvidersSection = () => {
       <div className="container">
         <AnimateOnScroll variant="fade-up">
           <div className="text-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+            <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
               Red de proveedores evaluados
             </h2>
-            <p className="mt-2 text-sm md:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
               Trabajamos con proveedores seleccionados por capacidad técnica, materiales, cumplimiento y calidad.
             </p>
           </div>

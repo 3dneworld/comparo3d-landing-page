@@ -88,6 +88,9 @@ const TrustStrip = () => {
         <AnimateOnScroll variant="fade-up">
           <div className="mx-auto mb-8 max-w-3xl text-center md:mb-10">
 
+            <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.16em] text-primary md:text-[13px]">
+              {header.eyebrow}
+            </p>
             <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
               {header.headline}
             </h2>
@@ -112,14 +115,14 @@ const TrustStrip = () => {
             >
               <div
                 className={[
-                  "flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl",
+                  "flex h-14 w-14 shrink-0 items-center justify-center rounded-xl md:h-16 md:w-16",
                   item.priority ? "bg-primary/14" : "bg-primary/8",
                 ].join(" ")}
               >
                 <item.icon
-                  size={70}
-                  strokeWidth={item.priority ? 2.2 : 2.05}
-                  className={`${item.priority ? "text-primary" : "text-primary/80"} h-[70px] w-[60px] px-0 mx-0 text-right`}
+                  size={28}
+                  strokeWidth={item.priority ? 2.2 : 2}
+                  className={item.priority ? "text-primary" : "text-primary/80"}
                 />
               </div>
 

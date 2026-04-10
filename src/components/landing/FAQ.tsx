@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import AnimateOnScroll from "@/components/AnimateOnScroll";
 import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
@@ -157,14 +158,25 @@ const FAQ = () => {
                   </span>
                 </button>
 
-                {isOpen && (
-                  <div className="px-5 pb-5 md:px-7 md:pb-6">
-                    <div className="mb-4 h-px bg-border" />
-                    <p className="text-[15px] leading-[1.75] text-muted-foreground md:text-[16px]">
-                      {faq.a}
-                    </p>
-                  </div>
-                )}
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div
+                      key="content"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-5 pb-5 md:px-7 md:pb-6">
+                        <div className="mb-4 h-px bg-border" />
+                        <p className="text-[15px] leading-[1.75] text-muted-foreground md:text-[16px]">
+                          {faq.a}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               </div>
               </StaggerItem>
