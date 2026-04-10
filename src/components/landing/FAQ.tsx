@@ -178,7 +178,6 @@ const FAQ = () => {
                   )}
                 </AnimatePresence>
               </div>
-              </div>
               </StaggerItem>
             );
           })}
