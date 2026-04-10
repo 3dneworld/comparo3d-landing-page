@@ -107,7 +107,7 @@ const TrustStrip = () => {
             <article
               key={item.label}
               className={[
-              "flex items-center gap-5 rounded-2xl p-5 md:p-6 transition-all duration-200",
+              "flex flex-col items-center text-center gap-4 rounded-2xl p-5 sm:flex-row sm:items-center sm:text-left sm:gap-5 md:p-6 transition-all duration-200",
                 item.priority
                   ? "border border-primary/18 bg-primary/[0.045] shadow-[0_12px_28px_-22px_hsl(var(--primary)/0.28)]"
                   : "border border-border bg-background hover:border-primary/10",

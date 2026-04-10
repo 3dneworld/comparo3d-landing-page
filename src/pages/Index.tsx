@@ -11,6 +11,7 @@ import MaterialsSection from "@/components/landing/MaterialsSection";
 import FAQ from "@/components/landing/FAQ";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
+import FloatingCTA from "@/components/FloatingCTA";
 
 const LandingContent = () => {
   const { audience } = useAudience();
@@ -33,6 +34,7 @@ const LandingContent = () => {
       </main>
 
       <Footer />
+      <FloatingCTA />
     </div>
   );
 };

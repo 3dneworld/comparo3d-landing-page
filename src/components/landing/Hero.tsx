@@ -89,6 +89,23 @@ const Hero = () => {
                 <ChevronDown size={16} />
               </a>
             </div>
+          {/* Mobile-only: mini process indicators */}
+          <div className="mt-10 flex justify-center gap-3 lg:hidden">
+            {[
+              { icon: Upload, label: "Subis tu STL" },
+              { icon: BarChart3, label: "Comparas opciones" },
+              { icon: PackageCheck, label: "Recibis tu pieza" },
+            ].map((step) => (
+              <div key={step.label} className="flex flex-col items-center gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-hero-muted/10 border border-hero-muted/15">
+                  <step.icon size={18} className="text-primary" />
+                </div>
+                <span className="text-[10px] text-hero-muted text-center leading-tight max-w-[80px]">
+                  {step.label}
+                </span>
+              </div>
+            ))}
+          </div>
           </motion.div>
 
           {/* Right: process flow illustration with model preview */}

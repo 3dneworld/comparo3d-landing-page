@@ -537,7 +537,7 @@ const QuoteSection = () => {
         )}
 
         {/* Step indicator */}
-        <div className="mb-8 flex items-center justify-between gap-2 md:mb-9">
+        <div className="mb-8 flex items-center justify-between gap-1 overflow-x-auto md:mb-9 md:gap-2">
           {stepLabels.map((s, i) => {
             const stepNum = i + 1;
             const isActive = data.step === stepNum;
@@ -546,7 +546,7 @@ const QuoteSection = () => {
               <div key={s.label} className="flex flex-1 items-center">
                 <div className="flex flex-1 flex-col items-center">
                   <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition-all ${
+                    className={`flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full text-sm font-semibold transition-all ${
                       isActive
                         ? "bg-gradient-primary text-primary-foreground shadow-cta"
                         : isDone
@@ -554,7 +554,7 @@ const QuoteSection = () => {
                         : "bg-secondary text-muted-foreground"
                     }`}
                   >
-                    <s.icon size={17} />
+                    <s.icon size={15} className="md:h-[17px] md:w-[17px]" />
                   </div>
                   <span
                     className={`mt-2 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.08em] ${

@@ -273,7 +273,7 @@ const MaterialsSection = () => {
                   ))}
                 </div>
 
-                <div className="mt-5 grid grid-cols-3 gap-2">
+                <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
                   {propertyItems.map((property) => {
                     const Icon = property.icon;
                     const value = material[property.key];
@@ -281,7 +281,7 @@ const MaterialsSection = () => {
                     return (
                       <div
                         key={property.label}
-                        className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-3 py-3"
+                        className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-3 py-2.5 sm:flex-col sm:items-start sm:gap-1.5 sm:px-2.5 sm:py-2.5 md:flex-row md:items-center md:gap-3 md:px-3 md:py-3"
                       >
                         <div className="flex shrink-0 items-center justify-center self-center text-primary/80">
                           <Icon size={25} strokeWidth={2.1} />
