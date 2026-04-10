@@ -70,7 +70,7 @@ export default {
       url.pathname === "/proveedores/login" || url.pathname === "/proveedores/login/";
 
     if (isProviderLoginRoute) {
-      const appShellUrl = new URL("/index.html", url.origin);
+      const appShellUrl = new URL("/", url.origin);
       const assetRequest = new Request(appShellUrl.toString(), request);
       return env.ASSETS.fetch(assetRequest);
     }
