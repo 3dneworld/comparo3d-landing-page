@@ -1,9 +1,38 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import logoWhite from "@/assets/logo-white.png";
 import networkImg from "@/assets/provider-network.jpg";
 
 const ProveedoresLogin = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkSession = async () => {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "include" });
+        if (!response.ok) return;
+        const user = await response.json();
+        if (!cancelled && user) navigate("/proveedores", { replace: true });
+      } catch {
+        // Keep the user on the login page if the session check fails.
+      }
+    };
+
+    void checkSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
+  const handleGoogleLogin = () => {
+    window.location.href = "/api/auth/login?redirect=proveedores";
+  };
+
   return (
     <div className="min-h-screen bg-gradient-dark relative overflow-hidden">
       {/* Grid pattern */}
@@ -96,6 +125,7 @@ const ProveedoresLogin = () => {
                 {/* Google button */}
                 <button
                   type="button"
+                  onClick={handleGoogleLogin}
                   className="w-full flex items-center justify-center gap-3 bg-hero-foreground text-hero rounded-lg px-5 py-3.5 font-semibold text-sm hover:opacity-90 transition-opacity"
                 >
                   <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
@@ -143,6 +173,7 @@ const ProveedoresLogin = () => {
 
                 <button
                   type="button"
+                  onClick={handleGoogleLogin}
                   className="w-full bg-gradient-primary text-primary-foreground rounded-lg px-5 py-3.5 font-semibold text-sm hover:opacity-90 transition-opacity shadow-cta"
                 >
                   Iniciar sesión

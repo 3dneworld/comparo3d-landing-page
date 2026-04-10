@@ -207,7 +207,9 @@ export function StepCheckout({
   const [loadingEstimate, setLoadingEstimate] = useState(false);
   const [creatingCheckout, setCreatingCheckout] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutWarning, setCheckoutWarning] = useState<string | null>(null);
   const [addressValidation, setAddressValidation] = useState<AddressValidationState | null>(null);
+  const [validationWarningAcknowledged, setValidationWarningAcknowledged] = useState(false);
 
   const estimateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -462,10 +464,9 @@ export function StepCheckout({
       address.number.trim().length > 0 &&
       address.city.trim().length > 0 &&
       postalDigits.length === 4 &&
-      address.province.trim().length > 0 &&
-      Boolean(addressValidation?.validated)
+      address.province.trim().length > 0
     );
-  }, [address, addressValidation?.validated, isRetiro, postalDigits.length, selectedMethodId]);
+  }, [address, isRetiro, postalDigits.length, selectedMethodId]);
 
   const setField =
     (field: keyof AddressForm) =>
@@ -477,6 +478,8 @@ export function StepCheckout({
         ...(field === "city" ? { locality_id: "" } : {}),
       }));
       setAddressValidation(null);
+      setValidationWarningAcknowledged(false);
+      setCheckoutWarning(null);
       setCheckoutError(null);
     };
 
@@ -489,6 +492,8 @@ export function StepCheckout({
       locality_id: digits.length === 4 ? current.locality_id : "",
     }));
     setAddressValidation(null);
+    setValidationWarningAcknowledged(false);
+    setCheckoutWarning(null);
     setCheckoutError(null);
   };
 
@@ -505,6 +510,8 @@ export function StepCheckout({
     setAllLocalities([]);
     setLocalities([]);
     setAddressValidation(null);
+    setValidationWarningAcknowledged(false);
+    setCheckoutWarning(null);
     setCheckoutError(null);
   };
 
@@ -516,6 +523,8 @@ export function StepCheckout({
       locality_id: locality?.id ?? "",
     }));
     setAddressValidation(null);
+    setValidationWarningAcknowledged(false);
+    setCheckoutWarning(null);
     setCheckoutError(null);
   };
 
@@ -527,6 +536,7 @@ export function StepCheckout({
     };
 
     setNormalizingAddress(true);
+    setCheckoutWarning(null);
     setCheckoutError(null);
 
     const result = await normalizeAddress({
@@ -543,8 +553,16 @@ export function StepCheckout({
     if (!isMountedRef.current) return;
 
     if (isApiError(result)) {
-      setCheckoutError(result.error || "No pudimos validar la direccion.");
+      const helpMessage =
+        result.details &&
+        typeof result.details === "object" &&
+        "help_message" in result.details &&
+        typeof result.details.help_message === "string"
+          ? result.details.help_message
+          : null;
+      setCheckoutError(helpMessage || result.error || "No pudimos validar la direccion.");
       setAddressValidation(null);
+      setValidationWarningAcknowledged(false);
       setNormalizingAddress(false);
       return;
     }
@@ -564,6 +582,8 @@ export function StepCheckout({
       normalized: result.normalized,
       validation: result.validation,
     });
+    setValidationWarningAcknowledged(false);
+    setCheckoutWarning(null);
     setCheckoutError(null);
     setLocalities((current) => {
       if (current.some((item) => item.id === result.normalized.locality_id)) {
@@ -593,6 +613,8 @@ export function StepCheckout({
     setSelectedMethodId(methodId);
     setEstimatePrice(null);
     setEstimateEta(null);
+    setValidationWarningAcknowledged(false);
+    setCheckoutWarning(null);
     setCheckoutError(null);
   };
 
@@ -615,6 +637,7 @@ export function StepCheckout({
     if (!isFormValid || creatingCheckout) return;
 
     setCreatingCheckout(true);
+    setCheckoutWarning(null);
     setCheckoutError(null);
 
     const result = await createCheckout(sessionId, {
@@ -982,6 +1005,13 @@ export function StepCheckout({
               <div className="mt-4 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-3">
                 <AlertCircle size={14} className="mt-0.5 shrink-0 text-destructive" />
                 <p className="text-[13px] leading-snug text-destructive">{checkoutError}</p>
+              </div>
+            )}
+
+            {checkoutWarning && (
+              <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3">
+                <AlertCircle size={14} className="mt-0.5 shrink-0 text-amber-600" />
+                <p className="text-[13px] leading-snug text-amber-800">{checkoutWarning}</p>
               </div>
             )}
 

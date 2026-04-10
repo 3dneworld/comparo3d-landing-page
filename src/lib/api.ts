@@ -14,7 +14,7 @@ console.log(
 export interface ApiError {
   success: false;
   error: string;
-  details?: string;
+  details?: unknown;
   field?: string;
   needs_reupload?: boolean;
   status?: string;
@@ -477,6 +477,11 @@ export async function getAddressProvinces(): Promise<{ success: true; items: Add
     const res = await fetch(`${API_BASE_URL}/api/address/provinces`);
     const data = await res.json();
     if (!res.ok || !data.success) {
+      return {
+        success: false,
+        error: data.error || "No pudimos validar la dirección",
+        details: data.details,
+      };
       return { success: false, error: data.error || "Error al obtener provincias" };
     }
     return data as { success: true; items: AddressProvince[] };
