@@ -1,16 +1,34 @@
-import AnimateOnScroll from "@/components/AnimateOnScroll";
+import { useEffect, useState } from "react";
 
-const providers = [
-  { name: "PAL",      logo: "/logos/PAL.png"        },
-  { name: "Piscobot", logo: "/logos/Piscobot.png"    },
-  { name: "Nost3rD",  logo: "/logos/Nost3rd.jpg"     },
-  { name: "Joaco3D",  logo: "/logos/JOACO3D.png"     },
-  { name: "MEGA 3D",  logo: "/logos/Mega3D.jpeg"     },
+import AnimateOnScroll from "@/components/AnimateOnScroll";
+import { getLandingProviders, type LandingProvider } from "@/lib/api";
+
+const fallbackProviders: LandingProvider[] = [
+  { name: "PAL", logo: "/logos/PAL.png" },
+  { name: "Piscobot", logo: "/logos/Piscobot.png" },
+  { name: "Nost3rD", logo: "/logos/Nost3rd.jpg" },
+  { name: "Joaco3D", logo: "/logos/JOACO3D.png" },
+  { name: "MEGA 3D", logo: "/logos/Mega3D.jpeg" },
 ];
 
-const providerCycle = [...providers, ...providers];
-
 const ProvidersSection = () => {
+  const [providers, setProviders] = useState<LandingProvider[]>(fallbackProviders);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getLandingProviders().then((items) => {
+      if (cancelled || items.length === 0) return;
+      setProviders(items);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const providerCycle = [...providers, ...providers];
+
   return (
     <section className="bg-muted/50 py-16 md:py-24">
       <div className="container">

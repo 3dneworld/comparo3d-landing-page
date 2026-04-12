@@ -11,6 +11,26 @@ console.log(
   API_BASE_URL.includes("localhost") ? "✓ LOCAL" : "⚠ PRODUCCION"
 );
 
+export interface LandingProvider {
+  name: string;
+  logo: string;
+  provider_id?: number | null;
+  source?: string;
+}
+
+export async function getLandingProviders(): Promise<LandingProvider[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/public/landing-providers`);
+    const data = await res.json();
+    if (!res.ok || !data.success || !Array.isArray(data.items)) {
+      return [];
+    }
+    return data.items as LandingProvider[];
+  } catch {
+    return [];
+  }
+}
+
 export interface ApiError {
   success: false;
   error: string;
