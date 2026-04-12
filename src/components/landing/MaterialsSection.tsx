@@ -204,14 +204,10 @@ const MaterialsSection = () => {
   const materials = materialsByAudience[audience];
 
   return (
-    <section id="materiales" className="bg-muted/50 py-16 md:py-24">
+    <section id="materiales" className="scroll-mt-24 bg-muted/50 py-16 md:scroll-mt-28 md:py-24">
       <div className="container">
         <AnimateOnScroll variant="fade-up">
           <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
-
-            <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.16em] text-primary md:text-[13px]">
-              {copy.eyebrow}
-            </p>
             <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
               {copy.headline}
             </h2>
@@ -226,10 +222,9 @@ const MaterialsSection = () => {
           {materials.map((material) => (
             <StaggerItem key={material.name}>
             <article
-              key={material.name}
               className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/14 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.18)]"
             >
-              <div className={`relative h-32 border-b border-border bg-gradient-to-br ${material.gradientClass}`}>
+              <div className={`relative h-36 border-b border-border bg-gradient-to-br ${material.gradientClass}`}>
                 <div
                   className="absolute inset-0 opacity-[0.05]"
                   style={{
@@ -238,17 +233,23 @@ const MaterialsSection = () => {
                   }}
                 />
 
-                <div className="absolute inset-x-6 top-5 flex items-center justify-between gap-4">
-                   <div>
+                <div className="absolute inset-x-6 top-5 flex items-start justify-between gap-3">
+                   <div className="min-w-0 flex-1">
                      <span className="inline-flex items-center rounded-full border border-border bg-background/90 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
                        {material.bestFor}
                      </span>
-                     <h3 className="mt-4 text-[30px] font-bold tracking-tight text-foreground md:text-[32px]">
+                     <h3 className="mt-3 text-[28px] font-bold tracking-tight text-foreground md:text-[32px]">
                        {material.name}
                      </h3>
                    </div>
                    {material.image && (
-                     <div className="flex h-[110px] w-[110px] shrink-0 items-center justify-center">
+                     <div
+                       className={`flex shrink-0 items-center justify-center ${
+                         material.name === "ABS"
+                           ? "h-[130px] w-[130px] -mr-1"
+                           : "h-[100px] w-[100px]"
+                       }`}
+                     >
                        <img
                          src={material.image}
                          alt={material.name}
@@ -283,7 +284,7 @@ const MaterialsSection = () => {
                     return (
                       <div
                         key={property.label}
-                        className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-3 py-2.5 sm:flex-col sm:items-start sm:gap-1.5 sm:px-2.5 sm:py-2.5 md:flex-row md:items-center md:gap-3 md:px-3 md:py-3"
+                        className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-3 py-2.5"
                       >
                         <div className="flex shrink-0 items-center justify-center self-center text-primary/80">
                           <Icon size={25} strokeWidth={2.1} />

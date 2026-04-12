@@ -23,7 +23,6 @@ interface ProjectCard {
   title: string;
   desc: string;
   material: string;
-  piecesLabel: string;
   visualLabel: string;
   cues: string[];
   icon: LucideIcon;
@@ -54,7 +53,6 @@ const projectCards: Record<Audience, ProjectCard[]> = {
       title: "Repuestos para arreglos del día a día",
       desc: "Piezas para reemplazar trabas, tapas, soportes o componentes difíciles de conseguir en el mercado.",
       material: "PETG",
-      piecesLabel: "1 a 2 piezas",
       visualLabel: "Caso frecuente",
       cues: ["uso cotidiano", "resolución rápida"],
       icon: Wrench,
@@ -63,11 +61,10 @@ const projectCards: Record<Audience, ProjectCard[]> = {
     },
     {
       category: "Hogar",
-      categoryTone: "bg-accent/10 text-accent",
+      categoryTone: "bg-primary/10 text-primary",
       title: "Accesorios útiles para casa y organización",
       desc: "Soportes, clips, bases y adaptadores pensados para ordenar, acomodar o mejorar espacios reales.",
       material: "PLA",
-      piecesLabel: "1 a 6 piezas",
       visualLabel: "Uso práctico",
       cues: ["orden", "adaptación"],
       icon: Home,
@@ -78,7 +75,6 @@ const projectCards: Record<Audience, ProjectCard[]> = {
       title: "Carcasas y piezas para proyectos makers",
       desc: "Cajas, tapas, montajes y piezas funcionales para electrónica, domótica o desarrollos propios.",
       material: "PETG / ABS",
-      piecesLabel: "1 a 4 piezas",
       visualLabel: "Muy pedido",
       cues: ["electrónica", "funcional"],
       icon: Cpu,
@@ -86,11 +82,10 @@ const projectCards: Record<Audience, ProjectCard[]> = {
     },
     {
       category: "Hobby",
-      categoryTone: "bg-accent/10 text-accent",
+      categoryTone: "bg-primary/10 text-primary",
       title: "Modelismo, hobby y proyectos personales",
       desc: "Componentes personalizados, detalles, adaptadores y piezas hechas para hobbies o ideas propias.",
       material: "PLA / PETG",
-      piecesLabel: "1 a 12 piezas",
       visualLabel: "Proyecto personal",
       cues: ["detalle", "personalización"],
       icon: Puzzle,
@@ -98,11 +93,10 @@ const projectCards: Record<Audience, ProjectCard[]> = {
     },
     {
       category: "Personalizados",
-      categoryTone: "bg-accent/10 text-accent",
+      categoryTone: "bg-primary/10 text-primary",
       title: "Objetos personalizados y regalos",
       desc: "Piezas a medida para regalos, identidad simple de marca o ideas que no existen en catálogo.",
       material: "PLA",
-      piecesLabel: "1 a 10 piezas",
       visualLabel: "Hecho a pedido",
       cues: ["único", "a medida"],
       icon: Gift,
@@ -113,7 +107,6 @@ const projectCards: Record<Audience, ProjectCard[]> = {
       title: "Primeras versiones para validar una idea",
       desc: "Iteraciones para probar forma, encastre o tamaño antes de pasar a una versión más cerrada.",
       material: "PLA / PETG",
-      piecesLabel: "1 a 3 versiones",
       visualLabel: "Primeras pruebas",
       cues: ["validación", "iteración"],
       icon: PencilRuler,
@@ -126,7 +119,6 @@ const projectCards: Record<Audience, ProjectCard[]> = {
       title: "Carcasas, soportes y piezas funcionales",
       desc: "Componentes para uso real, integración de equipos o mejora de procesos internos.",
       material: "PETG / ABS",
-      piecesLabel: "1 a 50 piezas",
       visualLabel: "Uso operativo",
       cues: ["funcional", "uso técnico"],
       icon: Settings2,
@@ -134,11 +126,10 @@ const projectCards: Record<Audience, ProjectCard[]> = {
     },
     {
       category: "Mantenimiento",
-      categoryTone: "bg-accent/10 text-accent",
+      categoryTone: "bg-primary/10 text-primary",
       title: "Repuestos de baja rotación",
       desc: "Piezas difíciles de conseguir o discontinuadas para sostener operación sin esperar importación.",
       material: "Nylon / PETG",
-      piecesLabel: "1 a 20 piezas",
       visualLabel: "Reposición",
       cues: ["continuidad", "reposición"],
       icon: Wrench,
@@ -149,7 +140,6 @@ const projectCards: Record<Audience, ProjectCard[]> = {
       title: "Validación de producto y prototipos",
       desc: "Iteraciones para validar forma, ensamble o presentación antes de entrar en fabricación.",
       material: "PLA / PETG",
-      piecesLabel: "1 a 10 piezas",
       visualLabel: "Desarrollo",
       cues: ["I+D", "validación"],
       icon: PencilRuler,
@@ -157,11 +147,10 @@ const projectCards: Record<Audience, ProjectCard[]> = {
     },
     {
       category: "Operaciones",
-      categoryTone: "bg-accent/10 text-accent",
+      categoryTone: "bg-primary/10 text-primary",
       title: "Utillajes y accesorios internos",
       desc: "Guías, fijaciones, soportes y soluciones puntuales para mejorar tareas de planta o taller.",
       material: "PETG / ABS",
-      piecesLabel: "1 a 30 piezas",
       visualLabel: "Proceso interno",
       cues: ["eficiencia", "mejora interna"],
       icon: Factory,
@@ -172,18 +161,16 @@ const projectCards: Record<Audience, ProjectCard[]> = {
       title: "Series cortas coordinadas",
       desc: "Producción distribuida cuando el proyecto exige plazo, volumen o respaldo operativo.",
       material: "Según aplicación",
-      piecesLabel: "10 a 100+ piezas",
       visualLabel: "Escalado",
       cues: ["plazo", "capacidad"],
       icon: Layers3,
     },
     {
       category: "Comercial",
-      categoryTone: "bg-accent/10 text-accent",
+      categoryTone: "bg-primary/10 text-primary",
       title: "Packaging, exhibición y activaciones",
       desc: "Piezas para exhibidores, soportes de producto o necesidades comerciales específicas.",
       material: "PLA / PETG",
-      piecesLabel: "5 a 200 piezas",
       visualLabel: "Frente comercial",
       cues: ["marca", "presentación"],
       icon: Package2,
@@ -201,10 +188,6 @@ const ProjectsGallery = () => {
       <div className="container">
         <AnimateOnScroll variant="fade-up">
           <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
-
-            <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.16em] text-primary md:text-[13px]">
-              {copy.eyebrow}
-            </p>
             <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
               {copy.headline}
             </h2>
@@ -219,7 +202,6 @@ const ProjectsGallery = () => {
           {cards.map((project) => (
             <StaggerItem key={project.title}>
             <article
-              key={project.title}
               className="group overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/14 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.18)]"
             >
               <div
@@ -285,10 +267,8 @@ const ProjectsGallery = () => {
                   {project.desc}
                 </p>
 
-                <div className="mt-5 flex items-center gap-3 text-[12px] text-muted-foreground md:text-[13px]">
+                <div className="mt-5 flex items-center text-[12px] text-muted-foreground md:text-[13px]">
                   <span>{project.material}</span>
-                  <span className="h-1 w-1 rounded-full bg-border" />
-                  <span>{project.piecesLabel}</span>
                 </div>
               </div>
             </article>

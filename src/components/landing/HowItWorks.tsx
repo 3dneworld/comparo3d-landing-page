@@ -85,13 +85,10 @@ const HowItWorks = () => {
   const steps = useMemo(() => stepsByAudience[audience], [audience]);
 
   return (
-    <section id="como-funciona" className="bg-background py-16 md:py-24">
+    <section id="como-funciona" className="scroll-mt-24 bg-background py-16 md:scroll-mt-28 md:py-24">
       <div className="container max-w-7xl">
         <AnimateOnScroll variant="fade-up">
           <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
-            <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.16em] text-primary md:text-[13px]">
-              {copy.eyebrow}
-            </p>
             <h2 className="text-3xl font-bold leading-tight text-foreground md:text-4xl">
               {copy.title}
             </h2>

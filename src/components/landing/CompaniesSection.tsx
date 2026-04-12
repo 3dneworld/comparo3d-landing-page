@@ -48,13 +48,9 @@ const CompaniesSection = () => {
   }
 
   return (
-    <section id="empresas" className="bg-[#0B1730] py-16 md:py-20">
+    <section id="empresas" className="scroll-mt-24 bg-[#0B1730] py-16 md:scroll-mt-28 md:py-20">
       <div className="container max-w-6xl">
         <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
-          <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.16em] text-accent md:text-[13px]">
-            PARA EMPRESAS
-          </p>
-
           <h2 className="text-[32px] font-bold leading-[1.08] text-hero-foreground md:text-[42px]">
             Impresión 3D para empresas, sin dispersión operativa
           </h2>

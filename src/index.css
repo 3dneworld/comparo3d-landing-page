@@ -107,4 +107,48 @@
   .shadow-card-hover {
     box-shadow: var(--shadow-card-hover);
   }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .provider-marquee {
+    overflow: hidden;
+  }
+  .provider-marquee-track {
+    display: flex;
+    width: max-content;
+    animation: provider-marquee 22s linear infinite;
+    will-change: transform;
+  }
+  .provider-marquee-group {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  .provider-marquee:hover .provider-marquee-track {
+    animation-play-state: paused;
+  }
+  @media (min-width: 768px) {
+    .provider-marquee-group {
+      gap: 2.5rem;
+      padding-right: 2.5rem;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .provider-marquee-track {
+      animation: none;
+    }
+  }
+  @keyframes provider-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
 }

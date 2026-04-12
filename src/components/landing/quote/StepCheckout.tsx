@@ -706,7 +706,7 @@ export function StepCheckout({
         </div>
       )}
 
-      <div className="grid gap-6 md:grid-cols-[1fr_288px]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6">
           <div>
             <p className="mb-3 text-[14px] font-semibold text-foreground">Metodo de envio</p>
@@ -844,7 +844,7 @@ export function StepCheckout({
                   <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
                     Codigo Postal
                   </label>
-                  <div className="flex max-w-[220px] overflow-hidden rounded-xl border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
+                  <div className="flex overflow-hidden rounded-xl border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
                     <span className="flex min-w-[52px] items-center justify-center border-r border-input bg-muted px-3 text-[15px] font-semibold text-foreground">
                       {postalPrefix || "-"}
                     </span>
@@ -928,7 +928,7 @@ export function StepCheckout({
         </div>
 
         <div>
-          <div className="rounded-2xl border border-border bg-muted/35 p-5">
+          <div className="rounded-2xl border border-border bg-muted/35 p-5 lg:sticky lg:top-24">
             <p className="mb-4 text-[13px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               Resumen del pedido
             </p>

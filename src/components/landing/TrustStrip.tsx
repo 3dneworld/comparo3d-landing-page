@@ -83,14 +83,10 @@ const TrustStrip = () => {
   const items = cards[audience];
 
   return (
-    <section className="border-y border-border bg-card py-16 md:py-24">
+    <section className="bg-background py-16 md:py-24">
       <div className="container">
         <AnimateOnScroll variant="fade-up">
-          <div className="mx-auto mb-8 max-w-3xl text-center md:mb-10">
-
-            <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.16em] text-primary md:text-[13px]">
-              {header.eyebrow}
-            </p>
+          <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
             <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
               {header.headline}
             </h2>
@@ -104,29 +100,27 @@ const TrustStrip = () => {
         <StaggerChildren className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
           {items.map((item) => (
             <StaggerItem key={item.label}>
-            <article
-              key={item.label}
-              className={[
-              "flex flex-col items-center text-center gap-4 rounded-2xl p-5 sm:flex-row sm:items-center sm:text-left sm:gap-5 md:p-6 transition-all duration-200",
-                item.priority
-                  ? "border border-primary/18 bg-primary/[0.045] shadow-[0_12px_28px_-22px_hsl(var(--primary)/0.28)]"
-                  : "border border-border bg-background hover:border-primary/10",
-              ].join(" ")}
-            >
-              <div
+              <article
                 className={[
-                  "flex h-14 w-14 shrink-0 items-center justify-center rounded-xl md:h-16 md:w-16",
-                  item.priority ? "bg-primary/14" : "bg-primary/8",
+                  "flex flex-col rounded-2xl p-6 transition-all duration-200 md:p-7",
+                  item.priority
+                    ? "border border-primary/18 bg-primary/[0.045] shadow-[0_12px_28px_-22px_hsl(var(--primary)/0.28)]"
+                    : "border border-border bg-background hover:border-primary/10",
                 ].join(" ")}
               >
-                <item.icon
-                  size={28}
-                  strokeWidth={item.priority ? 2.2 : 2}
-                  className={item.priority ? "text-primary" : "text-primary/80"}
-                />
-              </div>
+                <div
+                  className={[
+                    "mb-5 flex h-14 w-14 items-center justify-center rounded-2xl",
+                    item.priority ? "bg-primary/14" : "bg-primary/8",
+                  ].join(" ")}
+                >
+                  <item.icon
+                    size={28}
+                    strokeWidth={item.priority ? 2.2 : 2}
+                    className={item.priority ? "text-primary" : "text-primary/80"}
+                  />
+                </div>
 
-              <div className="min-w-0">
                 <h3
                   className={[
                     "text-[18px] font-semibold leading-[1.2] md:text-[20px]",
@@ -136,11 +130,10 @@ const TrustStrip = () => {
                   {item.label}
                 </h3>
 
-                <p className="mt-2 text-[14px] leading-[1.7] text-muted-foreground md:text-[15px]">
+                <p className="mt-2.5 text-[14px] leading-[1.7] text-muted-foreground md:text-[15px]">
                   {item.desc}
                 </p>
-              </div>
-            </article>
+              </article>
             </StaggerItem>
           ))}
         </StaggerChildren>

@@ -147,7 +147,6 @@ const QuoteSection = () => {
     });
 
     setMpBanner({ type: payment as "success" | "failure" | "pending", orderId });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setData = (updater: Partial<QuoteData> | ((prev: QuoteData) => QuoteData)) => {
@@ -208,7 +207,6 @@ const QuoteSection = () => {
     if (flow.orderId && flow.orderId !== data.orderId) {
       setData({ orderId: flow.orderId });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flow.orderId, data.orderId]);
 
   useEffect(() => {
@@ -222,7 +220,6 @@ const QuoteSection = () => {
     if (Object.keys(updates).length > 0) {
       setData(updates);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flow.material, flow.cantidad, data.material, data.cantidad]);
 
   // ── Validar sesión restaurada y recuperar thumbnail desde backend ──
@@ -394,7 +391,7 @@ const QuoteSection = () => {
   }, [data.sessionId, data.step, hasSaved, isCheckingSavedSession, scrollToActiveStep]);
 
   return (
-    <section id="cotizar" ref={sectionRef} className="bg-muted/50 py-16 md:py-24">
+    <section id="cotizar" ref={sectionRef} className="scroll-mt-24 bg-muted/50 py-16 md:scroll-mt-28 md:py-24">
       <div className="container max-w-4xl">
 
         {/* Header */}
@@ -412,9 +409,9 @@ const QuoteSection = () => {
         </AnimateOnScroll>
 
         {/* Info cards */}
-        <StaggerChildren staggerDelay={0.1} className="mx-auto mb-7 grid max-w-3xl grid-cols-1 gap-3 md:mb-8 md:grid-cols-3">
-          <StaggerItem>
-            <div className="rounded-2xl border border-border bg-card px-4 py-3 text-left">
+        <StaggerChildren className="scrollbar-hide -mx-4 mb-6 grid auto-cols-[78%] grid-flow-col gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory md:mx-auto md:mb-8 md:max-w-3xl md:grid-cols-3 md:grid-flow-row md:auto-cols-auto md:overflow-visible md:px-0 md:pb-0" staggerDelay={0.1}>
+          <StaggerItem className="snap-start">
+            <div className="h-full rounded-2xl border border-border bg-card px-4 py-3 text-left">
               <div className="flex items-center gap-2 text-primary">
                 <Files size={16} />
                 <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Archivo</span>
@@ -428,8 +425,8 @@ const QuoteSection = () => {
             </div>
           </StaggerItem>
 
-          <StaggerItem>
-            <div className="rounded-2xl border border-primary/15 px-4 py-3 text-left bg-card">
+          <StaggerItem className="snap-start">
+            <div className="h-full rounded-2xl border border-primary/15 bg-card px-4 py-3 text-left">
               <div className="flex items-center gap-2 text-primary">
                 <Upload size={16} />
                 <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Formato</span>
@@ -443,8 +440,8 @@ const QuoteSection = () => {
             </div>
           </StaggerItem>
 
-          <StaggerItem>
-            <div className="rounded-2xl border border-border bg-card px-4 py-3 text-left">
+          <StaggerItem className="snap-start">
+            <div className="h-full rounded-2xl border border-border bg-card px-4 py-3 text-left">
               <div className="flex items-center gap-2 text-primary">
                 <ShieldCheck size={16} />
                 <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Respuesta</span>
@@ -537,16 +534,16 @@ const QuoteSection = () => {
         )}
 
         {/* Step indicator */}
-        <div className="mb-8 flex items-center justify-between gap-1 overflow-x-auto md:mb-9 md:gap-2">
+        <div className="mb-8 flex items-center justify-between overflow-x-auto md:mb-9">
           {stepLabels.map((s, i) => {
             const stepNum = i + 1;
             const isActive = data.step === stepNum;
             const isDone = data.step > stepNum;
             return (
               <div key={s.label} className="flex flex-1 items-center">
-                <div className="flex flex-1 flex-col items-center">
+                <div className="flex w-full flex-col items-center">
                   <div
-                    className={`flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full text-sm font-semibold transition-all ${
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-all md:h-10 md:w-10 ${
                       isActive
                         ? "bg-gradient-primary text-primary-foreground shadow-cta"
                         : isDone
@@ -557,7 +554,7 @@ const QuoteSection = () => {
                     <s.icon size={15} className="md:h-[17px] md:w-[17px]" />
                   </div>
                   <span
-                    className={`mt-2 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.08em] ${
+                    className={`mt-2 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.08em] md:text-[11px] ${
                       isActive ? "text-primary" : "text-muted-foreground"
                     }`}
                   >
@@ -566,7 +563,7 @@ const QuoteSection = () => {
                   </span>
                 </div>
                 {i < stepLabels.length - 1 && (
-                  <div className={`mx-1 h-[2px] flex-1 ${isDone ? "bg-primary" : "bg-border"}`} />
+                  <div className={`h-[2px] w-full min-w-[16px] ${isDone ? "bg-primary" : "bg-border"}`} />
                 )}
               </div>
             );
