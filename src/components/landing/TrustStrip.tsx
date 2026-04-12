@@ -8,21 +8,16 @@ interface TrustCard {
   icon: LucideIcon;
   label: string;
   desc: string;
-  priority?: boolean;
 }
 
-const headerContent: Record<Audience, { eyebrow: string; headline: string; support: string }> = {
+const headerContent: Record<Audience, { headline: string; support: string }> = {
   particular: {
-    eyebrow: "POR QUÉ COTIZAR CON COMPARO3D",
     headline: "Menos vueltas, más claridad",
-    support:
-      "Los cuatro diferenciales que más pesan para un particular: comparación real, red evaluada, confidencialidad y entrega coordinada.",
+    support: "Todo lo que necesitás para cotizar con confianza, sin dar vueltas.",
   },
   empresa: {
-    eyebrow: "POR QUÉ TRABAJAR CON COMPARO3D",
     headline: "Menos dispersión, más control operativo",
-    support:
-      "Para empresas, la diferencia está en centralizar, coordinar, proteger la información y ejecutar con una red validada.",
+    support: "Centralizá la gestión de impresión 3D con una red coordinada.",
   },
 };
 
@@ -32,13 +27,11 @@ const cards: Record<Audience, TrustCard[]> = {
       icon: BarChart3,
       label: "Comparación clara",
       desc: "Compará opciones reales según precio, plazo y condiciones sin salir a buscar proveedor por proveedor.",
-      priority: true,
     },
     {
       icon: ShieldCheck,
       label: "Proveedores verificados",
       desc: "La red se evalúa por capacidad, calidad y cumplimiento antes de formar parte del proceso.",
-      priority: true,
     },
     {
       icon: Lock,
@@ -56,13 +49,11 @@ const cards: Record<Audience, TrustCard[]> = {
       icon: Users,
       label: "Un solo interlocutor",
       desc: "Centralizá requerimientos, seguimiento y coordinación desde un único frente operativo.",
-      priority: true,
     },
     {
       icon: Layers,
       label: "Producción paralela coordinada",
       desc: "Cuando el proyecto lo permite, se coordinan varios proveedores para reducir plazos y sostener capacidad.",
-      priority: true,
     },
     {
       icon: ShieldCheck,
@@ -86,51 +77,33 @@ const TrustStrip = () => {
     <section className="bg-background py-16 md:py-24">
       <div className="container">
         <AnimateOnScroll variant="fade-up">
-          <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
+          <div className="mx-auto mb-10 max-w-2xl text-center md:mb-14">
             <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
               {header.headline}
             </h2>
-
-            <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
+            <p className="mx-auto mt-4 max-w-xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
               {header.support}
             </p>
           </div>
         </AnimateOnScroll>
 
-        <StaggerChildren className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+        <StaggerChildren className="mx-auto grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
           {items.map((item) => (
             <StaggerItem key={item.label}>
-              <article
-                className={[
-                  "flex flex-col rounded-2xl p-6 transition-all duration-200 md:p-7",
-                  item.priority
-                    ? "border border-primary/18 bg-primary/[0.045] shadow-[0_12px_28px_-22px_hsl(var(--primary)/0.28)]"
-                    : "border border-border bg-background hover:border-primary/10",
-                ].join(" ")}
-              >
-                <div
-                  className={[
-                    "mb-5 flex h-14 w-14 items-center justify-center rounded-2xl",
-                    item.priority ? "bg-primary/[0.18]" : "bg-primary/[0.10]",
-                  ].join(" ")}
-                >
+              <article className="flex flex-col items-center rounded-2xl border border-border bg-card p-5 text-center transition-all duration-200 hover:border-primary/20 hover:shadow-md md:p-6">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/[0.12]">
                   <item.icon
-                    size={28}
-                    strokeWidth={item.priority ? 2.2 : 2}
-                    className={item.priority ? "text-primary" : "text-primary/80"}
+                    size={24}
+                    strokeWidth={2}
+                    className="text-primary"
                   />
                 </div>
 
-                <h3
-                  className={[
-                    "text-[18px] font-semibold leading-[1.2] md:text-[20px]",
-                    item.priority ? "text-foreground" : "text-foreground/92",
-                  ].join(" ")}
-                >
+                <h3 className="mt-3 text-[16px] font-semibold leading-[1.2] text-foreground md:text-[17px]">
                   {item.label}
                 </h3>
 
-                <p className="mt-2.5 text-[14px] leading-[1.7] text-muted-foreground md:text-[15px]">
+                <p className="mt-2 text-[13px] leading-[1.65] text-muted-foreground md:text-[14px]">
                   {item.desc}
                 </p>
               </article>
