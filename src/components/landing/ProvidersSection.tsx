@@ -1,9 +1,8 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { type CSSProperties } from "react";
 
 import AnimateOnScroll from "@/components/AnimateOnScroll";
-import { getLandingProviders, type LandingProvider } from "@/lib/api";
 
-const fallbackProviders: LandingProvider[] = [
+const providers = [
   { name: "PAL", logo: "/logos/PAL.png" },
   { name: "Piscobot", logo: "/logos/Piscobot.png" },
   { name: "Nost3rD", logo: "/logos/Nost3rd.jpg" },
@@ -12,20 +11,6 @@ const fallbackProviders: LandingProvider[] = [
 ];
 
 const ProvidersSection = () => {
-  const [providers, setProviders] = useState<LandingProvider[]>(fallbackProviders);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    getLandingProviders().then((items) => {
-      if (cancelled || items.length === 0) return;
-      setProviders(items);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   return (
     <section className="bg-muted/50 py-16 md:py-24">
