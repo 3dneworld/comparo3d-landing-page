@@ -29,12 +29,21 @@ const Hero = () => {
 
   return (
     <section className="relative bg-gradient-dark pt-28 pb-20 md:pt-36 md:pb-28 overflow-hidden">
-      {/* Subtle grid pattern */}
-      <div
+      {/* Subtle grid pattern with parallax */}
+      <motion.div
         className="absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0z' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E\")"
-        }} />
+        }}
+        animate={{
+          backgroundPosition: ["0px 0px", "40px 40px"],
+        }}
+        transition={{
+          duration: 20,
+          repeat: Infinity,
+          ease: "linear",
+        }}
+      />
       
 
       <div className="container relative z-10">
@@ -66,7 +75,7 @@ const Hero = () => {
             transition={{ duration: 0.3 }}
             className="flex-1 text-center lg:text-left max-w-xl">
             
-            <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-hero-foreground leading-tight tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-hero-foreground leading-tight tracking-tight">
               {current.title}
             </h1>
             <p className="mt-5 text-base md:text-lg text-hero-muted leading-relaxed">
@@ -89,6 +98,23 @@ const Hero = () => {
                 <ChevronDown size={16} />
               </a>
             </div>
+          {/* Mobile-only: mini process indicators */}
+          <div className="mt-10 flex justify-center gap-6 sm:gap-8 lg:hidden">
+            {[
+              { icon: Upload, label: "Subis tu STL" },
+              { icon: BarChart3, label: "Comparas opciones" },
+              { icon: PackageCheck, label: "Recibis tu pieza" },
+            ].map((step) => (
+              <div key={step.label} className="flex flex-col items-center gap-2">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-hero-muted/15 bg-hero-muted/10">
+                  <step.icon size={20} className="text-primary" />
+                </div>
+                <span className="max-w-[90px] text-center text-[11px] leading-tight text-hero-muted">
+                  {step.label}
+                </span>
+              </div>
+            ))}
+          </div>
           </motion.div>
 
           {/* Right: process flow illustration with model preview */}

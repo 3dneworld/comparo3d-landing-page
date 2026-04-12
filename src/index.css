@@ -1,10 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   :root {
     --background: 220 20% 97%;
     --foreground: 220 30% 12%;
@@ -66,8 +69,16 @@
   body {
     @apply bg-background text-foreground font-body antialiased;
   }
-  h1, h2, h3, h4, h5, h6 {
+  h1 {
+    font-family: 'Montserrat', system-ui, sans-serif;
+    font-weight: 800;
+  }
+  h2, h4, h5, h6 {
     @apply font-display;
+  }
+  h2, h3 {
+    font-family: 'Montserrat', system-ui, sans-serif;
+    font-weight: 700;
   }
 }
 
@@ -95,5 +106,88 @@
   }
   .shadow-card-hover {
     box-shadow: var(--shadow-card-hover);
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .provider-marquee-mobile {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.25rem;
+  }
+  .provider-marquee-mobile-track {
+    display: flex;
+    width: max-content;
+    gap: 1rem;
+  }
+  .provider-marquee-item {
+    display: flex;
+    min-width: fit-content;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .provider-marquee-desktop {
+    display: none;
+  }
+  @media (min-width: 768px) {
+    .provider-marquee-mobile {
+      display: none;
+    }
+    .provider-marquee-desktop {
+      position: relative;
+      display: block;
+      min-height: 9.5rem;
+      overflow: hidden;
+    }
+    .provider-marquee-lane {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(var(--provider-count), minmax(0, 1fr));
+      justify-items: center;
+      align-items: start;
+      gap: clamp(1.5rem, 2vw, 2.5rem);
+      animation-duration: 22s;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+    }
+    .provider-marquee-item {
+      min-width: 0;
+    }
+    .provider-marquee-lane-a {
+      animation-name: provider-marquee-lane-a;
+    }
+    .provider-marquee-lane-b {
+      animation-name: provider-marquee-lane-b;
+    }
+    .provider-marquee-desktop:hover .provider-marquee-lane {
+      animation-play-state: paused;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .provider-marquee-lane {
+      animation: none;
+    }
+  }
+  @keyframes provider-marquee-lane-a {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-100%);
+    }
+  }
+  @keyframes provider-marquee-lane-b {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
   }
 }

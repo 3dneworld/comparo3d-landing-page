@@ -1,64 +1,131 @@
-import { Upload, Users, BarChart3, PackageCheck } from "lucide-react";
+import { useMemo } from "react";
+import { Upload, Check, BarChart3, Truck, FileStack, ShieldCheck } from "lucide-react";
+import { useAudience, type Audience } from "@/contexts/AudienceContext";
+import AnimateOnScroll from "@/components/AnimateOnScroll";
+import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
 
-const steps = [
-  {
-    icon: Upload,
-    number: "1",
-    title: "Subí tu archivo",
-    desc: "Cargá tu modelo 3D y definí lo básico para cotizar.",
+interface StepItem {
+  step: string;
+  title: string;
+  desc: string;
+  icon: typeof Upload;
+}
+
+const sectionCopy: Record<Audience, { eyebrow: string; title: string; support: string }> = {
+  particular: {
+    eyebrow: "PROCESO SIMPLE",
+    title: "Cómo funciona",
+    support: "Una secuencia clara: subís tu archivo, comparás opciones reales y elegís la propuesta que más te conviene.",
   },
-  {
-    icon: Users,
-    number: "2",
-    title: "Recibí opciones",
-    desc: "Compará propuestas según precio, material y plazo.",
+  empresa: {
+    eyebrow: "FLUJO OPERATIVO",
+    title: "Cómo coordinamos un pedido empresa",
+    support: "Un proceso más ordenado para centralizar requerimientos, propuesta, validación y ejecución sin dispersión operativa.",
   },
-  {
-    icon: BarChart3,
-    number: "3",
-    title: "Elegí la mejor",
-    desc: "Seleccioná la opción que mejor se ajuste a tu necesidad.",
-  },
-  {
-    icon: PackageCheck,
-    number: "4",
-    title: "Recibí tu pieza",
-    desc: "Coordinamos producción y entrega para que no tengas que resolverlo por tu cuenta.",
-  },
-];
+};
+
+const stepsByAudience: Record<Audience, StepItem[]> = {
+  particular: [
+    {
+      step: "Paso 1",
+      title: "Subí tu archivo STL",
+      desc: "Cargás la pieza, completás lo básico y dejás listo el pedido para cotizar.",
+      icon: Upload,
+    },
+    {
+      step: "Paso 2",
+      title: "Compará opciones",
+      desc: "Analiza propuestas de diferentes proveedores según precio, plazo y condiciones de entrega.",
+      icon: BarChart3,
+    },
+    {
+      step: "Paso 3",
+      title: "Elegí la mejor",
+      desc: "Seleccionás la opción para vos sin perder tiempo buscando por tu cuenta en cada proveedor.",
+      icon: Check,
+    },
+    {
+      step: "Paso 4",
+      title: "Recibí tu pieza",
+      desc: "Se coordina producción y entrega para cerrar el pedido con seguimiento claro.",
+      icon: Truck,
+    },
+  ],
+  empresa: [
+    {
+      step: "Paso 1",
+      title: "Compartí requerimiento y archivos",
+      desc: "Recibimos el pedido, alcance técnico, cantidades y contexto de uso para ordenar la cotización.",
+      icon: FileStack,
+    },
+    {
+      step: "Paso 2",
+      title: "Recibí propuesta consolidada",
+      desc: "Centralizamos opciones y armamos una propuesta para evitar negociar proveedor por proveedor.",
+      icon: BarChart3,
+    },
+    {
+      step: "Paso 3",
+      title: "Validá alcance y tiempos",
+      desc: "Se define la mejor combinación entre factibilidad, plazo, materiales y condiciones operativas.",
+      icon: ShieldCheck,
+    },
+    {
+      step: "Paso 4",
+      title: "Coordinamos producción y entrega",
+      desc: "Ejecutamos el pedido con seguimiento consolidado y, si aplica, producción paralela coordinada.",
+      icon: Truck,
+    },
+  ],
+};
 
 const HowItWorks = () => {
-  return (
-    <section id="como-funciona" className="py-20 md:py-28 bg-background">
-      <div className="container">
-        <div className="text-center mb-14">
-          <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Proceso simple</p>
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">Cómo funciona</h2>
-          <p className="mt-3 text-muted-foreground max-w-lg mx-auto">
-            Cotizá, compará y recibí tu pieza en pocos pasos.
-          </p>
-        </div>
+  const { audience } = useAudience();
+  const copy = sectionCopy[audience];
+  const steps = useMemo(() => stepsByAudience[audience], [audience]);
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-          {steps.map((step, i) => (
-            <div
-              key={step.number}
-              className="relative bg-card rounded-xl p-7 shadow-card hover:shadow-card-hover transition-shadow border border-border group"
+  return (
+    <section id="como-funciona" className="scroll-mt-24 bg-background py-16 md:scroll-mt-28 md:py-24">
+      <div className="container max-w-7xl">
+        <AnimateOnScroll variant="fade-up">
+          <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
+            <h2 className="text-3xl font-bold leading-tight text-foreground md:text-4xl">
+              {copy.title}
+            </h2>
+            <p className="mx-auto mt-4 max-w-3xl text-[15px] leading-relaxed text-muted-foreground md:text-[17px]">
+              {copy.support}
+            </p>
+          </div>
+        </AnimateOnScroll>
+
+        <StaggerChildren staggerDelay={0.12} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 xl:gap-5">
+          {steps.map((step) => (
+            <StaggerItem key={step.title}>
+            <article
+              key={step.title}
+              className="group relative flex min-h-[250px] flex-col rounded-2xl border border-border bg-card px-5 py-5 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/18 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.22)] md:px-6 md:py-6"
             >
-              <span className="text-3xl font-display font-semibold text-muted-foreground/20 absolute top-4 right-5 select-none">
-                {step.number}
-              </span>
-              <div className="w-14 h-14 rounded-lg bg-gradient-primary flex items-center justify-center mb-5">
-                <step.icon size={26} className="text-primary-foreground" />
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <span className="inline-flex items-center rounded-full border border-primary/14 bg-primary/[0.05] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+                  {step.step}
+                </span>
+
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-primary shadow-[0_10px_24px_-16px_hsl(var(--primary)/0.6)]">
+                  <step.icon size={22} className="text-primary-foreground" />
+                </div>
               </div>
-              <h3 className="font-display font-semibold text-lg text-foreground mb-2">{step.title}</h3>
-              <p className="text-[13px] text-muted-foreground leading-[1.65]">{step.desc}</p>
-              {i < steps.length - 1 && (
-                <div className="hidden lg:block absolute top-1/2 -right-4 w-8 h-[2px] bg-border" />
-              )}
-            </div>
+
+              <h3 className="text-[22px] font-semibold leading-[1.15] text-foreground md:text-[24px]">
+                {step.title}
+              </h3>
+
+              <p className="mt-4 text-[14px] leading-[1.65] text-muted-foreground md:text-[15px]">
+                {step.desc}
+              </p>
+            </article>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerChildren>
       </div>
     </section>
   );

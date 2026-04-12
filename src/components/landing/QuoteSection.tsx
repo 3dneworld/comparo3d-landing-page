@@ -1,9 +1,28 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Upload, User, FileText, ShoppingCart, ChevronRight, ChevronDown, RotateCcw, Lock, MapPin, Eye, CheckCircle2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Upload,
+  User,
+  FileText,
+  CreditCard,
+  CheckCircle2,
+  RotateCcw,
+  Files,
+  ShieldCheck,
+} from "lucide-react";
 import { useAudience } from "@/contexts/AudienceContext";
-import modeloPreview from "@/assets/modelo-preview.png";
+import AnimateOnScroll from "@/components/AnimateOnScroll";
+import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
+import { useQuoteFlow } from "@/hooks/useQuoteFlow";
+import { StepUpload } from "./quote/StepUpload";
+import { StepUserData } from "./quote/StepUserData";
+import { StepQuotes } from "./quote/StepQuotes";
+import { StepCheckout } from "./quote/StepCheckout";
+import { StepConfirmation } from "./quote/StepConfirmation";
+import { QuoteOption, getThumbnail, isApiError } from "@/lib/api";
 
-const STORAGE_KEY = "comparo3d_quote";
+const STORAGE_KEY      = "comparo3d_quote";
+const MP_BANNER_KEY    = "comparo3d_mp_banner";
+const VALID_MATERIALS = new Set(["PLA", "ASESORAR", "ABS", "PETG", "Nylon", "TPU"]);
 
 interface QuoteData {
   nombre: string;
@@ -14,203 +33,517 @@ interface QuoteData {
   cantidad: string;
   detalles: string;
   fileName: string;
-  // Advanced fields
   colorAcabado: string;
-  usoPieza: string;
-  urgencia: string;
-  tolerancia: string;
+  infill: string;
+  alturaCapa: string;
   observaciones: string;
+  thumbnailUrl: string;  // ← persiste el thumbnail en localStorage para restaurar sesión
   step: number;
   sessionId: string;
+  tempName: string;
+  stlSha256: string;
+  selectedQuote: QuoteOption | null;
+  orderId: string;
   updatedAt: string;
 }
 
 const defaultData: QuoteData = {
-  nombre: "",
-  email: "",
-  telefono: "",
-  ubicacion: "",
-  material: "",
-  cantidad: "1",
-  detalles: "",
-  fileName: "",
-  colorAcabado: "",
-  usoPieza: "",
-  urgencia: "",
-  tolerancia: "",
-  observaciones: "",
-  step: 1,
-  sessionId: "",
-  updatedAt: "",
+  nombre: "", email: "", telefono: "", ubicacion: "",
+  material: "PLA", cantidad: "1", detalles: "", fileName: "",
+  colorAcabado: "", infill: "20%", alturaCapa: "0.2mm",
+  observaciones: "", thumbnailUrl: "", step: 1, sessionId: "", tempName: "",
+  stlSha256: "", selectedQuote: null, orderId: "", updatedAt: "",
 };
 
 const stepLabels = [
-  { icon: Upload, label: "Archivo 3D" },
-  { icon: User, label: "Tus datos" },
-  { icon: FileText, label: "Cotizaciones" },
-  { icon: ShoppingCart, label: "Compra" },
+  { icon: Upload, label: "Archivo 3D", short: "Archivo" },
+  { icon: User, label: "Tus datos", short: "Datos" },
+  { icon: FileText, label: "Cotizaciones", short: "Opciones" },
+  { icon: CreditCard, label: "Envío y pago", short: "Pago" },
+  { icon: CheckCircle2, label: "Confirmación", short: "Listo" },
 ];
 
-const materials = ["PLA", "ABS", "PETG", "Resina", "Nylon", "TPU", "Otro"];
+function loadSaved(): QuoteData | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<QuoteData>;
+    const normalizedMaterial =
+      typeof parsed.material === "string" && VALID_MATERIALS.has(parsed.material)
+        ? parsed.material
+        : defaultData.material;
+    const normalizedCantidad =
+      typeof parsed.cantidad === "string" && parsed.cantidad.trim() !== ""
+        ? parsed.cantidad
+        : defaultData.cantidad;
+    return {
+      ...defaultData,
+      ...parsed,
+      material: normalizedMaterial,
+      cantidad: normalizedCantidad,
+      selectedQuote: parsed.selectedQuote ?? null,
+      orderId: parsed.orderId ?? "",
+    };
+  } catch {
+    return null;
+  }
+}
 
-const generateSessionId = () =>
-  `CMP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+function saveData(data: QuoteData): void {
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({ ...data, updatedAt: new Date().toISOString() })
+  );
+}
 
 const QuoteSection = () => {
   const { audience } = useAudience();
-  const [data, setData] = useState<QuoteData>(defaultData);
-  const [hasSaved, setHasSaved] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const isEmpresa = audience === "empresa";
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const contentCardRef = useRef<HTMLDivElement | null>(null);
+  const restoredScrollKeyRef = useRef<string>("");
 
-  // Load from localStorage on mount
+  const [data, setDataRaw] = useState<QuoteData>(() => loadSaved() ?? defaultData);
+  const [hasSaved, setHasSaved] = useState(() => !!loadSaved());
+  const [isCheckingSavedSession, setIsCheckingSavedSession] = useState(() => {
+    const saved = loadSaved();
+    return Boolean(saved?.step && saved.step > 1 && saved.sessionId);
+  });
+  /** Cotización elegida por el usuario (Paso 3 → 4), persistida para volver desde MercadoPago. */
+  const [selectedQuote, setSelectedQuote] = useState<QuoteOption | null>(() => data.selectedQuote ?? null);
+  /** Banner de retorno desde MercadoPago */
+  const [mpBanner, setMpBanner] = useState<{ type: "success" | "failure" | "pending"; orderId: string } | null>(null);
+
+  // ── Detectar retorno desde MercadoPago (?payment=success|failure|pending&order_id=XXX) ──
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as QuoteData;
-        console.log("[QuoteSection] Restored saved quote:", parsed.sessionId);
-        setData(parsed);
-        setHasSaved(true);
-      }
-    } catch (e) {
-      console.warn("[QuoteSection] Failed to load saved quote:", e);
-    }
+    const params  = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    const orderId = params.get("order_id");
+
+    if (!payment || !orderId) return;
+    if (payment !== "success" && payment !== "failure" && payment !== "pending") return;
+
+    // Limpiar URL sin recargar
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, "", cleanUrl);
+
+    const saved = loadSaved();
+    const restoredQuote = saved?.selectedQuote ?? null;
+    if (restoredQuote) setSelectedQuote(restoredQuote);
+
+    setDataRaw((prev) => {
+      const next = {
+        ...prev,
+        selectedQuote: prev.selectedQuote ?? restoredQuote,
+        orderId,
+        step: payment === "success" ? 5 : 4,
+      };
+      saveData(next);
+      return next;
+    });
+    setHasSaved(true);
+    requestAnimationFrame(() => {
+      document.getElementById("cotizar")?.scrollIntoView({ block: "start" });
+    });
+
+    setMpBanner({ type: payment as "success" | "failure" | "pending", orderId });
   }, []);
 
-  const saveToStorage = useCallback((newData: QuoteData) => {
-    const toSave = { ...newData, updatedAt: new Date().toISOString() };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-    console.log("[QuoteSection] Auto-saved to localStorage");
-  }, []);
+  const setData = (updater: Partial<QuoteData> | ((prev: QuoteData) => QuoteData)) => {
+    setDataRaw((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : { ...prev, ...updater };
+      saveData(next);
+      return next;
+    });
+  };
 
   const updateField = (field: keyof QuoteData, value: string) => {
-    const updated = { ...data, [field]: value };
-    setData(updated);
-    saveToStorage(updated);
+    setData({ [field]: value } as Partial<QuoteData>);
   };
 
-  const goToStep = (step: number) => {
-    const updated = { ...data, step };
-    if (step === 2 && !data.sessionId) {
-      updated.sessionId = generateSessionId();
-    }
-    setData(updated);
-    saveToStorage(updated);
-    console.log("[QuoteSection] Step changed to:", step);
-  };
-
-  const handleFileSelect = (file: File | null) => {
-    if (file) {
-      console.log("[QuoteSection] File selected:", file.name, file.size);
-      updateField("fileName", file.name);
-      // TODO: Upload file to backend when API is ready
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    handleFileSelect(file);
-  };
+  const goToStep = (step: number) => setData({ step });
 
   const resetQuote = () => {
     localStorage.removeItem(STORAGE_KEY);
-    setData(defaultData);
+    setDataRaw(defaultData);
+    setSelectedQuote(null);
+    setMpBanner(null);
     setHasSaved(false);
-    console.log("[QuoteSection] Quote reset");
+    setIsCheckingSavedSession(false);
   };
 
-  const handleDetectLocation = () => {
-    // TODO: Integrate geolocation API or IP-based detection
-    console.log("[QuoteSection] Detect location triggered");
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        () => {
-          // For now just set a placeholder — real implementation would reverse geocode
-          updateField("ubicacion", "Buenos Aires");
-          console.log("[QuoteSection] Location detected");
-        },
-        (err) => {
-          console.warn("[QuoteSection] Geolocation error:", err.message);
+  const scrollToActiveStep = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const target = contentCardRef.current ?? sectionRef.current ?? document.getElementById("cotizar");
+    target?.scrollIntoView({ behavior, block: "start" });
+  }, []);
+
+  // ── Ref para no iniciar el polling dos veces para la misma sesión ──
+  const polledSessionRef = useRef<string>("");
+  // ── Ref para no pedir el thumbnail dos veces para la misma sesión ──
+  const thumbnailFetchedRef = useRef<string>("");
+  // ── Ref para validar una sesión restaurada una sola vez contra el backend ──
+  const restoredSessionCheckedRef = useRef<string>("");
+
+  // --- Callbacks para el hook ---
+  const handleSessionIdReady = useCallback(
+    (sessionId: string, tempName: string, stlSha256: string, thumbnailUrl: string | null) => {
+      setData({ sessionId, tempName, stlSha256, thumbnailUrl: thumbnailUrl || "" });
+    },
+    []
+  );
+
+  const handleQuotesReady = useCallback((_quotes: QuoteOption[]) => {
+    // quotes ya vienen del hook, no necesitamos guardarlas en data
+  }, []);
+
+  const flow = useQuoteFlow({
+    sessionId: data.sessionId,
+    tempName: data.tempName,
+    onSessionIdReady: handleSessionIdReady,
+    onQuotesReady: handleQuotesReady,
+  });
+
+  useEffect(() => {
+    if (flow.orderId && flow.orderId !== data.orderId) {
+      setData({ orderId: flow.orderId });
+    }
+  }, [flow.orderId, data.orderId]);
+
+  useEffect(() => {
+    const updates: Partial<QuoteData> = {};
+    if (flow.material && flow.material !== data.material) {
+      updates.material = flow.material;
+    }
+    if (flow.cantidad !== null && String(flow.cantidad) !== data.cantidad) {
+      updates.cantidad = String(flow.cantidad);
+    }
+    if (Object.keys(updates).length > 0) {
+      setData(updates);
+    }
+  }, [flow.material, flow.cantidad, data.material, data.cantidad]);
+
+  // ── Validar sesión restaurada y recuperar thumbnail desde backend ──
+  useEffect(() => {
+    const isRestoredSession = hasSaved && data.step > 1 && !!data.sessionId;
+    const conditions = {
+      stepOk:          data.step >= 2,
+      sessionOk:       !!data.sessionId,
+      restoredOk:      !isRestoredSession || restoredSessionCheckedRef.current !== data.sessionId,
+      refOk:           isRestoredSession || thumbnailFetchedRef.current !== data.sessionId,
+      noFlowThumb:     !flow.thumbnailUrl,
+      noDataThumb:     !data.thumbnailUrl,
+      hasSaved,
+      step:            data.step,
+      sessionId:       data.sessionId,
+      refCurrent:      thumbnailFetchedRef.current,
+      flowThumbLen:    flow.thumbnailUrl?.length ?? 0,
+      dataThumbLen:    data.thumbnailUrl?.length ?? 0,
+    };
+    console.log("[THUMB] useEffect thumbnail fired —", conditions);
+
+    if (
+      conditions.stepOk &&
+      conditions.sessionOk &&
+      conditions.restoredOk &&
+      conditions.refOk &&
+      (isRestoredSession || (conditions.noFlowThumb && conditions.noDataThumb))
+    ) {
+      if (isRestoredSession) restoredSessionCheckedRef.current = data.sessionId;
+      thumbnailFetchedRef.current = data.sessionId;
+      console.log("[THUMB] Validando/fetch thumbnail del backend para session:", data.sessionId);
+      getThumbnail(data.sessionId).then((result) => {
+        if (!isApiError(result) && result.thumbnail_base64) {
+          console.log("[THUMB] Thumbnail recibido del backend — source:", result.source, "len:", result.thumbnail_base64.length);
+          setData({ thumbnailUrl: result.thumbnail_base64 });
+          if (isRestoredSession) setIsCheckingSavedSession(false);
+        } else {
+          console.warn("[THUMB] Thumbnail no disponible en backend:", isApiError(result) ? (result as { error: string }).error : "sin thumbnail_base64");
+          if (isApiError(result) && (result.needs_reupload || result.http_status === 404)) {
+            localStorage.removeItem(STORAGE_KEY);
+            restoredSessionCheckedRef.current = "";
+            thumbnailFetchedRef.current = "";
+            polledSessionRef.current = "";
+            setHasSaved(false);
+            setIsCheckingSavedSession(false);
+            setDataRaw(defaultData);
+            flow.setError("No pudimos recuperar el STL de la sesión guardada. Por favor subí el archivo nuevamente.");
+          } else if (isRestoredSession) {
+            setIsCheckingSavedSession(false);
+          }
         }
-      );
+      }).catch((err) => {
+        console.error("[THUMB] Error inesperado en getThumbnail:", err);
+        if (isRestoredSession) setIsCheckingSavedSession(false);
+      });
+    } else {
+      console.log("[THUMB] Sin fetch — condición no cumplida (ver arriba)");
+      if (!isRestoredSession) setIsCheckingSavedSession(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.step, data.sessionId, hasSaved]);
+
+  // ── Auto-iniciar polling cuando se llega al step 3 (incluso restaurando desde localStorage) ──
+  useEffect(() => {
+    console.log("[POLL] useEffect polling fired —", {
+      step: data.step,
+      sessionId: data.sessionId,
+      refCurrent: polledSessionRef.current,
+      willPoll: !isCheckingSavedSession && data.step === 3 && !!data.sessionId && polledSessionRef.current !== data.sessionId,
+    });
+    if (
+      !isCheckingSavedSession &&
+      data.step === 3 &&
+      data.sessionId &&
+      polledSessionRef.current !== data.sessionId
+    ) {
+      polledSessionRef.current = data.sessionId;
+      console.log("[POLL] Arrancando polling para session:", data.sessionId);
+      flow.startPollingOptions();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.step, data.sessionId, isCheckingSavedSession]);
+
+  // --- Handlers de cada step ---
+  const handleStep1Continue = async () => {
+    if (!flow.stlFile && !data.fileName) {
+      // Sin archivo, igual avanzan (modo sin STL no existe actualmente — dejar pasar)
+      goToStep(2);
+      return;
+    }
+    if (flow.stlFile) {
+      const ok = await flow.handleUploadStl(flow.stlFile, data.sessionId || undefined);
+      if (ok) {
+        setData({ fileName: flow.stlFile.name });
+        goToStep(2);
+      }
+    } else {
+      goToStep(2);
     }
   };
 
-  // Mock quotes for step 3
-  const mockQuotes = [
-    { provider: "Proveedor A", price: 4500, time: "3 días" },
-    { provider: "Proveedor B", price: 3900, time: "5 días" },
-    { provider: "Proveedor C", price: 5200, time: "2 días" },
-  ];
+  const handleStep1AutoUpload = async (file: File) => {
+    const ok = await flow.handleUploadStl(file, data.sessionId || undefined);
+    if (ok) {
+      setData({ fileName: file.name });
+      goToStep(2);
+    }
+  };
 
-  const isEmpresa = audience === "empresa";
+  const handleStep2Continue = async () => {
+    if (!data.nombre || !data.email || !data.cantidad) {
+      flow.setError(
+        "Completá los campos obligatorios (nombre, email y cantidad) para continuar."
+      );
+      return;
+    }
+    // El dropdown siempre debería tener valor; si una sesión vieja guardó material vacío,
+    // forzamos PLA para mantener compatibilidad y evitar un falso error de validación.
+    const normalizedMaterial = VALID_MATERIALS.has(data.material) ? data.material : "PLA";
+    const materialParaBackend = normalizedMaterial === "ASESORAR" ? "PLA" : normalizedMaterial;
+
+    const ok = await flow.handleInitDraft({
+      client_name: data.nombre,
+      client_email: data.email,
+      client_phone: data.telefono,
+      client_location: data.ubicacion,
+      material: materialParaBackend,
+      cantidad: data.cantidad,
+      project_details: data.detalles,
+      color_acabado: data.colorAcabado,
+      observaciones: data.observaciones,
+      infill: data.infill || "20%",
+      layer_height: data.alturaCapa || "0.2mm",
+      stl_sha256: data.stlSha256,
+    });
+    if (ok) {
+      goToStep(3); // el useEffect de polling detecta step=3 y arranca automáticamente
+    }
+  };
+
+  const handleSelectQuote = async (quoteOptionUid: string) => {
+    // Guardar la cotización elegida ANTES de llamar al backend para tenerla disponible en Paso 4
+    const chosen = flow.quotes.find((q) => q.quote_option_uid === quoteOptionUid) ?? null;
+    if (!chosen) {
+      flow.setError("No pudimos identificar la cotización elegida. Por favor intentá nuevamente.");
+      return;
+    }
+    setSelectedQuote(chosen);
+    setData({ selectedQuote: chosen });
+    const orderId = await flow.handleAcceptQuote(quoteOptionUid);
+    if (orderId) {
+      setData((prev) => ({ ...prev, step: 4, selectedQuote: chosen, orderId }));
+    }
+  };
+
+  useEffect(() => {
+    if (isCheckingSavedSession) return;
+    if (!hasSaved || data.step <= 1) return;
+
+    const scrollKey = `${data.sessionId}:${data.step}`;
+    if (restoredScrollKeyRef.current === scrollKey) return;
+    restoredScrollKeyRef.current = scrollKey;
+
+    const timer = window.setTimeout(() => {
+      scrollToActiveStep("smooth");
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [data.sessionId, data.step, hasSaved, isCheckingSavedSession, scrollToActiveStep]);
 
   return (
-    <section id="cotizar" className="py-20 md:py-28 bg-muted/50">
-      <div className="container max-w-3xl">
-        <div className="text-center mb-6">
-          <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Empezá ahora</p>
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">Pedí tu cotización</h2>
-        </div>
+    <section id="cotizar" ref={sectionRef} className="scroll-mt-24 bg-muted/50 py-16 md:scroll-mt-28 md:py-24">
+      <div className="container max-w-4xl">
 
-        {/* Helper notes */}
-        <div className="text-center mb-8 space-y-1">
-          <p className="text-sm text-muted-foreground">
-            1 archivo por cotización. Podés pedir varias copias de la misma pieza.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Formato: STL · No se aceptan múltiples piezas diferentes en una sola cotización.
-          </p>
-          {isEmpresa ? (
-            <p className="text-xs font-medium text-accent mt-2">
-              Recibí una propuesta en hasta 72 hs hábiles.
+        {/* Header */}
+        <AnimateOnScroll variant="fade-up">
+          <div className="mx-auto mb-8 max-w-3xl text-center md:mb-10">
+            <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
+              {isEmpresa ? "Solicitá tu propuesta" : "Pedí tu cotización"}
+            </h2>
+            <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
+              {isEmpresa
+                ? "Ordená el requerimiento, cargá el archivo y dejá listo el pedido para recibir una propuesta consolidada."
+                : "Cargá tu STL, completá los datos y compará opciones reales sin perder tiempo buscando proveedor por proveedor."}
             </p>
-          ) : (
-            <p className="text-xs font-medium text-primary mt-2">
-              Recibí cotizaciones en minutos.
-            </p>
-          )}
-        </div>
+          </div>
+        </AnimateOnScroll>
 
-        {/* Session recovery */}
-        {hasSaved && data.step > 1 && (
-          <div className="mb-6 bg-primary/5 border border-primary/20 rounded-lg p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-foreground">Encontramos una cotización empezada</p>
-              <p className="text-xs text-muted-foreground">Sesión {data.sessionId}</p>
+        {/* Info cards */}
+        <StaggerChildren className="scrollbar-hide -mx-4 mb-6 grid auto-cols-[78%] grid-flow-col gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory md:mx-auto md:mb-8 md:max-w-3xl md:grid-cols-3 md:grid-flow-row md:auto-cols-auto md:overflow-visible md:px-0 md:pb-0" staggerDelay={0.1}>
+          <StaggerItem className="snap-start">
+            <div className="h-full rounded-2xl border border-border bg-card px-4 py-3 text-left">
+              <div className="flex items-center gap-2 text-primary">
+                <Files size={16} />
+                <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Archivo</span>
+              </div>
+              <p className="mt-2 text-[14px] font-medium leading-snug text-foreground">
+                1 archivo por cotización
+              </p>
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                Varias copias de la misma pieza, sí. Piezas distintas, por separado.
+              </p>
             </div>
-            <div className="flex gap-2">
+          </StaggerItem>
+
+          <StaggerItem className="snap-start">
+            <div className="h-full rounded-2xl border border-primary/15 bg-card px-4 py-3 text-left">
+              <div className="flex items-center gap-2 text-primary">
+                <Upload size={16} />
+                <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Formato</span>
+              </div>
+              <p className="mt-2 text-[14px] font-medium leading-snug text-foreground">
+                STL
+              </p>
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                La experiencia actual está pensada para STL y cotización automática.
+              </p>
+            </div>
+          </StaggerItem>
+
+          <StaggerItem className="snap-start">
+            <div className="h-full rounded-2xl border border-border bg-card px-4 py-3 text-left">
+              <div className="flex items-center gap-2 text-primary">
+                <ShieldCheck size={16} />
+                <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Respuesta</span>
+              </div>
+              <p className="mt-2 text-[14px] font-medium leading-snug text-foreground">
+                {isEmpresa ? "Propuesta en hasta 72 hs hábiles" : "Cotizaciones en minutos"}
+              </p>
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                {isEmpresa
+                  ? "Coordinamos proveedores verificados y consolidamos la propuesta."
+                  : "Comparás opciones reales sin salir a buscar talleres por tu cuenta."}
+              </p>
+            </div>
+          </StaggerItem>
+        </StaggerChildren>
+
+        {/* Banner de retorno desde MercadoPago */}
+        {mpBanner && (
+          <div
+            className={`mb-5 flex items-start justify-between gap-3 rounded-2xl border p-4 ${
+              mpBanner.type === "success"
+                ? "border-green-200 bg-green-50"
+                : mpBanner.type === "pending"
+                ? "border-yellow-200 bg-yellow-50"
+                : "border-red-200 bg-red-50"
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <span className="text-xl leading-none">
+                {mpBanner.type === "success" ? "✅" : mpBanner.type === "pending" ? "⏳" : "⚠️"}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {mpBanner.type === "success"
+                    ? "¡Pago recibido! Tu pedido está confirmado."
+                    : mpBanner.type === "pending"
+                    ? "Pago pendiente — te avisamos cuando se acredite."
+                    : "El pago no se procesó. Podés intentarlo de nuevo."}
+                </p>
+                <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                  Ref: {mpBanner.orderId}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setMpBanner(null)}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+              aria-label="Cerrar"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* Banner de sesión guardada */}
+        {isCheckingSavedSession && (
+          <div className="mb-5 rounded-2xl border border-primary/20 bg-primary/[0.05] p-4">
+            <p className="text-sm font-medium text-foreground">Validando cotización guardada...</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Estamos comprobando que el STL todavía esté disponible para continuar.
+            </p>
+          </div>
+        )}
+
+        {hasSaved && !isCheckingSavedSession && data.step > 1 && (
+          <div className="mb-5 rounded-2xl border border-primary/20 bg-primary/[0.05] p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Encontramos una cotización empezada
+                </p>
+                <p className="text-[11px] text-muted-foreground/70">Sesión {data.sessionId}</p>
+              </div>
+              <div className="flex gap-2">
               <button
                 onClick={resetQuote}
-                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 px-3 py-1.5 rounded border border-border hover:bg-muted transition-colors"
+                className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
               >
                 <RotateCcw size={12} /> Empezar de nuevo
               </button>
               <button
-                onClick={() => {}}
-                className="text-xs text-primary font-semibold flex items-center gap-1 px-3 py-1.5 rounded bg-primary/10 hover:bg-primary/15 transition-colors"
+                onClick={() => goToStep(data.step)}
+                className="rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/15"
               >
                 Continuar
               </button>
+              </div>
             </div>
           </div>
         )}
 
         {/* Step indicator */}
-        <div className="flex items-center justify-between mb-10">
+        <div className="mb-8 flex items-center justify-between overflow-x-auto md:mb-9">
           {stepLabels.map((s, i) => {
             const stepNum = i + 1;
             const isActive = data.step === stepNum;
             const isDone = data.step > stepNum;
             return (
-              <div key={s.label} className="flex items-center flex-1">
-                <div className="flex flex-col items-center flex-1">
+              <div key={s.label} className="flex flex-1 items-center">
+                <div className="flex w-full flex-col items-center">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-all md:h-10 md:w-10 ${
                       isActive
                         ? "bg-gradient-primary text-primary-foreground shadow-cta"
                         : isDone
@@ -218,14 +551,19 @@ const QuoteSection = () => {
                         : "bg-secondary text-muted-foreground"
                     }`}
                   >
-                    <s.icon size={18} />
+                    <s.icon size={15} className="md:h-[17px] md:w-[17px]" />
                   </div>
-                  <span className={`mt-2 text-xs font-medium hidden sm:block ${isActive ? "text-primary" : "text-muted-foreground"}`}>
-                    {s.label}
+                  <span
+                    className={`mt-2 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.08em] md:text-[11px] ${
+                      isActive ? "text-primary" : "text-muted-foreground"
+                    }`}
+                  >
+                    <span className="hidden sm:inline">{s.label}</span>
+                    <span className="sm:hidden">{s.short}</span>
                   </span>
                 </div>
                 {i < stepLabels.length - 1 && (
-                  <div className={`h-[2px] flex-1 mx-1 ${isDone ? "bg-primary" : "bg-border"}`} />
+                  <div className={`h-[2px] w-full min-w-[16px] ${isDone ? "bg-primary" : "bg-border"}`} />
                 )}
               </div>
             );
@@ -233,335 +571,126 @@ const QuoteSection = () => {
         </div>
 
         {/* Step content */}
-        <div className="bg-card rounded-xl border border-border p-6 md:p-8 shadow-card">
-          {/* ===== STEP 1: FILE UPLOAD ===== */}
-          {data.step === 1 && (
-            <div>
-              <h3 className="font-display font-semibold text-lg text-foreground mb-1">Subí tu archivo 3D</h3>
-              <p className="text-sm text-muted-foreground mb-5">
-                Un solo archivo por cotización. Si necesitás cotizar piezas distintas, creá una cotización por cada una.
+        <div ref={contentCardRef} className="rounded-2xl border border-border bg-card p-5 shadow-card md:p-6">
+          {isCheckingSavedSession ? (
+            <div className="flex flex-col items-center gap-3 py-10 text-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              <p className="text-[15px] font-medium text-foreground">Validando sesión guardada...</p>
+              <p className="max-w-md text-[13px] leading-relaxed text-muted-foreground">
+                Si el STL ya no está disponible en el backend, te vamos a pedir que lo subas nuevamente.
               </p>
-              <div
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
-                  isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-                }`}
-              >
-                <Upload size={32} className="mx-auto text-muted-foreground mb-3" />
-                {data.fileName ? (
-                  <p className="text-sm font-medium text-foreground">{data.fileName}</p>
-                ) : (
-                  <>
-                    <p className="text-sm font-medium text-foreground">Arrastrá tu archivo acá</p>
-                    <p className="text-xs text-muted-foreground mt-1">o hacé clic para seleccionar</p>
-                    <p className="text-xs text-muted-foreground mt-2 font-medium">Formato aceptado: STL</p>
-                  </>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".stl"
-                  className="hidden"
-                  onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
-                />
-              </div>
-              {/* Confidentiality note */}
-              <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
-                <Lock size={13} className="shrink-0" />
-                <span>Tu archivo se mantiene confidencial y no se comparte fuera del proceso de cotización.</span>
-              </div>
-              <button
-                onClick={() => goToStep(2)}
-                className="mt-6 w-full bg-gradient-primary text-primary-foreground py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-cta"
-              >
-                Continuar <ChevronRight size={18} />
-              </button>
             </div>
+          ) : data.step === 1 && (
+            <StepUpload
+              fileName={data.fileName}
+              isLoading={flow.isLoading}
+              progressMessage={flow.progressMessage}
+              error={flow.error}
+              onFileSelect={(file) => {
+                flow.setStlFile(file);
+                updateField("fileName", file.name);
+              }}
+              onAutoUpload={handleStep1AutoUpload}
+            />
           )}
 
-          {/* ===== STEP 2: USER DATA ===== */}
-          {data.step === 2 && (
-            <div>
-              {/* Model preview card */}
-              {data.fileName && (
-                <div className="mb-6 bg-muted/50 border border-border rounded-xl overflow-hidden">
-                  <div className="flex items-center gap-2 px-4 pt-3 pb-2">
-                    <Eye size={14} className="text-primary" />
-                    <p className="text-sm font-medium text-foreground">Vista previa del modelo</p>
-                    <CheckCircle2 size={14} className="text-accent ml-auto" />
-                    <span className="text-xs text-accent font-medium">Cargado</span>
-                  </div>
-                  <div className="px-4 pb-4">
-                    <div className="bg-background rounded-lg overflow-hidden flex items-center justify-center h-40 border border-border">
-                      {/* TODO: Replace with real thumbnail from uploaded file when backend supports it */}
-                      <img
-                        src={modeloPreview}
-                        alt="Vista previa del modelo 3D"
-                        className="h-full w-full object-contain p-4"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="text-xs text-muted-foreground">{data.fileName}</p>
-                      <p className="text-xs text-muted-foreground">Tu pieza fue cargada correctamente</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <h3 className="font-display font-semibold text-lg text-foreground mb-4">Tus datos</h3>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">Nombre</label>
-                  <input
-                    value={data.nombre}
-                    onChange={(e) => updateField("nombre", e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Tu nombre"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">Email</label>
-                  <input
-                    type="email"
-                    value={data.email}
-                    onChange={(e) => updateField("email", e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="tu@email.com"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">Teléfono</label>
-                  <input
-                    type="tel"
-                    value={data.telefono}
-                    onChange={(e) => updateField("telefono", e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="+54 11 ..."
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">Ubicación / Ciudad</label>
-                  <div className="relative">
-                    <input
-                      value={data.ubicacion}
-                      onChange={(e) => updateField("ubicacion", e.target.value)}
-                      className="w-full px-4 py-2.5 pr-28 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      placeholder="Tu ciudad"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleDetectLocation}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors px-2 py-1 rounded bg-primary/5 hover:bg-primary/10"
-                    >
-                      <MapPin size={12} />
-                      Detectar
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">Material</label>
-                  <select
-                    value={data.material}
-                    onChange={(e) => updateField("material", e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="">Seleccionar material</option>
-                    {materials.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-1.5">Cantidad de copias</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={data.cantidad}
-                    onChange={(e) => updateField("cantidad", e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Copias de la misma pieza"
-                  />
-                </div>
-              </div>
-              <div className="mt-4">
-                <label className="text-sm font-medium text-foreground block mb-1.5">Detalles del proyecto</label>
-                <textarea
-                  value={data.detalles}
-                  onChange={(e) => updateField("detalles", e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                  placeholder="Contanos qué necesitás..."
-                />
-              </div>
-
-              {/* TODO: Implement Google auth for "Continuar con Google" */}
-              <button
-                type="button"
-                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
-                onClick={() => console.log("[QuoteSection] Google auth placeholder")}
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                Continuar con Google
-              </button>
-
-              {/* Advanced section */}
-              <div className="mt-5 border-t border-border pt-4">
-                <button
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <ChevronDown size={16} className={`transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
-                  Avanzado
-                </button>
-                {showAdvanced && (
-                  <div className="mt-4 grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-foreground block mb-1.5">Color / acabado</label>
-                      <input
-                        value={data.colorAcabado}
-                        onChange={(e) => updateField("colorAcabado", e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                        placeholder="Ej: blanco, negro mate"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground block mb-1.5">Uso de la pieza</label>
-                      <input
-                        value={data.usoPieza}
-                        onChange={(e) => updateField("usoPieza", e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                        placeholder="Ej: prototipo, producción final"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground block mb-1.5">Urgencia</label>
-                      <select
-                        value={data.urgencia}
-                        onChange={(e) => updateField("urgencia", e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      >
-                        <option value="">Sin urgencia especial</option>
-                        <option value="normal">Normal</option>
-                        <option value="urgente">Urgente</option>
-                        <option value="flexible">Flexible</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground block mb-1.5">Tolerancia / precisión</label>
-                      <input
-                        value={data.tolerancia}
-                        onChange={(e) => updateField("tolerancia", e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                        placeholder="Ej: ±0.2mm"
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="text-sm font-medium text-foreground block mb-1.5">Observaciones adicionales</label>
-                      <textarea
-                        value={data.observaciones}
-                        onChange={(e) => updateField("observaciones", e.target.value)}
-                        rows={2}
-                        className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                        placeholder="Cualquier detalle extra que nos ayude a cotizar mejor"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-6 flex gap-3">
-                <button
-                  onClick={() => goToStep(1)}
-                  className="px-6 py-3 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors"
-                >
-                  Atrás
-                </button>
-                <button
-                  onClick={() => goToStep(3)}
-                  className="flex-1 bg-gradient-primary text-primary-foreground py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-cta"
-                >
-                  {isEmpresa ? "Solicitar propuesta" : "Ver cotizaciones"} <ChevronRight size={18} />
-                </button>
-              </div>
-            </div>
+          {!isCheckingSavedSession && data.step === 2 && (
+            <StepUserData
+              data={{
+                nombre: data.nombre, email: data.email, telefono: data.telefono,
+                ubicacion: data.ubicacion, material: data.material, cantidad: data.cantidad,
+                detalles: data.detalles, colorAcabado: data.colorAcabado,
+                infill: data.infill, alturaCapa: data.alturaCapa,
+                observaciones: data.observaciones,
+              }}
+              fileName={data.fileName}
+              thumbnailUrl={flow.thumbnailUrl || data.thumbnailUrl || null}
+              isEmpresa={isEmpresa}
+              isLoading={flow.isLoading}
+              progressMessage={flow.progressMessage}
+              error={flow.error}
+              onChange={updateField}
+              onBack={() => goToStep(1)}
+              onContinue={handleStep2Continue}
+            />
           )}
 
-          {/* ===== STEP 3: QUOTES ===== */}
-          {data.step === 3 && (
-            <div>
-              <h3 className="font-display font-semibold text-lg text-foreground mb-1">
-                {isEmpresa ? "Propuesta en proceso" : "Cotizaciones disponibles"}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-6">Sesión: {data.sessionId}</p>
-
-              {isEmpresa ? (
-                <div className="text-center py-8">
-                  <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4">
-                    <FileText size={24} className="text-accent" />
-                  </div>
-                  <p className="text-sm text-foreground font-medium mb-1">Tu propuesta está siendo preparada</p>
-                  <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                    Nuestro equipo está coordinando con proveedores verificados. Recibís la propuesta consolidada en hasta 72 hs hábiles.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {/* TODO: Replace mock quotes with real API data */}
-                  <div className="space-y-3">
-                    {mockQuotes.map((q) => (
-                      <div key={q.provider} className="border border-border rounded-lg p-4 flex items-center justify-between hover:shadow-card-hover transition-shadow">
-                        <div>
-                          <p className="font-semibold text-foreground">{q.provider}</p>
-                          <p className="text-xs text-muted-foreground">Entrega estimada: {q.time}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-display font-bold text-lg text-foreground">${q.price.toLocaleString("es-AR")}</p>
-                          <button
-                            onClick={() => goToStep(4)}
-                            className="text-xs font-semibold text-primary hover:underline"
-                          >
-                            Elegir →
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-              <button
-                onClick={() => goToStep(2)}
-                className="mt-6 px-6 py-3 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors"
-              >
-                Atrás
-              </button>
-            </div>
+          {!isCheckingSavedSession && data.step === 3 && (
+            <StepQuotes
+              isEmpresa={isEmpresa}
+              isProcessing={flow.isProcessing}
+              progressMessage={flow.progressMessage}
+              error={flow.error}
+              quotes={flow.quotes}
+              sessionId={data.sessionId}
+              thumbnailUrl={flow.thumbnailUrl || data.thumbnailUrl || null}
+              material={flow.material || data.material || null}
+              cantidad={flow.cantidad ?? (data.cantidad ? Number(data.cantidad) : null)}
+              stlDimensions={flow.stlDimensions}
+              onSelectQuote={handleSelectQuote}
+              onUpdateQuantity={async (newQty) => {
+                const ok = await flow.handleUpdateQuantity(newQty);
+                if (ok) {
+                  setSelectedQuote(null);
+                  setData({ cantidad: String(newQty), selectedQuote: null, orderId: "" });
+                }
+              }}
+              onRetry={() => {
+                flow.clearError();
+                polledSessionRef.current = ""; // permite reiniciar el polling
+                flow.startPollingOptions();
+              }}
+              onBack={() => {
+                flow.clearError();
+                goToStep(2);
+              }}
+            />
           )}
 
-          {/* ===== STEP 4: CONFIRMATION ===== */}
-          {data.step === 4 && (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center mx-auto mb-4">
-                <ShoppingCart size={28} className="text-primary-foreground" />
-              </div>
-              <h3 className="font-display font-semibold text-xl text-foreground mb-2">¡Listo!</h3>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
-                {isEmpresa
-                  ? "Tu solicitud fue registrada. Nos vamos a poner en contacto para coordinar la propuesta corporativa."
-                  : "Tu pedido fue registrado. Nos vamos a poner en contacto con vos para coordinar el pago y la entrega."}
-              </p>
-              <p className="text-xs text-muted-foreground">Referencia: {data.sessionId}</p>
-              <button
-                onClick={resetQuote}
-                className="mt-6 bg-gradient-primary text-primary-foreground px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity shadow-cta"
-              >
-                Nueva cotización
-              </button>
-            </div>
+          {!isCheckingSavedSession && data.step === 4 && (
+            <StepCheckout
+              selectedQuote={
+                selectedQuote ?? data.selectedQuote ?? {
+                  quote_option_uid: "",
+                  provider_id: 0,
+                  provider_name: "—",
+                  provider_score: 0,
+                  provider_tier: "",
+                  provider_location: "",
+                  logo_url: "",
+                  is_certified: false,
+                  provider_lat: null,
+                  provider_lng: null,
+                  price_ars: 0,
+                  delivery_days: 0,
+                  trust_metrics: { score: 0, reviews_count: 0, on_time_pct: 0 },
+                }
+              }
+              orderId={flow.orderId || data.orderId || ""}
+              sessionId={data.sessionId}
+              isEmpresa={isEmpresa}
+              isAccepting={flow.isLoading}
+              cantidad={flow.cantidad ?? (data.cantidad ? Number(data.cantidad) : 1)}
+              thumbnailUrl={flow.thumbnailUrl || data.thumbnailUrl || null}
+              onBack={() => {
+                flow.clearError();
+                goToStep(3);
+              }}
+            />
+          )}
+
+          {!isCheckingSavedSession && data.step === 5 && (
+            <StepConfirmation
+              isEmpresa={isEmpresa}
+              sessionId={data.sessionId}
+              orderId={flow.orderId || data.orderId}
+              isLoading={flow.isLoading}
+              progressMessage={flow.progressMessage}
+              onReset={resetQuote}
+            />
           )}
         </div>
+
       </div>
     </section>
   );

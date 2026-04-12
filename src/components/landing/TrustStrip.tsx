@@ -1,6 +1,8 @@
-import { ShieldCheck, Headphones, Lock, MapPin, Truck, BarChart3, Users, FileText, Layers } from "lucide-react";
+import { ShieldCheck, Lock, Truck, BarChart3, Layers, Users } from "lucide-react";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import type { LucideIcon } from "lucide-react";
+import AnimateOnScroll from "@/components/AnimateOnScroll";
+import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
 
 interface TrustCard {
   icon: LucideIcon;
@@ -13,31 +15,65 @@ const headerContent: Record<Audience, { eyebrow: string; headline: string; suppo
   particular: {
     eyebrow: "POR QUÉ COTIZAR CON COMPARO3D",
     headline: "Menos vueltas, más claridad",
-    support: "Compará opciones con una red evaluada, seguimiento claro y ayuda real durante el proceso.",
+    support:
+      "Los cuatro diferenciales que más pesan para un particular: comparación real, red evaluada, confidencialidad y entrega coordinada.",
   },
   empresa: {
     eyebrow: "POR QUÉ TRABAJAR CON COMPARO3D",
     headline: "Menos dispersión, más control operativo",
-    support: "Centralizá compras de impresión 3D con red evaluada, confidencialidad y seguimiento claro.",
+    support:
+      "Para empresas, la diferencia está en centralizar, coordinar, proteger la información y ejecutar con una red validada.",
   },
 };
 
 const cards: Record<Audience, TrustCard[]> = {
   particular: [
-    { icon: ShieldCheck, label: "Proveedores verificados", desc: "Red evaluada en capacidad, calidad y cumplimiento.", priority: true },
-    { icon: Headphones, label: "Soporte humano", desc: "Acompañamiento real durante cotización y compra." },
-    { icon: BarChart3, label: "Comparación clara", desc: "Compará precio, plazo y opciones sin vueltas.", priority: true },
-    { icon: MapPin, label: "Seguimiento del pedido", desc: "Estado claro del pedido en cada etapa." },
-    { icon: Lock, label: "Archivo confidencial", desc: "Tu archivo no sale del proceso de cotización." },
-    { icon: Truck, label: "Entrega coordinada", desc: "Coordinamos la entrega en Argentina." },
+    {
+      icon: BarChart3,
+      label: "Comparación clara",
+      desc: "Compará opciones reales según precio, plazo y condiciones sin salir a buscar proveedor por proveedor.",
+      priority: true,
+    },
+    {
+      icon: ShieldCheck,
+      label: "Proveedores verificados",
+      desc: "La red se evalúa por capacidad, calidad y cumplimiento antes de formar parte del proceso.",
+      priority: true,
+    },
+    {
+      icon: Lock,
+      label: "Archivo confidencial",
+      desc: "Tu STL se usa dentro del flujo de cotización y coordinación. No se comparte fuera de ese proceso.",
+    },
+    {
+      icon: Truck,
+      label: "Entrega coordinada",
+      desc: "Producción y envío quedan dentro de un mismo flujo para que no tengas que resolver todo por tu cuenta.",
+    },
   ],
   empresa: [
-    { icon: ShieldCheck, label: "Proveedores verificados", desc: "Capacidad, calidad y cumplimiento evaluados.", priority: true },
-    { icon: Lock, label: "Archivo confidencial", desc: "Tu archivo no se comparte fuera del proceso." },
-    { icon: Layers, label: "Producción paralela coordinada", desc: "Cuando el proyecto lo permite, coordinamos varios proveedores para reducir plazos.", priority: true },
-    { icon: MapPin, label: "Seguimiento consolidado", desc: "Estado claro del pedido en cada etapa." },
-    { icon: Users, label: "Un solo interlocutor", desc: "Un punto de contacto durante todo el proceso." },
-    { icon: FileText, label: "Facturación simplificada", desc: "Factura A o B según corresponda." },
+    {
+      icon: Users,
+      label: "Un solo interlocutor",
+      desc: "Centralizá requerimientos, seguimiento y coordinación desde un único frente operativo.",
+      priority: true,
+    },
+    {
+      icon: Layers,
+      label: "Producción paralela coordinada",
+      desc: "Cuando el proyecto lo permite, se coordinan varios proveedores para reducir plazos y sostener capacidad.",
+      priority: true,
+    },
+    {
+      icon: ShieldCheck,
+      label: "Red de proveedores verificados",
+      desc: "Capacidad técnica, materiales, cumplimiento y confiabilidad operativa evaluados antes de cotizar.",
+    },
+    {
+      icon: Lock,
+      label: "Confidencialidad del proyecto",
+      desc: "Archivos y requerimientos se tratan dentro del proceso operativo, con criterio de resguardo y control.",
+    },
   ],
 };
 
@@ -47,58 +83,60 @@ const TrustStrip = () => {
   const items = cards[audience];
 
   return (
-    <section className="py-14 md:py-18 bg-card border-y border-border">
+    <section className="bg-background py-16 md:py-24">
       <div className="container">
-        {/* Section header */}
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <p className="text-xs font-semibold tracking-[0.15em] uppercase text-primary mb-3">
-            {header.eyebrow}
-          </p>
-          <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground leading-tight">
-            {header.headline}
-          </h2>
-          <p className="mt-3 text-sm md:text-base text-muted-foreground leading-relaxed">
-            {header.support}
-          </p>
-        </div>
+        <AnimateOnScroll variant="fade-up">
+          <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
+            <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
+              {header.headline}
+            </h2>
 
-        {/* Cards grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 max-w-5xl mx-auto">
+            <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
+              {header.support}
+            </p>
+          </div>
+        </AnimateOnScroll>
+
+        <StaggerChildren className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
           {items.map((item) => (
-            <div
-              key={item.label}
-              className={`flex items-start gap-4 p-5 md:p-6 rounded-xl transition-none ${
-                item.priority
-                  ? "bg-primary/[0.06] border-2 border-primary/20 shadow-[0_2px_12px_-2px_hsl(var(--primary)/0.10)]"
-                  : "bg-muted/40 border border-border/60"
-              }`}
-            >
-              <div
-                className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 ${
+            <StaggerItem key={item.label}>
+              <article
+                className={[
+                  "flex flex-col rounded-2xl p-6 transition-all duration-200 md:p-7",
                   item.priority
-                    ? "bg-primary/20"
-                    : "bg-primary/10"
-                }`}
+                    ? "border border-primary/18 bg-primary/[0.045] shadow-[0_12px_28px_-22px_hsl(var(--primary)/0.28)]"
+                    : "border border-border bg-background hover:border-primary/10",
+                ].join(" ")}
               >
-                <item.icon
-                  size={26}
-                  strokeWidth={item.priority ? 2.2 : 2}
-                  className={item.priority ? "text-primary" : "text-primary/75"}
-                />
-              </div>
-              <div className="min-w-0 pt-0.5">
-                <p className={`text-[15px] font-bold leading-snug ${
-                  item.priority ? "text-foreground" : "text-foreground/85"
-                }`}>
+                <div
+                  className={[
+                    "mb-5 flex h-14 w-14 items-center justify-center rounded-2xl",
+                    item.priority ? "bg-primary/[0.18]" : "bg-primary/[0.10]",
+                  ].join(" ")}
+                >
+                  <item.icon
+                    size={28}
+                    strokeWidth={item.priority ? 2.2 : 2}
+                    className={item.priority ? "text-primary" : "text-primary/80"}
+                  />
+                </div>
+
+                <h3
+                  className={[
+                    "text-[18px] font-semibold leading-[1.2] md:text-[20px]",
+                    item.priority ? "text-foreground" : "text-foreground/92",
+                  ].join(" ")}
+                >
                   {item.label}
-                </p>
-                <p className="text-[13px] text-muted-foreground/90 mt-1.5 leading-relaxed">
+                </h3>
+
+                <p className="mt-2.5 text-[14px] leading-[1.7] text-muted-foreground md:text-[15px]">
                   {item.desc}
                 </p>
-              </div>
-            </div>
+              </article>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerChildren>
       </div>
     </section>
   );

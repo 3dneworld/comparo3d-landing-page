@@ -1,40 +1,102 @@
-const providers = [
-  { name: "PRINTALOT" },
-  { name: "Piscobot" },
-  { name: "PJAL" },
-  { name: "Joaco3D" },
+import { useEffect, useState, type CSSProperties } from "react";
+
+import AnimateOnScroll from "@/components/AnimateOnScroll";
+import { getLandingProviders, type LandingProvider } from "@/lib/api";
+
+const fallbackProviders: LandingProvider[] = [
+  { name: "PAL", logo: "/logos/PAL.png" },
+  { name: "Piscobot", logo: "/logos/Piscobot.png" },
+  { name: "Nost3rD", logo: "/logos/Nost3rd.jpg" },
+  { name: "Joaco3D", logo: "/logos/JOACO3D.png" },
+  { name: "MEGA 3D", logo: "/logos/Mega3D.jpeg" },
 ];
 
 const ProvidersSection = () => {
-  return (
-    <section className="py-12 md:py-16 bg-background">
-      <div className="container">
-        <div className="text-center mb-8">
-          <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">
-            Nuestra red
-          </p>
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-            Red de proveedores evaluados
-          </h2>
-          <p className="mt-2 text-sm md:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Trabajamos con proveedores seleccionados por capacidad técnica, materiales, cumplimiento y calidad.
-          </p>
-        </div>
+  const [providers, setProviders] = useState<LandingProvider[]>(fallbackProviders);
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 max-w-3xl mx-auto">
-          {providers.map((p) => (
-            <div
-              key={p.name}
-              className="flex flex-col items-center rounded-xl border border-border bg-card p-4 md:p-5"
-            >
-              <div className="w-full aspect-[5/2] rounded-lg bg-muted/40 border border-border/50 mb-3 flex items-center justify-center">
-                <div className="w-16 h-[2px] rounded-full bg-muted-foreground/10" />
-              </div>
-              <span className="text-sm font-semibold text-foreground">{p.name}</span>
-              <span className="text-[11px] text-muted-foreground/60 mt-0.5">Proveedor evaluado</span>
+  useEffect(() => {
+    let cancelled = false;
+
+    getLandingProviders().then((items) => {
+      if (cancelled || items.length === 0) return;
+      setProviders(items);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <section className="bg-muted/50 py-16 md:py-24">
+      <div className="container">
+        <AnimateOnScroll variant="fade-up">
+          <div className="mb-10 text-center md:mb-12">
+            <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
+              Red de proveedores evaluados
+            </h2>
+            <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
+              Trabajamos con proveedores seleccionados por capacidad técnica, materiales, cumplimiento y calidad.
+            </p>
+          </div>
+        </AnimateOnScroll>
+
+        <AnimateOnScroll variant="fade-up" delay={0.15}>
+          <div className="provider-marquee-mobile scrollbar-hide">
+            <div className="provider-marquee-mobile-track">
+              {providers.map((provider) => (
+                <div
+                  key={provider.name}
+                  className="provider-marquee-item"
+                >
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-card p-2.5 shadow-sm md:h-20 md:w-20 md:p-3">
+                    <img
+                      src={provider.logo}
+                      alt={`Logo ${provider.name}`}
+                      className="h-full w-full object-contain"
+                      loading="lazy"
+                    />
+                  </div>
+                  <span className="whitespace-nowrap text-center text-xs font-semibold text-foreground md:text-sm">
+                    {provider.name}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+
+          <div
+            className="provider-marquee-desktop"
+            style={{ ["--provider-count" as string]: providers.length } as CSSProperties}
+          >
+            {[0, 1].map((laneIndex) => (
+              <div
+                key={`lane-${laneIndex}`}
+                className={`provider-marquee-lane ${laneIndex === 0 ? "provider-marquee-lane-a" : "provider-marquee-lane-b"}`}
+                aria-hidden={laneIndex === 1}
+              >
+                {providers.map((provider) => (
+                  <div
+                    key={`${provider.name}-${laneIndex}`}
+                    className="provider-marquee-item"
+                  >
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-card p-2.5 shadow-sm md:h-20 md:w-20 md:p-3">
+                      <img
+                        src={provider.logo}
+                        alt={`Logo ${provider.name}`}
+                        className="h-full w-full object-contain"
+                        loading="lazy"
+                      />
+                    </div>
+                    <span className="whitespace-nowrap text-center text-xs font-semibold text-foreground md:text-sm">
+                      {provider.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </AnimateOnScroll>
       </div>
     </section>
   );
