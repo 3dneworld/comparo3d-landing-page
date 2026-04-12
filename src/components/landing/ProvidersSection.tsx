@@ -8,6 +8,8 @@ const providers = [
   { name: "MEGA 3D",  logo: "/logos/Mega3D.jpeg"     },
 ];
 
+const providerCycle = [...providers, ...providers];
+
 const ProvidersSection = () => {
   return (
     <section className="bg-muted/50 py-16 md:py-24">
@@ -26,7 +28,7 @@ const ProvidersSection = () => {
         <AnimateOnScroll variant="fade-up" delay={0.15}>
           <div className="provider-marquee">
             <div className="provider-marquee-track">
-              {[providers, providers].map((group, groupIndex) => (
+              {[providerCycle, providerCycle].map((group, groupIndex) => (
                 <div
                   key={`group-${groupIndex}`}
                   className="provider-marquee-group"
