@@ -114,41 +114,80 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  .provider-marquee {
-    overflow: hidden;
+  .provider-marquee-mobile {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.25rem;
   }
-  .provider-marquee-track {
+  .provider-marquee-mobile-track {
     display: flex;
     width: max-content;
-    animation: provider-marquee 22s linear infinite;
-    will-change: transform;
+    gap: 1rem;
   }
-  .provider-marquee-group {
+  .provider-marquee-item {
     display: flex;
+    min-width: fit-content;
+    flex-direction: column;
     align-items: center;
-    gap: 1.5rem;
-    padding-right: 1.5rem;
+    gap: 0.75rem;
   }
-  .provider-marquee:hover .provider-marquee-track {
-    animation-play-state: paused;
+  .provider-marquee-desktop {
+    display: none;
   }
   @media (min-width: 768px) {
-    .provider-marquee-group {
-      gap: 2.5rem;
-      padding-right: 2.5rem;
+    .provider-marquee-mobile {
+      display: none;
+    }
+    .provider-marquee-desktop {
+      position: relative;
+      display: block;
+      min-height: 9.5rem;
+      overflow: hidden;
+    }
+    .provider-marquee-lane {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(var(--provider-count), minmax(0, 1fr));
+      justify-items: center;
+      align-items: start;
+      gap: clamp(1.5rem, 2vw, 2.5rem);
+      animation-duration: 22s;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+    }
+    .provider-marquee-item {
+      min-width: 0;
+    }
+    .provider-marquee-lane-a {
+      animation-name: provider-marquee-lane-a;
+    }
+    .provider-marquee-lane-b {
+      animation-name: provider-marquee-lane-b;
+    }
+    .provider-marquee-desktop:hover .provider-marquee-lane {
+      animation-play-state: paused;
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .provider-marquee-track {
+    .provider-marquee-lane {
       animation: none;
     }
   }
-  @keyframes provider-marquee {
+  @keyframes provider-marquee-lane-a {
     from {
       transform: translateX(0);
     }
     to {
-      transform: translateX(-50%);
+      transform: translateX(-100%);
+    }
+  }
+  @keyframes provider-marquee-lane-b {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
     }
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 import AnimateOnScroll from "@/components/AnimateOnScroll";
 import { getLandingProviders, type LandingProvider } from "@/lib/api";
@@ -27,8 +27,6 @@ const ProvidersSection = () => {
     };
   }, []);
 
-  const providerCycle = [...providers, ...providers];
-
   return (
     <section className="bg-muted/50 py-16 md:py-24">
       <div className="container">
@@ -44,35 +42,59 @@ const ProvidersSection = () => {
         </AnimateOnScroll>
 
         <AnimateOnScroll variant="fade-up" delay={0.15}>
-          <div className="provider-marquee">
-            <div className="provider-marquee-track">
-              {[providerCycle, providerCycle].map((group, groupIndex) => (
+          <div className="provider-marquee-mobile scrollbar-hide">
+            <div className="provider-marquee-mobile-track">
+              {providers.map((provider) => (
                 <div
-                  key={`group-${groupIndex}`}
-                  className="provider-marquee-group"
-                  aria-hidden={groupIndex === 1}
+                  key={provider.name}
+                  className="provider-marquee-item"
                 >
-                  {group.map((provider) => (
-                    <div
-                      key={`${provider.name}-${groupIndex}`}
-                      className="flex shrink-0 flex-col items-center gap-3"
-                    >
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-card p-2.5 shadow-sm md:h-20 md:w-20 md:p-3">
-                        <img
-                          src={provider.logo}
-                          alt={`Logo ${provider.name}`}
-                          className="h-full w-full object-contain"
-                          loading="lazy"
-                        />
-                      </div>
-                      <span className="whitespace-nowrap text-center text-xs font-semibold text-foreground md:text-sm">
-                        {provider.name}
-                      </span>
-                    </div>
-                  ))}
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-card p-2.5 shadow-sm md:h-20 md:w-20 md:p-3">
+                    <img
+                      src={provider.logo}
+                      alt={`Logo ${provider.name}`}
+                      className="h-full w-full object-contain"
+                      loading="lazy"
+                    />
+                  </div>
+                  <span className="whitespace-nowrap text-center text-xs font-semibold text-foreground md:text-sm">
+                    {provider.name}
+                  </span>
                 </div>
               ))}
             </div>
+          </div>
+
+          <div
+            className="provider-marquee-desktop"
+            style={{ ["--provider-count" as string]: providers.length } as CSSProperties}
+          >
+            {[0, 1].map((laneIndex) => (
+              <div
+                key={`lane-${laneIndex}`}
+                className={`provider-marquee-lane ${laneIndex === 0 ? "provider-marquee-lane-a" : "provider-marquee-lane-b"}`}
+                aria-hidden={laneIndex === 1}
+              >
+                {providers.map((provider) => (
+                  <div
+                    key={`${provider.name}-${laneIndex}`}
+                    className="provider-marquee-item"
+                  >
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-card p-2.5 shadow-sm md:h-20 md:w-20 md:p-3">
+                      <img
+                        src={provider.logo}
+                        alt={`Logo ${provider.name}`}
+                        className="h-full w-full object-contain"
+                        loading="lazy"
+                      />
+                    </div>
+                    <span className="whitespace-nowrap text-center text-xs font-semibold text-foreground md:text-sm">
+                      {provider.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
         </AnimateOnScroll>
       </div>
