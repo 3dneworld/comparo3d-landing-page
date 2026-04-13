@@ -7,6 +7,7 @@
 const BACKEND = "https://api.3dneworld.com";
 
 const PROXY_PREFIXES = ["/onboarding", "/proveedores", "/client-dashboard", "/admin", "/login", "/static/", "/api/"];
+const PROVIDER_DASHBOARD_V2_PREFIX = "/proveedores-v2";
 
 const BRAND_WORDMARK_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" width="360" height="96" viewBox="0 0 360 96" fill="none">
@@ -71,6 +72,10 @@ export default {
     const url = new URL(request.url);
     const cookieHeader = request.headers.get("cookie") || "";
     const hasAuthCookie = /(?:^|;\s*)auth_token=/.test(cookieHeader);
+    const isProviderDashboardV2Route =
+      url.pathname === PROVIDER_DASHBOARD_V2_PREFIX ||
+      url.pathname === `${PROVIDER_DASHBOARD_V2_PREFIX}/` ||
+      url.pathname.startsWith(`${PROVIDER_DASHBOARD_V2_PREFIX}/`);
 
     const isProviderLoginRoute =
       url.pathname === "/proveedores/login" || url.pathname === "/proveedores/login/";
@@ -82,6 +87,10 @@ export default {
           return Response.redirect(new URL("/proveedores", url.origin).toString(), 302);
         }
       }
+      return serveSpaShell(request, env, url);
+    }
+
+    if (isProviderDashboardV2Route) {
       return serveSpaShell(request, env, url);
     }
 
