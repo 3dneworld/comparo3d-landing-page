@@ -245,11 +245,11 @@ const ProjectsGallery = () => {
                   <img
                     src={project.image}
                     alt={project.title}
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[100px] w-auto shrink-0 object-contain drop-shadow-md"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 h-[110px] max-w-[45%] shrink-0 object-contain drop-shadow-md"
                   />
                 )}
 
-                <div className="absolute bottom-5 left-5 right-5 flex flex-col-reverse gap-1.5">
+                <div className="absolute bottom-5 left-5 flex flex-col-reverse gap-1.5">
                   {project.cues.map((cue) => (
                     <span
                       key={cue}
