@@ -224,7 +224,7 @@ const MaterialsSection = () => {
             <article
               className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/14 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.18)]"
             >
-              <div className={`relative h-48 border-b border-border bg-gradient-to-br ${material.gradientClass}`}>
+              <div className={`relative border-b border-border bg-gradient-to-br ${material.gradientClass}`}>
                 <div
                   className="absolute inset-0 opacity-[0.05]"
                   style={{
@@ -233,7 +233,7 @@ const MaterialsSection = () => {
                   }}
                 />
 
-                <div className="absolute inset-x-6 top-5 flex items-start justify-between gap-3">
+                <div className="relative flex items-center justify-between gap-3 px-6 py-5">
                    <div className="min-w-0 flex-1">
                      <span className="inline-flex items-center rounded-full border border-border bg-background/90 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
                        {material.bestFor}
@@ -243,23 +243,19 @@ const MaterialsSection = () => {
                      </h3>
                    </div>
                    {material.image && (
-                     <div
-                       className={`flex shrink-0 items-center justify-center ${
+                     <img
+                       src={material.image}
+                       alt={material.name}
+                       className={`shrink-0 object-contain drop-shadow-md ${
                          material.name === "ABS"
-                           ? "h-[169px] w-[169px] -mr-1"
+                           ? "h-[120px]"
                            : material.name === "PLA"
-                           ? "h-[140px] w-[140px]"
+                           ? "h-[100px]"
                            : material.name === "Nylon"
-                           ? "h-[120px] w-[120px]"
-                           : "h-[100px] w-[100px]"
+                           ? "h-[90px]"
+                           : "h-[80px]"
                        }`}
-                     >
-                       <img
-                         src={material.image}
-                         alt={material.name}
-                         className="max-h-full max-w-full object-contain drop-shadow-md"
-                       />
-                     </div>
+                     />
                    )}
                  </div>
               </div>
@@ -280,7 +276,7 @@ const MaterialsSection = () => {
                   ))}
                 </div>
 
-                <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div className="mt-5 grid grid-cols-3 gap-2">
                   {propertyItems.map((property) => {
                     const Icon = property.icon;
                     const value = material[property.key];
@@ -288,15 +284,11 @@ const MaterialsSection = () => {
                     return (
                       <div
                         key={property.label}
-                        className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-3 py-2.5"
+                        className="flex flex-col items-center gap-1 rounded-xl border border-border bg-muted/40 px-2 py-2.5 text-center"
                       >
-                        <div className="flex shrink-0 items-center justify-center self-center text-primary/80">
-                          <Icon size={25} strokeWidth={2.1} />
-                        </div>
-                        <div className="flex flex-col justify-center">
-                          <p className="text-[11px] leading-none text-muted-foreground">{property.label}</p>
-                          <p className="mt-1 text-[12px] font-semibold leading-tight text-foreground">{value}</p>
-                        </div>
+                        <Icon size={20} strokeWidth={2.1} className="shrink-0 text-primary/80" />
+                        <p className="text-[10px] leading-none text-muted-foreground">{property.label}</p>
+                        <p className="text-[12px] font-semibold leading-tight text-foreground">{value}</p>
                       </div>
                     );
                   })}
