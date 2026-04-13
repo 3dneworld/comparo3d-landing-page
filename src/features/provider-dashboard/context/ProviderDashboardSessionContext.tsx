@@ -3,11 +3,7 @@ import { createContext, useContext, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 
-import {
-  DashboardApiError,
-  fetchDashboardSession,
-  logoutDashboardSession,
-} from "@/features/provider-dashboard/api";
+import { fetchDashboardSession, logoutDashboardSession } from "@/features/provider-dashboard/api";
 import type { DashboardUser } from "@/features/provider-dashboard/types";
 
 interface ProviderDashboardSessionValue {
@@ -39,10 +35,7 @@ export function ProviderDashboardSessionProvider({ children }: { children: React
   const sessionQuery = useQuery({
     queryKey: ["provider-dashboard", "session"],
     queryFn: fetchDashboardSession,
-    retry: (failureCount, error) => {
-      if (error instanceof DashboardApiError && error.status === 401) return false;
-      return failureCount < 1;
-    },
+    retry: false,
     staleTime: 60_000,
   });
 
@@ -56,8 +49,12 @@ export function ProviderDashboardSessionProvider({ children }: { children: React
     providerId = requestedProviderId;
   }
 
-  const isUnauthorized =
-    sessionQuery.error instanceof DashboardApiError && sessionQuery.error.status === 401;
+  const isUnauthorized = Boolean(
+    sessionQuery.error &&
+      typeof sessionQuery.error === "object" &&
+      "status" in sessionQuery.error &&
+      sessionQuery.error.status === 401
+  );
 
   const value = useMemo<ProviderDashboardSessionValue>(
     () => ({
