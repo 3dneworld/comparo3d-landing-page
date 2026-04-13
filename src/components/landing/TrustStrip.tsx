@@ -90,7 +90,7 @@ const TrustStrip = () => {
         <StaggerChildren className="mx-auto grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
           {items.map((item) => (
             <StaggerItem key={item.label}>
-              <article className="flex flex-col items-center rounded-2xl border border-border bg-card p-5 text-center transition-all duration-200 hover:border-primary/20 hover:shadow-md md:p-6">
+              <article className="flex h-full flex-col items-center rounded-2xl border border-border bg-card p-5 text-center transition-all duration-200 hover:border-primary/20 hover:shadow-md md:p-6">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/[0.12]">
                   <item.icon
                     size={24}
