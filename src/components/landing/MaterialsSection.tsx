@@ -224,7 +224,7 @@ const MaterialsSection = () => {
             <article
               className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/14 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.18)]"
             >
-              <div className={`relative h-36 border-b border-border bg-gradient-to-br ${material.gradientClass}`}>
+              <div className={`relative h-48 border-b border-border bg-gradient-to-br ${material.gradientClass}`}>
                 <div
                   className="absolute inset-0 opacity-[0.05]"
                   style={{
@@ -246,7 +246,11 @@ const MaterialsSection = () => {
                      <div
                        className={`flex shrink-0 items-center justify-center ${
                          material.name === "ABS"
-                           ? "h-[130px] w-[130px] -mr-1"
+                           ? "h-[169px] w-[169px] -mr-1"
+                           : material.name === "PLA"
+                           ? "h-[140px] w-[140px]"
+                           : material.name === "Nylon"
+                           ? "h-[120px] w-[120px]"
                            : "h-[100px] w-[100px]"
                        }`}
                      >

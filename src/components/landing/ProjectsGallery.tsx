@@ -16,6 +16,11 @@ import {
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import hogarImg from "@/assets/projects/hogar.png";
 import hobbyImg from "@/assets/projects/hobby.png";
+import prototypeImg from "@/assets/projects/prototype.png";
+import customerPresentImg from "@/assets/projects/customer-present.png";
+import makersImg from "@/assets/projects/makers.png";
+import arreglosImg from "@/assets/projects/arreglos.png";
+import casaImg from "@/assets/projects/casa.png";
 
 interface ProjectCard {
   category: string;
@@ -57,7 +62,7 @@ const projectCards: Record<Audience, ProjectCard[]> = {
       cues: ["uso cotidiano", "resolución rápida"],
       icon: Wrench,
       emphasis: true,
-      image: hogarImg,
+      image: arreglosImg,
     },
     {
       category: "Hogar",
@@ -68,6 +73,7 @@ const projectCards: Record<Audience, ProjectCard[]> = {
       visualLabel: "Uso práctico",
       cues: ["orden", "adaptación"],
       icon: Home,
+      image: casaImg,
     },
     {
       category: "Makers",
@@ -79,6 +85,7 @@ const projectCards: Record<Audience, ProjectCard[]> = {
       cues: ["electrónica", "funcional"],
       icon: Cpu,
       emphasis: true,
+      image: makersImg,
     },
     {
       category: "Hobby",
@@ -100,6 +107,7 @@ const projectCards: Record<Audience, ProjectCard[]> = {
       visualLabel: "Hecho a pedido",
       cues: ["único", "a medida"],
       icon: Gift,
+      image: customerPresentImg,
     },
     {
       category: "Prototipos",
@@ -110,6 +118,7 @@ const projectCards: Record<Audience, ProjectCard[]> = {
       visualLabel: "Primeras pruebas",
       cues: ["validación", "iteración"],
       icon: PencilRuler,
+      image: prototypeImg,
     },
   ],
   empresa: [
@@ -236,11 +245,11 @@ const ProjectsGallery = () => {
                   <img
                     src={project.image}
                     alt={project.title}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 h-[100px] w-auto shrink-0 object-contain drop-shadow-md"
+                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[100px] w-auto shrink-0 object-contain drop-shadow-md"
                   />
                 )}
 
-                <div className="absolute bottom-5 left-5 right-5 flex flex-wrap gap-2">
+                <div className="absolute bottom-5 left-5 right-5 flex flex-col-reverse gap-1.5">
                   {project.cues.map((cue) => (
                     <span
                       key={cue}
