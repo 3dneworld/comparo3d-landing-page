@@ -1,12 +1,20 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+
 import logoWhite from "@/assets/logo-white.png";
 import networkImg from "@/assets/provider-network.jpg";
 
 const ProveedoresLogin = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const authError = searchParams.get("error");
+
+  const errorMessage =
+    authError === "auth_unavailable"
+      ? "No pudimos iniciar sesion en este momento. Reintenta en unos minutos o escribinos si el problema persiste."
+      : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -34,8 +42,7 @@ const ProveedoresLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-dark relative overflow-hidden">
-      {/* Grid pattern */}
+    <div className="relative min-h-screen overflow-hidden bg-gradient-dark">
       <div
         className="absolute inset-0 opacity-[0.03]"
         style={{
@@ -44,15 +51,14 @@ const ProveedoresLogin = () => {
         }}
       />
 
-      {/* Top nav */}
       <header className="relative z-10 border-b border-hero-muted/10">
-        <div className="container flex items-center justify-between h-16">
+        <div className="container flex h-16 items-center justify-between">
           <a href="/">
             <img src={logoWhite} alt="COMPARO3D" className="h-8" />
           </a>
           <a
             href="/"
-            className="text-hero-muted hover:text-hero-foreground transition-colors text-sm flex items-center gap-1.5"
+            className="flex items-center gap-1.5 text-sm text-hero-muted transition-colors hover:text-hero-foreground"
           >
             <ArrowLeft size={14} />
             Volver al sitio principal
@@ -60,45 +66,41 @@ const ProveedoresLogin = () => {
         </div>
       </header>
 
-      {/* Main content */}
-      <div className="relative z-10 container flex items-center justify-center min-h-[calc(100vh-4rem)]">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center w-full max-w-5xl py-12">
-          {/* Left — visual side */}
+      <div className="relative z-10 container flex min-h-[calc(100vh-4rem)] items-center justify-center">
+        <div className="grid w-full max-w-5xl items-center gap-12 py-12 lg:grid-cols-2 lg:gap-20">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            className="hidden lg:flex flex-col items-center"
+            className="hidden flex-col items-center lg:flex"
           >
             <div className="relative w-full max-w-md">
-              <div className="absolute -inset-4 bg-primary/5 rounded-3xl blur-2xl" />
+              <div className="absolute -inset-4 rounded-3xl bg-primary/5 blur-2xl" />
               <img
                 src={networkImg}
                 alt="Red de proveedores COMPARO3D"
-                className="relative rounded-2xl border border-hero-muted/10 w-full"
+                className="relative w-full rounded-2xl border border-hero-muted/10"
                 width={800}
                 height={1024}
               />
             </div>
 
-            {/* Stats strip */}
             <div className="mt-8 flex gap-8">
               {[
                 { value: "50+", label: "Proveedores activos" },
                 { value: "24hs", label: "Tiempo de respuesta" },
-                { value: "100%", label: "Operación trazable" },
-              ].map((s) => (
-                <div key={s.label} className="text-center">
-                  <p className="text-xl font-bold text-hero-foreground font-display">
-                    {s.value}
+                { value: "100%", label: "Operacion trazable" },
+              ].map((stat) => (
+                <div key={stat.label} className="text-center">
+                  <p className="font-display text-xl font-bold text-hero-foreground">
+                    {stat.value}
                   </p>
-                  <p className="text-[11px] text-hero-muted mt-0.5">{s.label}</p>
+                  <p className="mt-0.5 text-[11px] text-hero-muted">{stat.label}</p>
                 </div>
               ))}
             </div>
           </motion.div>
 
-          {/* Right — login card */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -106,29 +108,32 @@ const ProveedoresLogin = () => {
             className="flex flex-col items-center lg:items-start"
           >
             <div className="w-full max-w-sm">
-              {/* Eyebrow */}
-              <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-primary mb-4">
+              <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.15em] text-primary">
                 Red de proveedores COMPARO3D
               </p>
 
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-hero-foreground leading-tight tracking-tight">
+              <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-hero-foreground sm:text-3xl">
                 Acceso al panel de proveedores
               </h1>
 
-              <p className="mt-3 text-sm text-hero-muted leading-relaxed">
-                Iniciá sesión con tu cuenta autorizada para gestionar
-                cotizaciones, pedidos y seguimiento operativo.
+              <p className="mt-3 text-sm leading-relaxed text-hero-muted">
+                Inicia sesion con tu cuenta autorizada para gestionar cotizaciones,
+                pedidos y seguimiento operativo.
               </p>
 
-              {/* Login card */}
-              <div className="mt-8 bg-hero-muted/5 border border-hero-muted/10 rounded-2xl p-6 space-y-5">
-                {/* Google button */}
+              {errorMessage ? (
+                <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3">
+                  <p className="text-sm leading-relaxed text-amber-100">{errorMessage}</p>
+                </div>
+              ) : null}
+
+              <div className="mt-8 space-y-5 rounded-2xl border border-hero-muted/10 bg-hero-muted/5 p-6">
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="w-full flex items-center justify-center gap-3 bg-hero-foreground text-hero rounded-lg px-5 py-3.5 font-semibold text-sm hover:opacity-90 transition-opacity"
+                  className="flex w-full items-center justify-center gap-3 rounded-lg bg-hero-foreground px-5 py-3.5 text-sm font-semibold text-hero transition-opacity hover:opacity-90"
                 >
-                  <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
                     <path
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
                       fill="#4285F4"
@@ -150,50 +155,46 @@ const ProveedoresLogin = () => {
                 </button>
 
                 <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-hero-muted/15" />
-                  <span className="text-[11px] text-hero-muted/50 uppercase tracking-wider">
+                  <div className="h-px flex-1 bg-hero-muted/15" />
+                  <span className="text-[11px] uppercase tracking-wider text-hero-muted/50">
                     o
                   </span>
-                  <div className="flex-1 h-px bg-hero-muted/15" />
+                  <div className="h-px flex-1 bg-hero-muted/15" />
                 </div>
 
-                {/* Email / password fields (visual, ready to integrate) */}
                 <div className="space-y-3">
                   <input
                     type="email"
                     placeholder="Email corporativo"
-                    className="w-full bg-hero-muted/8 border border-hero-muted/12 rounded-lg px-4 py-3 text-sm text-hero-foreground placeholder:text-hero-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
+                    className="w-full rounded-lg border border-hero-muted/12 bg-hero-muted/8 px-4 py-3 text-sm text-hero-foreground placeholder:text-hero-muted/40 transition-shadow focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                   <input
                     type="password"
-                    placeholder="Contraseña"
-                    className="w-full bg-hero-muted/8 border border-hero-muted/12 rounded-lg px-4 py-3 text-sm text-hero-foreground placeholder:text-hero-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
+                    placeholder="Contrasena"
+                    className="w-full rounded-lg border border-hero-muted/12 bg-hero-muted/8 px-4 py-3 text-sm text-hero-foreground placeholder:text-hero-muted/40 transition-shadow focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
 
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="w-full bg-gradient-primary text-primary-foreground rounded-lg px-5 py-3.5 font-semibold text-sm hover:opacity-90 transition-opacity shadow-cta"
+                  className="w-full rounded-lg bg-gradient-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-cta transition-opacity hover:opacity-90"
                 >
-                  Iniciar sesión
+                  Iniciar sesion
                 </button>
               </div>
 
-              {/* Microcopy */}
-              <p className="mt-5 text-[11px] text-hero-muted/50 leading-relaxed text-center lg:text-left">
-                Acceso exclusivo para proveedores validados dentro de la red
-                COMPARO3D.
+              <p className="mt-5 text-center text-[11px] leading-relaxed text-hero-muted/50 lg:text-left">
+                Acceso exclusivo para proveedores validados dentro de la red COMPARO3D.
               </p>
 
-              {/* Support link */}
-              <p className="mt-3 text-[11px] text-hero-muted/40 text-center lg:text-left">
-                ¿Problemas para acceder?{" "}
+              <p className="mt-3 text-center text-[11px] text-hero-muted/40 lg:text-left">
+                Problemas para acceder?{" "}
                 <a
                   href="mailto:soporte@comparo3d.com"
                   className="text-primary hover:underline"
                 >
-                  Contactá al equipo de COMPARO3D
+                  Contacta al equipo de COMPARO3D
                 </a>
               </p>
             </div>

@@ -52,13 +52,17 @@ async function hasProviderSession(request: Request) {
   const headers = new Headers(request.headers);
   headers.set("Host", "api.3dneworld.com");
 
-  const response = await fetch(authProbeUrl.toString(), {
-    method: "GET",
-    headers,
-    redirect: "manual",
-  });
+  try {
+    const response = await fetch(authProbeUrl.toString(), {
+      method: "GET",
+      headers,
+      redirect: "manual",
+    });
 
-  return response.ok;
+    return response.ok;
+  } catch {
+    return false;
+  }
 }
 
 async function serveSpaShell(request: Request, env: any, url: URL) {
@@ -68,6 +72,12 @@ async function serveSpaShell(request: Request, env: any, url: URL) {
     headers: request.headers,
   });
   return env.ASSETS.fetch(shellRequest);
+}
+
+function buildLoginFallbackRedirect(url: URL, code = "auth_unavailable") {
+  const loginUrl = new URL("/proveedores/login", url.origin);
+  loginUrl.searchParams.set("error", code);
+  return Response.redirect(loginUrl.toString(), 302);
 }
 
 export default {
@@ -141,7 +151,22 @@ export default {
         body: request.body,
         redirect: "manual",
       });
-      const backendResponse = await fetch(proxyRequest);
+      let backendResponse: Response;
+      try {
+        backendResponse = await fetch(proxyRequest);
+      } catch {
+        if (url.pathname === "/api/auth/login" || url.pathname === "/api/auth/callback") {
+          return buildLoginFallbackRedirect(url);
+        }
+        throw new Error(`Backend proxy failed for ${url.pathname}`);
+      }
+
+      if (
+        backendResponse.status >= 530 &&
+        (url.pathname === "/api/auth/login" || url.pathname === "/api/auth/callback")
+      ) {
+        return buildLoginFallbackRedirect(url);
+      }
 
       const isCallback = url.pathname === "/api/auth/callback";
       const responseHeaders = new Headers();
