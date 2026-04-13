@@ -63,7 +63,10 @@ async function hasProviderSession(request: Request) {
 
 async function serveSpaShell(request: Request, env: any, url: URL) {
   const shellUrl = new URL("/", url.origin);
-  const shellRequest = new Request(shellUrl.toString(), request);
+  const shellRequest = new Request(shellUrl.toString(), {
+    method: "GET",
+    headers: request.headers,
+  });
   return env.ASSETS.fetch(shellRequest);
 }
 
