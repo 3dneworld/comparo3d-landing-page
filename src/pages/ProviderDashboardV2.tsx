@@ -1,11 +1,10 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { LockKeyhole, SearchCheck } from "lucide-react";
+import { SearchCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ProviderDashboardShell } from "@/features/provider-dashboard/components/ProviderDashboardShell";
 import {
   DashboardEmptyState,
-  DashboardErrorState,
   DashboardLoadingState,
 } from "@/features/provider-dashboard/components/DashboardStates";
 import {
@@ -16,30 +15,16 @@ import {
 function ProviderDashboardRouteContent() {
   const location = useLocation();
   const session = useProviderDashboardSession();
+  const loginTarget = `/proveedores/login?next=${encodeURIComponent(
+    `${location.pathname}${location.search}`
+  )}`;
 
   if (session.isLoading) {
     return <DashboardLoadingState />;
   }
 
-  if (session.isUnauthorized) {
-    return (
-      <DashboardErrorState
-        title="Sesion requerida"
-        description="Esta version React del dashboard usa la misma sesion actual de proveedores. Inicia sesion para continuar."
-        actionLabel="Ir al login de proveedores"
-        actionHref="/proveedores/login"
-        icon={<LockKeyhole className="h-6 w-6" />}
-      />
-    );
-  }
-
-  if (session.error) {
-    return (
-      <DashboardErrorState
-        title="No pudimos validar la sesion"
-        description="La base del dashboard quedo montada, pero el chequeo de sesion devolvio un error no controlado."
-      />
-    );
+  if (session.isUnauthorized || session.error) {
+    return <Navigate to={loginTarget} replace />;
   }
 
   if (session.requiresProviderSelection) {
