@@ -5,7 +5,7 @@ import plaImg from "@/assets/materials/PLA.png";
 import petgImg from "@/assets/materials/PETG.png";
 import absImg from "@/assets/materials/ABS-s-series.png";
 import tpuImg from "@/assets/materials/TPU.png";
-import nylonImg from "@/assets/materials/Nylon.png";
+import nylonImg from "@/assets/materials/Nylon-new.png";
 import pcImg from "@/assets/materials/PC.png";
 
 interface MaterialCard {
@@ -58,7 +58,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       name: "PETG",
       bestFor: "Uso real y cotidiano",
       useCases: "Repuestos, soportes, accesorios de hogar y piezas que necesitan más aguante.",
-      strengths: ["más resistente", "uso práctico", "Durabilidad"],
+      strengths: ["más resistente", "uso práctico", "durabilidad"],
       caution: "Suele ser menos rígido y un poco menos prolijo que PLA en algunos acabados.",
       finish: "Buena",
       flexibility: "Media",
@@ -70,7 +70,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       name: "ABS",
       bestFor: "Mayor exigencia",
       useCases: "Carcasas, piezas funcionales y componentes que pueden enfrentar calor o golpes.",
-      strengths: ["soporta calor", "más técnico", "+ Posproceso"],
+      strengths: ["soporta 87°C", "más técnico", "+ posproceso"],
       caution: "Considerar la contracción del material al imprimir.",
       finish: "Buena",
       flexibility: "Baja",
@@ -82,7 +82,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       name: "TPU",
       bestFor: "Piezas flexibles",
       useCases: "Fundas, topes, juntas, agarres o piezas que necesitan doblarse sin romperse.",
-      strengths: ["flexible", "absorbe impacto", "antideslizante"],
+      strengths: ["flexible", "amortiguación", "antideslizante"],
       caution: "No es el material indicado si buscás rigidez o mucha precisión dimensional.",
       finish: "Buena",
       flexibility: "Alta",
@@ -94,7 +94,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       name: "Nylon",
       bestFor: "Más técnico",
       useCases: "Engranajes, herramientas, piezas mecánicas y aplicaciones con mayor desgaste.",
-      strengths: ["muy resistente", "durable", "mejor para exigencia"],
+      strengths: ["muy resistente", "durable", "flexible"],
       caution: "No siempre es necesario para un proyecto común y suele tener mayor costo.",
       finish: "Media",
       flexibility: "Media",
@@ -106,8 +106,8 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       name: "Policarbonato",
       bestFor: "Alta exigencia",
       useCases: "Piezas funcionales exigentes, carcasas robustas y alto desempeño.",
-      strengths: ["muy resistente", "mejor temperatura", "más robusto"],
-      caution: "Usarlo sólo para los casos en los que requiera soportar alto impacto y el costo lo justifique.",
+      strengths: ["muy resistente", "soporta 111°C", "más robusto"],
+      caution: "Sólo para los casos en los que requiera soportar alto impacto y el costo lo justifique.",
       finish: "Buena",
       flexibility: "Baja",
       resistance: "Muy alta",
