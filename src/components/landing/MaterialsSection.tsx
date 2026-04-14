@@ -233,7 +233,7 @@ const MaterialsSection = () => {
                 />
 
                 <div className="relative flex h-full items-center justify-between gap-3 px-6 py-5">
-                   <div className="min-w-0 flex-1">
+                   <div className="min-w-0 flex-1 translate-y-[22px]">
                      <span className="inline-flex items-center rounded-full border border-border bg-background/90 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
                        {material.bestFor}
                      </span>
@@ -241,13 +241,31 @@ const MaterialsSection = () => {
                        {material.name}
                      </h3>
                    </div>
-                   {material.image && (
-                     <img
-                       src={material.image}
-                       alt={material.name}
-                       className="max-h-[120px] shrink-0 object-contain drop-shadow-md"
-                     />
-                   )}
+                    {material.image && (
+                      <img
+                        src={material.image}
+                        alt={material.name}
+                        className={`shrink-0 object-contain drop-shadow-md ${
+                          material.name === "Nylon"
+                            ? "max-h-[156px]"
+                            : material.name === "Policarbonato"
+                            ? "max-h-[96px]"
+                            : "max-h-[120px]"
+                        } ${
+                          material.name === "PLA" ? "translate-y-[10px]" : ""
+                        } ${
+                          material.name === "PETG" ? "translate-y-[10px]" : ""
+                        } ${
+                          material.name === "ABS" ? "translate-y-[10px]" : ""
+                        } ${
+                          material.name === "TPU" ? "translate-y-[10px]" : ""
+                        } ${
+                          material.name === "Nylon" ? "translate-y-[15px]" : ""
+                        } ${
+                          material.name === "Policarbonato" ? "translate-x-6 translate-y-[22px]" : ""
+                        }`}
+                      />
+                    )}
                  </div>
               </div>
 
