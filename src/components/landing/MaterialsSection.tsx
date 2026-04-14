@@ -4,7 +4,7 @@ import AnimateOnScroll from "@/components/AnimateOnScroll";
 import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
 import plaImg from "@/assets/materials/PLA.png";
 import petgImg from "@/assets/materials/PETG.png";
-import absImg from "@/assets/materials/ABS.png";
+import absImg from "@/assets/materials/ABS-s-series.png";
 import tpuImg from "@/assets/materials/TPU.png";
 import nylonImg from "@/assets/materials/Nylon.png";
 import pcImg from "@/assets/materials/PC.png";
@@ -71,8 +71,8 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       name: "ABS",
       bestFor: "Mayor exigencia",
       useCases: "Carcasas, piezas funcionales y componentes que pueden enfrentar calor o golpes.",
-      strengths: ["soporta calor", "más técnico", "apto para función"],
-      caution: "Su fabricación es más delicada y no siempre es la opción más conveniente para piezas comunes.",
+      strengths: ["soporta calor", "más técnico", "+ Posproceso"],
+      caution: "No siempre es la opción más conveniente para piezas comunes debido a la contracción del material al imprimir",
       finish: "Buena",
       flexibility: "Baja",
       resistance: "Alta",
