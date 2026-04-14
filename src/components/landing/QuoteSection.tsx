@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import {
   Upload,
   User,
@@ -396,11 +396,11 @@ const QuoteSection = () => {
 
         {/* Header */}
         <AnimateOnScroll variant="fade-up">
-          <div className="mx-auto mb-8 max-w-3xl text-center md:mb-10">
+          <div className="mb-8 text-center md:mb-10">
             <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
               {isEmpresa ? "Solicitá tu propuesta" : "Pedí tu cotización"}
             </h2>
-            <p className="mx-auto mt-5 max-w-3xl text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
+            <p className="mx-auto mt-5 text-[16px] leading-[1.7] text-muted-foreground md:text-[18px]">
               {isEmpresa
                 ? "Ordená el requerimiento, cargá el archivo y dejá listo el pedido para recibir una propuesta consolidada."
                 : "Cargá tu STL, completá los datos y compará opciones reales sin perder tiempo buscando proveedor por proveedor."}
@@ -409,7 +409,7 @@ const QuoteSection = () => {
         </AnimateOnScroll>
 
         {/* Info cards */}
-        <StaggerChildren className="scrollbar-hide -mx-4 mb-6 grid auto-cols-[78%] grid-flow-col gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory md:mx-auto md:mb-8 md:max-w-3xl md:grid-cols-3 md:grid-flow-row md:auto-cols-auto md:overflow-visible md:px-0 md:pb-0" staggerDelay={0.1}>
+        <StaggerChildren className="scrollbar-hide -mx-4 mb-6 grid auto-cols-[78%] grid-flow-col gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory md:mx-0 md:mb-8 md:grid-cols-3 md:grid-flow-row md:auto-cols-auto md:overflow-visible md:px-0 md:pb-0" staggerDelay={0.1}>
           <StaggerItem className="snap-start">
             <div className="h-full rounded-2xl border border-border bg-card px-4 py-3 text-left">
               <div className="flex items-center gap-2 text-primary">
@@ -534,14 +534,14 @@ const QuoteSection = () => {
         )}
 
         {/* Step indicator */}
-        <div className="mb-8 flex items-center justify-between overflow-x-auto md:mb-9">
+        <div className="mb-8 flex items-center md:mb-9">
           {stepLabels.map((s, i) => {
             const stepNum = i + 1;
             const isActive = data.step === stepNum;
             const isDone = data.step > stepNum;
             return (
-              <div key={s.label} className="flex flex-1 items-center">
-                <div className="flex w-full flex-col items-center">
+              <Fragment key={s.label}>
+                <div className="flex shrink-0 flex-col items-center">
                   <div
                     className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-all md:h-10 md:w-10 ${
                       isActive
@@ -563,9 +563,9 @@ const QuoteSection = () => {
                   </span>
                 </div>
                 {i < stepLabels.length - 1 && (
-                  <div className={`h-[2px] w-full min-w-[16px] ${isDone ? "bg-primary" : "bg-border"}`} />
+                  <div className={`mx-1 h-[2px] flex-1 self-start mt-4 md:mt-5 ${isDone ? "bg-primary" : "bg-border"}`} />
                 )}
-              </div>
+              </Fragment>
             );
           })}
         </div>
