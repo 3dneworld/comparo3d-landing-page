@@ -223,7 +223,7 @@ const MaterialsSection = () => {
             <article
               className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/14 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.18)]"
             >
-              <div className={`relative h-[160px] border-b border-border bg-gradient-to-br ${material.gradientClass}`}>
+              <div className={`relative h-[138px] border-b border-border bg-gradient-to-br ${material.gradientClass}`}>
                 <div
                   className="absolute inset-0 opacity-[0.05]"
                   style={{
@@ -254,15 +254,15 @@ const MaterialsSection = () => {
                         } ${
                           material.name === "PLA" ? "translate-y-[10px]" : ""
                         } ${
-                          material.name === "PETG" ? "translate-y-[10px]" : ""
+                          material.name === "PETG" ? "translate-y-[5px] scale-[0.8]" : ""
                         } ${
-                          material.name === "ABS" ? "translate-y-[10px]" : ""
+                          material.name === "ABS" ? "translate-y-[16px] scale-[0.8]" : ""
                         } ${
-                          material.name === "TPU" ? "translate-y-[10px]" : ""
+                          material.name === "TPU" ? "translate-y-[25px] scale-[0.8]" : ""
                         } ${
-                          material.name === "Nylon" ? "translate-y-[15px]" : ""
+                          material.name === "Nylon" ? "translate-y-[22px]" : ""
                         } ${
-                          material.name === "Policarbonato" ? "translate-x-6 translate-y-[22px]" : ""
+                          material.name === "Policarbonato" ? "translate-x-6 translate-y-[15px]" : ""
                         }`}
                       />
                     )}
