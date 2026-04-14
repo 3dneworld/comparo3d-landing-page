@@ -46,9 +46,9 @@ const Hero = () => {
       />
       
 
-      <div className="container relative z-10">
-        {/* Audience toggle */}
-        <div className="flex justify-center mb-10">
+      <div className="container max-w-6xl relative z-10">
+        {/* Audience toggle — oculto en PRO, se reactiva cuando haya flujo empresa */}
+        {/* <div className="flex justify-center mb-10">
           <div className="inline-flex bg-hero-muted/10 rounded-full p-1 border border-hero-muted/15">
             {(["particular", "empresa"] as Audience[]).map((a) =>
             <button
@@ -59,12 +59,12 @@ const Hero = () => {
               "bg-gradient-primary text-primary-foreground shadow-cta" :
               "text-hero-muted hover:text-hero-foreground"}`
               }>
-              
+
                 {a === "particular" ? "Particular" : "Empresa"}
               </button>
             )}
           </div>
-        </div>
+        </div> */}
 
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
           {/* Left: copy */}
@@ -92,8 +92,8 @@ const Hero = () => {
               </a>
               <a
                 href={current.secondaryHref}
-                className="text-hero-muted hover:text-hero-foreground transition-colors text-sm font-medium flex items-center gap-1">
-                
+                className="border border-hero-muted/25 hover:border-hero-muted/40 text-hero-muted hover:text-hero-foreground transition-all px-6 py-3.5 rounded-lg text-sm font-medium flex items-center gap-1.5">
+
                 {current.secondaryCta}
                 <ChevronDown size={16} />
               </a>

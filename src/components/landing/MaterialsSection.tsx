@@ -204,7 +204,7 @@ const MaterialsSection = () => {
 
   return (
     <section id="materiales" className="scroll-mt-24 bg-muted/50 py-16 md:scroll-mt-28 md:py-24">
-      <div className="container">
+      <div className="container max-w-6xl">
         <AnimateOnScroll variant="fade-up">
           <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
             <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">

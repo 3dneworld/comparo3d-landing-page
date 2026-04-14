@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { Plus, Minus } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import AnimateOnScroll from "@/components/AnimateOnScroll";
@@ -104,7 +104,7 @@ const FAQ = () => {
 
   return (
     <section id="faq" className="scroll-mt-24 bg-background py-16 md:scroll-mt-28 md:py-24">
-      <div className="container max-w-5xl">
+      <div className="container max-w-6xl">
         <AnimateOnScroll variant="fade-up">
           <div className="mx-auto mb-8 max-w-3xl text-center md:mb-10">
             <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
@@ -117,40 +117,29 @@ const FAQ = () => {
           </div>
         </AnimateOnScroll>
 
-        <StaggerChildren staggerDelay={0.08} className="space-y-4">
+        <StaggerChildren staggerDelay={0.05} className="divide-y divide-border border-t border-border">
           {faqs.map((faq, index) => {
             const isOpen = openIndex === index;
 
             return (
               <StaggerItem key={faq.q}>
-              <div
-                key={faq.q}
-                className={[
-                  "overflow-hidden rounded-2xl border bg-card transition-all duration-200",
-                  isOpen
-                    ? "border-primary/22 bg-primary/[0.035] shadow-[0_12px_32px_-20px_hsl(var(--primary)/0.26)]"
-                    : "border-border hover:border-primary/12 hover:bg-muted/20",
-                ].join(" ")}
-              >
+              <div key={faq.q}>
                 <button
                   type="button"
                   aria-expanded={isOpen}
                   onClick={() => setOpenIndex(isOpen ? null : index)}
-                  className="flex w-full items-start justify-between gap-4 px-5 py-5 text-left md:px-7 md:py-6"
+                  className="flex w-full items-center gap-4 py-5 text-left md:py-6"
                 >
-                  <span className="pr-4 text-[16px] font-semibold leading-[1.45] text-foreground md:text-[17px]">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[12px] font-bold text-primary-foreground">
+                    {index + 1}
+                  </span>
+
+                  <span className="flex-1 text-[15px] font-medium leading-[1.45] text-foreground md:text-[16px]">
                     {faq.q}
                   </span>
 
-                  <span
-                    className={[
-                      "mt-0.5 shrink-0 rounded-full border p-1.5 transition-all duration-200",
-                      isOpen
-                        ? "rotate-180 border-primary/15 bg-primary/10"
-                        : "border-border bg-background",
-                    ].join(" ")}
-                  >
-                    <ChevronDown size={16} className="text-muted-foreground" />
+                  <span className="shrink-0 text-muted-foreground transition-transform duration-200">
+                    {isOpen ? <Minus size={18} /> : <Plus size={18} />}
                   </span>
                 </button>
 
@@ -164,9 +153,8 @@ const FAQ = () => {
                       transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className="px-5 pb-5 md:px-7 md:pb-6">
-                        <div className="mb-4 h-px bg-border" />
-                        <p className="text-[15px] leading-[1.75] text-muted-foreground md:text-[16px]">
+                      <div className="pb-5 pl-11 pr-10 md:pb-6">
+                        <p className="text-[14px] leading-[1.75] text-muted-foreground md:text-[15px]">
                           {faq.a}
                         </p>
                       </div>

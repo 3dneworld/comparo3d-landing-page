@@ -19,7 +19,7 @@ const FinalCTA = () => {
 
   return (
     <section className="py-20 md:py-28 bg-gradient-dark">
-      <div className="container text-center">
+      <div className="container max-w-6xl text-center">
         <AnimateOnScroll variant="fade-up">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-hero-foreground max-w-2xl mx-auto">
             {copy.headline}

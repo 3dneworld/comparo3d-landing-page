@@ -28,13 +28,13 @@ const stepsByAudience: Record<Audience, StepItem[]> = {
   particular: [
     {
       step: "Paso 1",
-      title: "Subí tu archivo STL",
-      desc: "Cargás la pieza, completás lo básico y dejás listo el pedido para cotizar.",
+      title: "Subí tu STL",
+      desc: "Cargás la pieza, completás con tus datos y dejás listo el pedido para cotizar por los proveedores.",
       icon: Upload,
     },
     {
       step: "Paso 2",
-      title: "Compará opciones",
+      title: "Compará",
       desc: "Analiza propuestas de diferentes proveedores según precio, plazo y condiciones de entrega.",
       icon: BarChart3,
     },
@@ -47,7 +47,7 @@ const stepsByAudience: Record<Audience, StepItem[]> = {
     {
       step: "Paso 4",
       title: "Recibí tu pieza",
-      desc: "Se coordina producción y entrega para cerrar el pedido con seguimiento claro.",
+      desc: "Realizas el pago y se te dará un día estimado de entrega de la impresión 3D con seguimiento claro.",
       icon: Truck,
     },
   ],
@@ -86,7 +86,7 @@ const HowItWorks = () => {
 
   return (
     <section id="como-funciona" className="scroll-mt-24 bg-background py-16 md:scroll-mt-28 md:py-24">
-      <div className="container max-w-7xl">
+      <div className="container max-w-6xl">
         <AnimateOnScroll variant="fade-up">
           <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
             <h2 className="text-3xl font-bold leading-tight text-foreground md:text-4xl">
@@ -100,10 +100,10 @@ const HowItWorks = () => {
 
         <StaggerChildren staggerDelay={0.12} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 xl:gap-5">
           {steps.map((step) => (
-            <StaggerItem key={step.title}>
+            <StaggerItem key={step.title} className="h-full">
             <article
               key={step.title}
-              className="group relative flex min-h-[250px] flex-col rounded-2xl border border-border bg-card px-5 py-5 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/18 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.22)] md:px-6 md:py-6"
+              className="group relative flex h-full flex-col rounded-2xl border border-border bg-card px-5 py-5 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/18 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.22)] md:px-6 md:py-6"
             >
               <div className="mb-5 flex items-center justify-between gap-4">
                 <span className="inline-flex items-center rounded-full border border-primary/14 bg-primary/[0.05] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">

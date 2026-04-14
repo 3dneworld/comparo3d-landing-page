@@ -135,10 +135,6 @@ export function StepUpload({
           </div>
         </div>
       </div>
-
-      <p className="mt-5 text-center text-[13px] text-muted-foreground">
-        Apenas detectamos el STL, validamos la malla y avanzamos automaticamente.
-      </p>
     </div>
   );
 }

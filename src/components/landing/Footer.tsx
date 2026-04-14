@@ -4,7 +4,7 @@ import AnimateOnScroll from "@/components/AnimateOnScroll";
 const Footer = () => {
   return (
     <footer className="bg-hero border-t border-hero-muted/10 py-12">
-      <div className="container">
+      <div className="container max-w-6xl">
         <AnimateOnScroll variant="fade-up" delay={0.1}>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>

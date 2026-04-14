@@ -75,7 +75,7 @@ const TrustStrip = () => {
 
   return (
     <section className="bg-background py-16 md:py-24">
-      <div className="container">
+      <div className="container max-w-6xl">
         <AnimateOnScroll variant="fade-up">
           <div className="mx-auto mb-10 max-w-2xl text-center md:mb-14">
             <h2 className="text-[32px] font-bold leading-[1.08] text-foreground md:text-[42px]">
