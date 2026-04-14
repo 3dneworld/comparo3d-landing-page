@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ProviderLogisticsView } from "@/features/provider-dashboard/views/ProviderLogisticsView";
+import { ProviderProfileView } from "@/features/provider-dashboard/views/ProviderProfileView";
 import { ProviderSummaryView } from "@/features/provider-dashboard/views/ProviderSummaryView";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -22,6 +24,8 @@ const App = () => (
           <Route path="/proveedores/login" element={<ProveedoresLogin />} />
           <Route path="/proveedores-v2" element={<ProviderDashboardV2 />}>
             <Route path="resumen" element={<ProviderSummaryView />} />
+            <Route path="perfil" element={<ProviderProfileView />} />
+            <Route path="logistica" element={<ProviderLogisticsView />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

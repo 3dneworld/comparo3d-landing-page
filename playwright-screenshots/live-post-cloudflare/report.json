@@ -1,0 +1,12 @@
+{
+  "desktop": {
+    "eyebrowTrust": false,
+    "eyebrowHow": false,
+    "marquee": true
+  },
+  "mobile": {
+    "eyebrowTrust": false,
+    "eyebrowHow": false,
+    "marquee": true
+  }
+}

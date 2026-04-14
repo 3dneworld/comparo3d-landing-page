@@ -211,73 +211,70 @@ const ProjectsGallery = () => {
           {cards.map((project) => (
             <StaggerItem key={project.title}>
             <article
-              className="group overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/14 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.18)]"
+              className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/14 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.18)]"
             >
-              <div
-                className={`relative h-40 overflow-hidden border-b border-border ${
-                  project.emphasis
-                    ? "bg-gradient-to-br from-primary/[0.08] via-background to-primary/[0.025]"
-                    : "bg-gradient-to-br from-muted/70 via-background to-muted/35"
-                }`}
-              >
+              {/* ── Zona imagen ── */}
+              {project.image ? (
                 <div
-                  className="absolute inset-0 opacity-[0.05]"
-                  style={{
-                    backgroundImage:
-                      "url(\"data:image/svg+xml,%3Csvg width='22' height='22' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h22v22H0z' fill='none' stroke='%23000000' stroke-width='0.35'/%3E%3C/svg%3E\")",
-                  }}
-                />
-
-                <div className="absolute inset-x-5 top-5 flex items-start justify-between gap-4">
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-[0.04em] ${
-                      project.emphasis
-                        ? "bg-primary/10 text-primary"
-                        : "border border-border bg-background/85 text-muted-foreground"
-                    }`}
-                  >
-                    {project.visualLabel}
-                  </span>
-
-                </div>
-
-                {project.image && (
+                  className={`flex h-44 items-center justify-center overflow-hidden border-b border-border p-5 ${
+                    project.emphasis
+                      ? "bg-gradient-to-br from-primary/[0.06] via-background to-primary/[0.02]"
+                      : "bg-gradient-to-br from-muted/50 via-background to-muted/25"
+                  }`}
+                >
                   <img
                     src={project.image}
                     alt={project.title}
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[128px] max-w-[70%] object-contain drop-shadow-md"
+                    className="h-full max-h-[140px] w-auto max-w-full object-contain drop-shadow-md"
                   />
-                )}
+                </div>
+              ) : (
+                <div
+                  className={`flex h-32 items-center justify-center border-b border-border ${
+                    project.emphasis
+                      ? "bg-gradient-to-br from-primary/[0.06] via-background to-primary/[0.02]"
+                      : "bg-gradient-to-br from-muted/50 via-background to-muted/25"
+                  }`}
+                >
+                  <project.icon size={40} strokeWidth={1.5} className="text-primary/30" />
+                </div>
+              )}
 
-                <div className="absolute bottom-4 left-5 flex flex-col-reverse gap-1.5 z-10">
+              {/* ── Zona contenido ── */}
+              <div className="flex flex-1 flex-col p-5">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-[0.03em] ${project.categoryTone}`}
+                  >
+                    {project.category}
+                  </span>
+                  {project.emphasis && (
+                    <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-[10px] font-medium text-primary">
+                      {project.visualLabel}
+                    </span>
+                  )}
+                </div>
+
+                <h3 className="mt-3 text-[20px] font-semibold leading-[1.2] text-foreground md:text-[22px]">
+                  {project.title}
+                </h3>
+
+                <p className="mt-2.5 flex-1 text-[14px] leading-[1.65] text-muted-foreground">
+                  {project.desc}
+                </p>
+
+                <div className="mt-4 flex flex-wrap items-center gap-1.5">
                   {project.cues.map((cue) => (
                     <span
                       key={cue}
-                      className="inline-flex items-center rounded-full border border-border bg-background/95 px-2.5 py-1 text-[11px] text-muted-foreground backdrop-blur-sm"
+                      className="inline-flex items-center rounded-full border border-primary/10 bg-primary/[0.06] px-2.5 py-1 text-[11px] font-medium text-primary"
                     >
                       {cue}
                     </span>
                   ))}
-                </div>
-              </div>
-
-              <div className="p-6">
-                <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-[0.03em] ${project.categoryTone}`}
-                >
-                  {project.category}
-                </span>
-
-                <h3 className="mt-4 text-[22px] font-semibold leading-[1.18] text-foreground md:text-[24px]">
-                  {project.title}
-                </h3>
-
-                <p className="mt-3 min-h-[72px] text-[14px] leading-[1.7] text-muted-foreground md:text-[15px]">
-                  {project.desc}
-                </p>
-
-                <div className="mt-5 flex items-center text-[12px] text-muted-foreground md:text-[13px]">
-                  <span>{project.material}</span>
+                  <span className="ml-auto text-[12px] text-muted-foreground">
+                    {project.material}
+                  </span>
                 </div>
               </div>
             </article>

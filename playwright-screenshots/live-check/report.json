@@ -1,0 +1,31 @@
+{
+  "generatedAt": "2026-04-12T14:22:56.527Z",
+  "desktop": {
+    "name": "desktop",
+    "eyebrowCounts": {
+      "trust": 0,
+      "howItWorks": 0,
+      "faq": 0
+    },
+    "providerLayout": {
+      "hasMarquee": true,
+      "uniqueTops": [
+        2070
+      ]
+    }
+  },
+  "mobile": {
+    "name": "mobile",
+    "eyebrowCounts": {
+      "trust": 0,
+      "howItWorks": 0,
+      "faq": 0
+    },
+    "providerLayout": {
+      "hasMarquee": true,
+      "uniqueTops": [
+        2361
+      ]
+    }
+  }
+}

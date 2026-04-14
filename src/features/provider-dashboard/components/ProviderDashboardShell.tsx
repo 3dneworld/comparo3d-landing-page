@@ -20,10 +20,10 @@ import logoWhite from "@/assets/logo-white.png";
 
 const navigationItems = [
   { key: "resumen", label: "Resumen", to: "resumen", icon: Boxes, available: true },
-  { key: "perfil", label: "Perfil", icon: ClipboardList, available: false },
+  { key: "perfil", label: "Perfil", to: "perfil", icon: ClipboardList, available: true },
   { key: "produccion", label: "Produccion", icon: Printer, available: false },
   { key: "materiales", label: "Materiales", icon: PackageCheck, available: false },
-  { key: "logistica", label: "Logistica", icon: Truck, available: false },
+  { key: "logistica", label: "Logistica", to: "logistica", icon: Truck, available: true },
   { key: "certificacion", label: "Certificacion", icon: ShieldCheck, available: false },
   { key: "portfolio", label: "Portfolio", icon: Star, available: false },
   { key: "envios", label: "Envios", icon: MapPinned, available: false },
@@ -202,7 +202,7 @@ export function ProviderDashboardShell({
                 Siguiente fase
               </p>
               <p className="mt-2 text-sm leading-relaxed text-hero-muted">
-                Esta base ya deja preparado el shell para migrar Perfil y Logistica sin rehacer la estructura.
+                Perfil y Logistica ya corren sobre la base React nueva. La siguiente fase natural queda lista para Produccion.
               </p>
             </div>
           </div>

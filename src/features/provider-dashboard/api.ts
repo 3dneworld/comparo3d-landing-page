@@ -1,6 +1,11 @@
 import type {
   DashboardApiErrorShape,
   DashboardUser,
+  ProviderGeoLocationPayload,
+  DashboardLogisticsFormPayload,
+  ProviderLogisticsResponse,
+  ProviderProfileFormPayload,
+  ProviderProfileResponse,
   ProviderSummaryResponse,
 } from "@/features/provider-dashboard/types";
 
@@ -55,6 +60,56 @@ export function fetchDashboardSession() {
 
 export function fetchProviderSummary(providerId: number) {
   return dashboardFetch<ProviderSummaryResponse>(`/api/provider-dashboard/proveedores/${providerId}/resumen`);
+}
+
+export function fetchProviderProfile(providerId: number) {
+  return dashboardFetch<ProviderProfileResponse>(`/api/provider-dashboard/proveedores/${providerId}/perfil`);
+}
+
+export function updateProviderProfile(providerId: number, payload: ProviderProfileFormPayload) {
+  return dashboardFetch<ProviderProfileResponse>(`/api/provider-dashboard/proveedores/${providerId}/perfil`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function captureProviderGeoLocation(providerId: number, payload: ProviderGeoLocationPayload) {
+  return dashboardFetch<ProviderProfileResponse>(
+    `/api/provider-dashboard/proveedores/${providerId}/geo-location`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export function validateProviderPostalAddress(providerId: number) {
+  return dashboardFetch<ProviderProfileResponse>(
+    `/api/provider-dashboard/proveedores/${providerId}/postal-validation/validate`,
+    {
+      method: "POST",
+    }
+  );
+}
+
+export function fetchProviderLogistics(providerId: number) {
+  return dashboardFetch<ProviderLogisticsResponse>(`/api/provider-dashboard/proveedores/${providerId}/logistica`);
+}
+
+export function updateProviderLogistics(providerId: number, payload: DashboardLogisticsFormPayload) {
+  return dashboardFetch<ProviderLogisticsResponse>(`/api/provider-dashboard/proveedores/${providerId}/logistica`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function logoutDashboardSession() {
