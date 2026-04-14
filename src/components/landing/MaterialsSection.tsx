@@ -1,7 +1,6 @@
 import { Info, Droplets, Sparkles, ShieldCheck, Layers3, Wrench } from "lucide-react";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import AnimateOnScroll from "@/components/AnimateOnScroll";
-import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
 import plaImg from "@/assets/materials/PLA.png";
 import petgImg from "@/assets/materials/PETG.png";
 import absImg from "@/assets/materials/ABS-s-series.png";
@@ -72,7 +71,7 @@ const materialsByAudience: Record<Audience, MaterialCard[]> = {
       bestFor: "Mayor exigencia",
       useCases: "Carcasas, piezas funcionales y componentes que pueden enfrentar calor o golpes.",
       strengths: ["soporta calor", "más técnico", "+ Posproceso"],
-      caution: "No siempre es la opción más conveniente para piezas comunes debido a la contracción del material al imprimir",
+      caution: "No es conveniente para piezas comunes debido a la contracción del material al imprimir",
       finish: "Buena",
       flexibility: "Baja",
       resistance: "Alta",
@@ -218,13 +217,13 @@ const MaterialsSection = () => {
           </div>
         </AnimateOnScroll>
 
-        <StaggerChildren staggerDelay={0.1} className="mx-auto grid max-w-6xl grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
           {materials.map((material) => (
-            <StaggerItem key={material.name}>
+            <div key={material.name} className="h-full">
             <article
-              className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/14 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.18)]"
+              className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/14 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.18)]"
             >
-              <div className={`relative border-b border-border bg-gradient-to-br ${material.gradientClass}`}>
+              <div className={`relative h-[160px] border-b border-border bg-gradient-to-br ${material.gradientClass}`}>
                 <div
                   className="absolute inset-0 opacity-[0.05]"
                   style={{
@@ -233,7 +232,7 @@ const MaterialsSection = () => {
                   }}
                 />
 
-                <div className="relative flex items-center justify-between gap-3 px-6 py-5">
+                <div className="relative flex h-full items-center justify-between gap-3 px-6 py-5">
                    <div className="min-w-0 flex-1">
                      <span className="inline-flex items-center rounded-full border border-border bg-background/90 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
                        {material.bestFor}
@@ -246,30 +245,22 @@ const MaterialsSection = () => {
                      <img
                        src={material.image}
                        alt={material.name}
-                       className={`shrink-0 object-contain drop-shadow-md ${
-                         material.name === "ABS"
-                           ? "h-[120px]"
-                           : material.name === "PLA"
-                           ? "h-[100px]"
-                           : material.name === "Nylon"
-                           ? "h-[90px]"
-                           : "h-[80px]"
-                       }`}
+                       className="max-h-[120px] shrink-0 object-contain drop-shadow-md"
                      />
                    )}
                  </div>
               </div>
 
-              <div className="p-6">
+              <div className="flex flex-1 flex-col p-6">
                 <p className="min-h-[76px] text-[14px] leading-[1.7] text-muted-foreground md:text-[15px]">
                   {material.useCases}
                 </p>
 
-                <div className="mt-5 flex flex-wrap gap-2">
+                <div className="mt-5 grid grid-cols-3 gap-2">
                   {material.strengths.map((item) => (
                     <span
                       key={item}
-                      className="inline-flex items-center rounded-full border border-primary/10 bg-primary/8 px-2.5 py-1 text-[11px] font-medium text-primary"
+                      className="inline-flex items-center justify-center rounded-full border border-primary/10 bg-primary/8 px-2.5 py-1 text-[11px] font-medium text-primary"
                     >
                       {item}
                     </span>
@@ -302,9 +293,9 @@ const MaterialsSection = () => {
                 </div>
               </div>
             </article>
-            </StaggerItem>
+            </div>
           ))}
-        </StaggerChildren>
+        </div>
 
       </div>
     </section>
