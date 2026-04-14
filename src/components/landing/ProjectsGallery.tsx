@@ -216,26 +216,44 @@ const ProjectsGallery = () => {
               {/* ── Zona imagen ── */}
               {project.image ? (
                 <div
-                  className={`flex h-44 items-center justify-center overflow-hidden border-b border-border p-5 ${
+                  className={`relative flex h-44 items-center justify-center overflow-hidden border-b border-border p-5 ${
                     project.emphasis
                       ? "bg-gradient-to-br from-primary/[0.06] via-background to-primary/[0.02]"
                       : "bg-gradient-to-br from-muted/50 via-background to-muted/25"
                   }`}
                 >
+                  <span className="absolute left-3 top-6 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold tracking-[0.03em] text-emerald-700">
+                    {project.visualLabel}
+                  </span>
                   <img
                     src={project.image}
                     alt={project.title}
-                    className="h-full max-h-[140px] w-auto max-w-full object-contain drop-shadow-md"
+                    className={`h-full max-h-[140px] w-auto max-w-full object-contain drop-shadow-md ${
+                      project.category === "Repuestos" ? "translate-x-[70px] scale-[1.2]" : ""
+                    } ${
+                      project.category === "Hogar" ? "translate-x-[50px] scale-[1.2]" : ""
+                    } ${
+                      project.category === "Makers" ? "translate-x-[50px] scale-[1.3]" : ""
+                    } ${
+                      project.category === "Prototipos" ? "translate-x-[60px] scale-[1.2]" : ""
+                    } ${
+                      project.category === "Personalizados" ? "translate-x-[60px]" : ""
+                    } ${
+                      project.category === "Hobby" ? "translate-x-[70px] scale-[1.2]" : ""
+                    }`}
                   />
                 </div>
               ) : (
                 <div
-                  className={`flex h-32 items-center justify-center border-b border-border ${
+                  className={`relative flex h-32 items-center justify-center border-b border-border ${
                     project.emphasis
                       ? "bg-gradient-to-br from-primary/[0.06] via-background to-primary/[0.02]"
                       : "bg-gradient-to-br from-muted/50 via-background to-muted/25"
                   }`}
                 >
+                  <span className="absolute left-3 top-6 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold tracking-[0.03em] text-emerald-700">
+                    {project.visualLabel}
+                  </span>
                   <project.icon size={40} strokeWidth={1.5} className="text-primary/30" />
                 </div>
               )}
@@ -248,11 +266,6 @@ const ProjectsGallery = () => {
                   >
                     {project.category}
                   </span>
-                  {project.emphasis && (
-                    <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-[10px] font-medium text-primary">
-                      {project.visualLabel}
-                    </span>
-                  )}
                 </div>
 
                 <h3 className="mt-3 text-[20px] font-semibold leading-[1.2] text-foreground md:text-[22px]">
