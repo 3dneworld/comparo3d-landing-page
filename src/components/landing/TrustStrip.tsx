@@ -1,4 +1,4 @@
-import { ShieldCheck, Lock, Truck, BarChart3, Layers, Users } from "lucide-react";
+import { ShieldCheck, Clock, Lock, Truck, BarChart3, Layers, Users } from "lucide-react";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import type { LucideIcon } from "lucide-react";
 import AnimateOnScroll from "@/components/AnimateOnScroll";
@@ -34,9 +34,9 @@ const cards: Record<Audience, TrustCard[]> = {
       desc: "La red se evalúa por capacidad, calidad y cumplimiento antes de formar parte del proceso.",
     },
     {
-      icon: Lock,
-      label: "Archivo confidencial",
-      desc: "Tu STL se usa dentro del flujo de cotización y coordinación. No se comparte fuera de ese proceso.",
+      icon: Clock,
+      label: "Tiempos claros",
+      desc: "Te damos la fecha de entrega estimada para que puedas manejar tus tiempos o planificar tu proyecto personal",
     },
     {
       icon: Truck,
