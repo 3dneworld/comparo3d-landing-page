@@ -707,7 +707,7 @@ export function StepCheckout({
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
           <div>
             <p className="mb-3 text-[14px] font-semibold text-foreground">Metodo de envio</p>
 
@@ -734,7 +734,7 @@ export function StepCheckout({
           </div>
 
           {selectedMethodId && !isRetiro && (
-            <div>
+            <div className="mt-auto">
               <div className="mb-3 flex items-center gap-2">
                 <MapPin size={15} className="text-primary" />
                 <p className="text-[14px] font-semibold text-foreground">Direccion de entrega</p>
@@ -750,7 +750,7 @@ export function StepCheckout({
                 </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
                     Calle
@@ -772,12 +772,12 @@ export function StepCheckout({
                     value={address.number}
                     onChange={setField("number")}
                     className="w-full rounded-xl border border-input bg-background px-4 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Nro. de puerta"
+                    placeholder="Altura"
                     autoComplete="address-line2"
                   />
                 </div>
 
-                <div>
+                <div className="sm:col-span-2">
                   <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
                     Piso / Depto <span className="font-normal text-muted-foreground">(opcional)</span>
                   </label>
@@ -806,6 +806,32 @@ export function StepCheckout({
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
+                    Codigo Postal
+                  </label>
+                  <div className="flex overflow-hidden rounded-xl border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
+                    <span className="flex min-w-[52px] items-center justify-center border-r border-input bg-muted px-3 text-[15px] font-semibold text-foreground">
+                      {postalPrefix || "-"}
+                    </span>
+                    <input
+                      value={postalDigits}
+                      onChange={handlePostalDigitsChange}
+                      inputMode="numeric"
+                      maxLength={4}
+                      disabled={!postalPrefix}
+                      className="w-full bg-transparent px-4 py-3 text-[15px] text-foreground focus:outline-none disabled:cursor-not-allowed disabled:text-muted-foreground"
+                      placeholder={postalPrefix ? "1043" : "Primero selecciona provincia"}
+                      autoComplete="postal-code"
+                    />
+                  </div>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {postalPrefix
+                      ? `La letra ${postalPrefix} queda fijada por la provincia elegida.`
+                      : "Primero selecciona la provincia para fijar la letra oficial del CPA."}
+                  </p>
                 </div>
 
                 <div className="sm:col-span-2">
@@ -837,32 +863,6 @@ export function StepCheckout({
                       : postalDigits.length === 4
                         ? "Filtramos las localidades compatibles con el CPA cuando Correo Argentino lo define."
                         : "Mostramos solo localidades oficiales de la provincia elegida."}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-[14px] font-semibold text-foreground">
-                    Codigo Postal
-                  </label>
-                  <div className="flex overflow-hidden rounded-xl border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
-                    <span className="flex min-w-[52px] items-center justify-center border-r border-input bg-muted px-3 text-[15px] font-semibold text-foreground">
-                      {postalPrefix || "-"}
-                    </span>
-                    <input
-                      value={postalDigits}
-                      onChange={handlePostalDigitsChange}
-                      inputMode="numeric"
-                      maxLength={4}
-                      disabled={!postalPrefix}
-                      className="w-full bg-transparent px-4 py-3 text-[15px] text-foreground focus:outline-none disabled:cursor-not-allowed disabled:text-muted-foreground"
-                      placeholder={postalPrefix ? "1043" : "Primero selecciona provincia"}
-                      autoComplete="postal-code"
-                    />
-                  </div>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    {postalPrefix
-                      ? `La letra ${postalPrefix} queda fijada por la provincia elegida.`
-                      : "Primero selecciona la provincia para fijar la letra oficial del CPA."}
                   </p>
                 </div>
 
@@ -913,7 +913,7 @@ export function StepCheckout({
           )}
 
           {isRetiro && selectedMethodId && (
-            <div className="rounded-xl border border-border bg-muted/40 px-4 py-3">
+            <div className="mt-auto rounded-xl border border-border bg-muted/40 px-4 py-3">
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-background">
                   <Check size={18} className="text-emerald-500" />
