@@ -12,7 +12,6 @@ import {
 import {
   getAddressProvinces,
   getPostalLocalityCandidates,
-  normalizeAddress,
   searchAddressLocalities,
   createCheckout,
   getShippingEstimate,
@@ -24,6 +23,7 @@ import {
   type QuoteOption,
   type ShippingMethod,
 } from "@/lib/api";
+import { runNormalizeAddress } from "@/lib/normalizeAddressFlow";
 import { TrimmedThumbnail } from "./TrimmedThumbnail";
 
 interface AddressForm {
@@ -533,40 +533,34 @@ export function StepCheckout({
     if (!address.street.trim() || !address.number.trim() || !address.city.trim() || !address.postal_code.trim() || !address.province.trim()) {
       setCheckoutError("Completa calle, numero, localidad, provincia y codigo postal para validar la direccion.");
       return;
-    };
+    }
 
     setNormalizingAddress(true);
     setCheckoutWarning(null);
     setCheckoutError(null);
 
-    const result = await normalizeAddress({
+    const outcome = await runNormalizeAddress({
       street: address.street,
       number: address.number,
-      floor: address.floor || undefined,
-      locality: address.city,
-      locality_id: address.locality_id || undefined,
+      floor: address.floor,
+      city: address.city,
+      locality_id: address.locality_id,
       province: address.province,
-      province_id: address.province_id || undefined,
+      province_id: address.province_id,
       postal_code: address.postal_code,
     });
 
     if (!isMountedRef.current) return;
 
-    if (isApiError(result)) {
-      const helpMessage =
-        result.details &&
-        typeof result.details === "object" &&
-        "help_message" in result.details &&
-        typeof result.details.help_message === "string"
-          ? result.details.help_message
-          : null;
-      setCheckoutError(helpMessage || result.error || "No pudimos validar la direccion.");
+    if (!outcome.ok) {
+      setCheckoutError(outcome.errorMessage);
       setAddressValidation(null);
       setValidationWarningAcknowledged(false);
       setNormalizingAddress(false);
       return;
     }
 
+    const result = outcome.result;
     setAddress({
       street: result.normalized.street_name,
       number: result.normalized.street_number,
@@ -898,13 +892,10 @@ export function StepCheckout({
                     <p className="text-[13px] font-semibold text-foreground">
                       {addressValidation.validation.correo_status === "validated"
                         ? "Direccion validada"
-                        : "Direccion estructurada"}
+                        : "Dirección sugerida"}
                     </p>
                     <p className="mt-1 text-[12px] text-muted-foreground">
                       {addressValidation.normalized.full_address}
-                    </p>
-                    <p className="mt-1 text-[12px] text-muted-foreground">
-                      {addressValidation.validation.message}
                     </p>
                   </div>
                 )}
