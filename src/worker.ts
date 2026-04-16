@@ -9,6 +9,12 @@ const BACKEND = "https://api.3dneworld.com";
 const PROXY_PREFIXES = ["/onboarding", "/proveedores", "/client-dashboard", "/admin", "/login", "/static/", "/api/"];
 const PROVIDER_DASHBOARD_V2_PREFIX = "/proveedores-v2";
 
+interface WorkerEnv {
+  ASSETS: {
+    fetch(request: Request): Promise<Response>;
+  };
+}
+
 const BRAND_WORDMARK_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" width="360" height="96" viewBox="0 0 360 96" fill="none">
   <rect width="96" height="96" rx="24" fill="url(#g)"/>
@@ -65,7 +71,7 @@ async function hasProviderSession(request: Request) {
   }
 }
 
-async function serveSpaShell(request: Request, env: any, url: URL) {
+async function serveSpaShell(request: Request, env: WorkerEnv, url: URL) {
   const shellUrl = new URL("/", url.origin);
   const shellRequest = new Request(shellUrl.toString(), {
     method: "GET",
@@ -81,7 +87,7 @@ function buildLoginFallbackRedirect(url: URL, code = "auth_unavailable") {
 }
 
 export default {
-  async fetch(request: Request, env: any, ctx: any): Promise<Response> {
+  async fetch(request: Request, env: WorkerEnv): Promise<Response> {
     const url = new URL(request.url);
     const cookieHeader = request.headers.get("cookie") || "";
     const hasAuthCookie = /(?:^|;\s*)auth_token=/.test(cookieHeader);
@@ -89,6 +95,22 @@ export default {
       url.pathname === PROVIDER_DASHBOARD_V2_PREFIX ||
       url.pathname === `${PROVIDER_DASHBOARD_V2_PREFIX}/` ||
       url.pathname.startsWith(`${PROVIDER_DASHBOARD_V2_PREFIX}/`);
+    const providerDashboardShortRoutes: Record<string, string> = {
+      "/materiales": "/proveedores-v2/materiales",
+      "/materiales/": "/proveedores-v2/materiales",
+      "/cotizaciones": "/proveedores-v2/cotizaciones",
+      "/cotizaciones/": "/proveedores-v2/cotizaciones",
+      "/pedidos": "/proveedores-v2/pedidos",
+      "/pedidos/": "/proveedores-v2/pedidos",
+      "/envios": "/proveedores-v2/envios",
+      "/envios/": "/proveedores-v2/envios",
+      "/portfolio": "/proveedores-v2/portfolio",
+      "/portfolio/": "/proveedores-v2/portfolio",
+      "/certificacion": "/proveedores-v2/certificacion",
+      "/certificacion/": "/proveedores-v2/certificacion",
+      "/competitividad": "/proveedores-v2/competitividad",
+      "/competitividad/": "/proveedores-v2/competitividad",
+    };
 
     const isProviderLoginRoute =
       url.pathname === "/proveedores/login" || url.pathname === "/proveedores/login/";
@@ -101,6 +123,11 @@ export default {
         }
       }
       return serveSpaShell(request, env, url);
+    }
+
+    const dashboardShortTarget = providerDashboardShortRoutes[url.pathname];
+    if (dashboardShortTarget) {
+      return Response.redirect(new URL(dashboardShortTarget + url.search, url.origin).toString(), 302);
     }
 
     if (isProviderDashboardV2Route) {

@@ -5,7 +5,10 @@ import {
   ClipboardList,
   MapPinned,
   PackageCheck,
+  PackageOpen,
   Printer,
+  ReceiptText,
+  TrendingUp,
   ShieldCheck,
   Star,
   Truck,
@@ -21,12 +24,15 @@ import logoWhite from "@/assets/logo-white.png";
 const navigationItems = [
   { key: "resumen", label: "Resumen", to: "resumen", icon: Boxes, available: true },
   { key: "perfil", label: "Perfil", to: "perfil", icon: ClipboardList, available: true },
-  { key: "produccion", label: "Produccion", icon: Printer, available: false },
-  { key: "materiales", label: "Materiales", icon: PackageCheck, available: false },
+  { key: "produccion", label: "Produccion", to: "produccion", icon: Printer, available: true },
+  { key: "materiales", label: "Materiales", to: "materiales", icon: PackageCheck, available: true },
   { key: "logistica", label: "Logistica", to: "logistica", icon: Truck, available: true },
-  { key: "certificacion", label: "Certificacion", icon: ShieldCheck, available: false },
-  { key: "portfolio", label: "Portfolio", icon: Star, available: false },
-  { key: "envios", label: "Envios", icon: MapPinned, available: false },
+  { key: "cotizaciones", label: "Cotizaciones", to: "cotizaciones", icon: ReceiptText, available: true },
+  { key: "pedidos", label: "Pedidos", to: "pedidos", icon: PackageOpen, available: true },
+  { key: "envios", label: "Envios", to: "envios", icon: MapPinned, available: true },
+  { key: "portfolio", label: "Portfolio", to: "portfolio", icon: Star, available: true },
+  { key: "certificacion", label: "Certificacion", to: "certificacion", icon: ShieldCheck, available: true },
+  { key: "competitividad", label: "Competitividad", to: "competitividad", icon: TrendingUp, available: true },
 ] as const;
 
 function formatProviderLocation(provider?: DashboardProvider | null) {
@@ -202,7 +208,7 @@ export function ProviderDashboardShell({
                 Siguiente fase
               </p>
               <p className="mt-2 text-sm leading-relaxed text-hero-muted">
-                Perfil y Logistica ya corren sobre la base React nueva. La siguiente fase natural queda lista para Produccion.
+                El dashboard proveedor ya tiene migradas las vistas operativas y de confianza principales. Queda listo para handoff, QA con datos reales y commit del paquete.
               </p>
             </div>
           </div>

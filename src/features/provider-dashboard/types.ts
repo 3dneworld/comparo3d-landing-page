@@ -12,6 +12,9 @@ export interface DashboardReadiness {
   visibility_ready: boolean;
   order_ready: boolean;
   blocking_reasons: string[];
+  quote_materials?: string[];
+  visible_materials?: string[];
+  material_visibility?: Record<string, boolean>;
 }
 
 export interface DashboardPermissions {
@@ -90,6 +93,7 @@ export interface DashboardProviderProfile extends DashboardProvider {
   postal_normalized_province?: string | null;
   mp_user_id?: string | null;
   mp_linked_at?: string | null;
+  last_capacity_update_at?: string | null;
   last_profile_update_at?: string | null;
   last_stock_update_at?: string | null;
 }
@@ -139,6 +143,22 @@ export interface DashboardPrinter {
   notas?: string | null;
 }
 
+export interface DashboardPrinterFormPayload {
+  nombre_impresora: string;
+  cama_x: number;
+  cama_y: number;
+  cama_z: number;
+  cantidad_unidades: number;
+  activa: boolean;
+  es_principal: boolean;
+  materiales_permitidos: string[];
+  notas: string;
+}
+
+export interface DashboardPrintersFormPayload {
+  impresoras: DashboardPrinterFormPayload[];
+}
+
 export interface DashboardMaterialColor {
   id: number;
   color_name: string;
@@ -147,6 +167,8 @@ export interface DashboardMaterialColor {
   stock_status?: string | null;
   stock_qty_grams?: number | null;
 }
+
+export type DashboardStockStatus = "available" | "low" | "out" | "on_request" | "unknown";
 
 export interface DashboardMaterial {
   id: number;
@@ -158,6 +180,29 @@ export interface DashboardMaterial {
   allow_custom_color: number;
   trabajo_minimo_override?: number | null;
   colores: DashboardMaterialColor[];
+}
+
+export interface DashboardMaterialColorFormPayload {
+  color_name: string;
+  color_hex: string;
+  activo: boolean;
+  stock_status: DashboardStockStatus;
+  stock_qty_grams: number | null;
+}
+
+export interface DashboardMaterialFormPayload {
+  material_code: string;
+  activo: boolean;
+  precio_hora: number;
+  stock_status: DashboardStockStatus;
+  stock_qty_grams: number | null;
+  allow_custom_color: boolean;
+  trabajo_minimo_override: number | null;
+  colores: DashboardMaterialColorFormPayload[];
+}
+
+export interface DashboardMaterialsFormPayload {
+  materiales: DashboardMaterialFormPayload[];
 }
 
 export interface DashboardLogistica {
@@ -196,6 +241,352 @@ export interface ProviderProfileResponse {
 }
 
 export type ProviderLogisticsResponse = ProviderProfileResponse;
+
+export type ProviderProductionResponse = ProviderProfileResponse;
+
+export type ProviderMaterialsResponse = ProviderProfileResponse;
+
+export type DashboardQuoteStatus =
+  | "quoted"
+  | "selected_pending_payment"
+  | "paid_confirmed"
+  | "won"
+  | "not_selected"
+  | "payment_rejected"
+  | "expired"
+  | string;
+
+export interface DashboardQuoteMatch {
+  id: number;
+  cotizacion_id?: number | null;
+  material?: string | null;
+  cantidad?: string | number | null;
+  precio_final?: number | null;
+  print_time_min?: number | null;
+  delivery_days_est?: number | null;
+  ranking_score_snapshot?: number | null;
+  estado?: DashboardQuoteStatus | null;
+  selected_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  quote_uid?: string | null;
+  infill?: string | null;
+  layer_height?: string | null;
+  color?: string | null;
+  detalles?: string | null;
+  filament_grams?: number | null;
+}
+
+export interface ProviderQuotesResponse {
+  success: true;
+  items: DashboardQuoteMatch[];
+}
+
+export interface ProviderQuoteDetailResponse {
+  success: true;
+  item: DashboardQuoteMatch;
+}
+
+export type DashboardOrderStatus =
+  | "paid_confirmed"
+  | "in_production"
+  | "completed"
+  | "cancelled"
+  | "pending_confirmation"
+  | string;
+
+export interface DashboardOrderFile {
+  file_type?: string | null;
+  file_path?: string | null;
+  created_at?: string | null;
+}
+
+export interface DashboardOrder {
+  id: number;
+  cotizacion_id?: number | null;
+  cotizacion_proveedor_id?: number | null;
+  proveedor_id?: number | null;
+  client_name?: string | null;
+  client_email?: string | null;
+  client_phone?: string | null;
+  delivery_method?: string | null;
+  delivery_address_json?: string | Record<string, unknown> | null;
+  notas?: string | null;
+  payment_status?: string | null;
+  order_status?: DashboardOrderStatus | null;
+  confirmed_at?: string | null;
+  completed_at?: string | null;
+  cancelled_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  files_count?: number | null;
+  files?: DashboardOrderFile[];
+}
+
+export interface ProviderOrdersResponse {
+  success: true;
+  items: DashboardOrder[];
+}
+
+export interface ProviderOrderDetailResponse {
+  success: true;
+  item: DashboardOrder;
+}
+
+export type DashboardShipmentStatus =
+  | "pending"
+  | "ready_to_ship"
+  | "dispatched"
+  | "in_transit"
+  | "delivered"
+  | "cancelled"
+  | "problem"
+  | string;
+
+export type DashboardShippingMethod = "retiro_taller" | "paqar_clasico" | "paqar_expreso" | string;
+
+export interface DashboardShipment {
+  id: number;
+  cotizacion_id?: number | null;
+  cotizacion_proveedor_id?: number | null;
+  proveedor_id?: number | null;
+  quote_uid?: string | null;
+  shipping_method?: DashboardShippingMethod | null;
+  managed_by?: string | null;
+  origen_nombre?: string | null;
+  origen_direccion?: string | null;
+  origen_localidad?: string | null;
+  origen_provincia?: string | null;
+  origen_cp?: string | null;
+  origen_telefono?: string | null;
+  destino_nombre?: string | null;
+  destino_direccion?: string | null;
+  destino_localidad?: string | null;
+  destino_provincia?: string | null;
+  destino_cp?: string | null;
+  destino_telefono?: string | null;
+  peso_gramos?: number | null;
+  dimension_largo_cm?: number | null;
+  dimension_ancho_cm?: number | null;
+  dimension_alto_cm?: number | null;
+  peso_override_proveedor?: number | null;
+  shipping_cost_real_ars?: number | null;
+  tarifa_estimada_ars?: number | null;
+  tarifa_zona?: string | null;
+  margen_plataforma_pct?: number | null;
+  precio_cobrado_cliente_ars?: number | null;
+  fecha_pedido?: string | null;
+  fecha_limite_despacho?: string | null;
+  fecha_pickup_sugerida?: string | null;
+  fecha_despacho_real?: string | null;
+  fecha_entrega_real?: string | null;
+  status?: DashboardShipmentStatus | null;
+  tracking_code?: string | null;
+  tracking_url?: string | null;
+  tracking_loaded_at?: string | null;
+  notificacion_cliente_tracking_enviada?: number | boolean | null;
+  notas_proveedor?: string | null;
+  notas_internas?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  dispatch_package?: string | null;
+  tracking_customer_message?: string | null;
+}
+
+export interface ProviderShipmentsResponse {
+  success: true;
+  items: DashboardShipment[];
+  stats?: Record<string, number>;
+}
+
+export interface ProviderShipmentMutationResponse {
+  success: true;
+  shipment: DashboardShipment;
+}
+
+export interface DashboardNotification {
+  id: number;
+  proveedor_id?: number | null;
+  tipo?: string | null;
+  titulo?: string | null;
+  mensaje?: string | null;
+  referencia_tipo?: string | null;
+  referencia_id?: number | null;
+  leida?: number | boolean | null;
+  created_at?: string | null;
+}
+
+export interface ProviderNotificationsResponse {
+  success: true;
+  items: DashboardNotification[];
+  total?: number;
+  unread?: number;
+}
+
+export interface ProviderNotificationReadResponse {
+  success: true;
+}
+
+export interface DashboardPortfolioItem {
+  id: number;
+  provider_id?: number | null;
+  photo_path?: string | null;
+  description?: string | null;
+  technology?: string | null;
+  project_type?: string | null;
+  client_industry?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface DashboardPortfolioFormPayload {
+  photo_path: string;
+  description: string;
+  technology: string;
+  project_type: string;
+  client_industry: string;
+}
+
+export interface ProviderPortfolioResponse {
+  success: true;
+  items: DashboardPortfolioItem[];
+}
+
+export interface ProviderPortfolioItemResponse {
+  success: true;
+  item: DashboardPortfolioItem;
+}
+
+export type ProviderPortfolioDeleteResponse = ProviderPortfolioItemResponse;
+
+export interface DashboardCertificationRequirement {
+  value?: number | null;
+  target?: number | null;
+  target_lt?: number | null;
+  ok?: boolean;
+}
+
+export interface ProviderCertificationProgressResponse {
+  success: true;
+  provider_id: number;
+  active_months?: DashboardCertificationRequirement;
+  total_orders_completed?: DashboardCertificationRequirement;
+  avg_rating?: DashboardCertificationRequirement;
+  total_reviews?: DashboardCertificationRequirement;
+  cancellation_rate_90d?: DashboardCertificationRequirement;
+  on_time_delivery_rate?: DashboardCertificationRequirement;
+  open_disputes?: DashboardCertificationRequirement;
+  certification_progress_pct?: number;
+  ranking_mode?: string | null;
+  active_badges?: DashboardProviderBadge[];
+}
+
+export interface DashboardProviderBadge {
+  id?: number;
+  provider_id?: number | null;
+  badge_type?: string | null;
+  badge_tier?: string | null;
+  granted_at?: string | null;
+  granted_by?: string | null;
+  notes?: string | null;
+  is_active?: number | boolean | null;
+}
+
+export interface ProviderBadgesResponse {
+  success: true;
+  items: DashboardProviderBadge[];
+}
+
+export interface DashboardProviderReview {
+  id: number;
+  order_id?: number | null;
+  provider_id?: number | null;
+  rating?: number | null;
+  comment?: string | null;
+  is_b2b_order?: number | boolean | null;
+  visible?: number | boolean | null;
+  reported?: number | boolean | null;
+  created_at?: string | null;
+}
+
+export interface ProviderReviewsResponse {
+  success: true;
+  items: DashboardProviderReview[];
+}
+
+export interface DashboardProviderRawMetrics {
+  provider_id?: number;
+  total_orders_completed?: number | null;
+  total_orders_cancelled?: number | null;
+  cancellation_rate_90d?: number | null;
+  on_time_delivery_rate?: number | null;
+  avg_rating?: number | null;
+  total_reviews?: number | null;
+  b2b_projects_completed?: number | null;
+  active_months?: number | null;
+  open_disputes?: number | null;
+  certification_progress_pct?: number | null;
+  ranking_mode?: string | null;
+  current_sr_score?: number | null;
+  last_completed_order_at?: string | null;
+  last_calculated_at?: string | null;
+}
+
+export interface ProviderMetricsResponse {
+  success: true;
+  provider_id: number;
+  reviews_count?: number;
+  rating?: number | null;
+  b2b_projects_completed?: number;
+  badges?: DashboardProviderBadge[];
+  badges_count?: number;
+  portfolio_count?: number;
+  certification_progress_pct?: number;
+  ranking_mode?: string | null;
+  current_sr_score?: number | null;
+  trust_level?: string | null;
+  raw_metrics?: DashboardProviderRawMetrics;
+}
+
+export interface DashboardScoreBreakdown {
+  provider_id?: number;
+  nombre?: string | null;
+  sr_score?: number | null;
+  ranking_mode?: string | null;
+  score_breakdown?: Record<string, unknown>;
+  badges?: DashboardProviderBadge[];
+  portfolio_count?: number;
+  [key: string]: unknown;
+}
+
+export interface ProviderScoreBreakdownResponse {
+  success: true;
+  item: DashboardScoreBreakdown;
+}
+
+export interface DashboardCompetitivenessBenchmark {
+  success?: boolean;
+  error?: string;
+  median?: number | null;
+  p25?: number | null;
+  p75?: number | null;
+  percentile?: number | null;
+  position_label?: string | null;
+  suggestion?: string | null;
+  sample_size?: number | null;
+  show_raw_competitor_data?: boolean;
+}
+
+export interface ProviderCompetitivenessResponse {
+  success: true;
+  provider_id: number;
+  material_code?: string | null;
+  own_price?: number | null;
+  cohort?: string | null;
+  benchmark?: DashboardCompetitivenessBenchmark;
+  data_source?: string | null;
+  debug_counts?: Record<string, number>;
+}
 
 export interface ProviderProfileFormPayload {
   nombre: string;
