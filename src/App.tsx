@@ -18,6 +18,7 @@ import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ProviderDashboardV2 from "./pages/ProviderDashboardV2.tsx";
 import ProveedoresLogin from "./pages/ProveedoresLogin.tsx";
+import ProviderProfile from "./pages/ProviderProfile.tsx";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,8 @@ const App = () => (
             <Route path="certificacion" element={<ProviderCertificationView />} />
             <Route path="competitividad" element={<ProviderCompetitivenessView />} />
           </Route>
+          {/* Perfil público de proveedor — /proveedores/42-proveedor-nombre */}
+          <Route path="/proveedores/:idslug" element={<ProviderProfile />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
