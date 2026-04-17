@@ -642,3 +642,121 @@ export async function createCheckout(
     return { success: false, error: "Error de conexión al iniciar el pago" };
   }
 }
+
+// ─── Catalog ─────────────────────────────────────────────────────────────────
+
+export interface CatalogItem {
+  slug: string;
+  title: string;
+  description: string;
+  category: string;
+  image_url: string;
+  material: string;
+  print_time_min: number | null;
+  filament_grams: number | null;
+  tags: string[];
+  trending: boolean;
+}
+
+export interface CatalogItemsResponse {
+  success: true;
+  items: CatalogItem[];
+}
+
+export interface QuickQuoteResponse {
+  success: true;
+  session_id: string;
+  temp_name: string;
+  stl_sha256: string;
+  stl_dimensions: { x: number; y: number; z: number } | null;
+  thumbnail_base64: string | null;
+  manifold_status: string;
+  slicing: {
+    slicing_available: boolean;
+    print_time_minutes: number;
+    filament_grams: number;
+    material: string;
+    layer_height: string;
+    infill: string;
+  };
+  catalog_item: { slug: string; title: string; material: string };
+  from_catalog: boolean;
+}
+
+/** Obtener items del catálogo para la galería. */
+export async function getCatalogItems(): Promise<CatalogItemsResponse | ApiError> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/catalog/items`);
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || "Error al obtener catálogo" };
+    }
+    return data as CatalogItemsResponse;
+  } catch {
+    return { success: false, error: "Error de conexión al obtener catálogo" };
+  }
+}
+
+/** Iniciar cotización rápida desde un item del catálogo. */
+export async function quickQuoteFromCatalog(slug: string): Promise<QuickQuoteResponse | ApiError> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/catalog/items/${slug}/quick-quote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || "Error al cargar pieza del catálogo" };
+    }
+    return data as QuickQuoteResponse;
+  } catch {
+    return { success: false, error: "Error de conexión al cargar pieza del catálogo" };
+  }
+}
+
+// ─── Contact ──────────────────────────────────────────────────────────────────
+
+/** Enviar mensaje de contacto desde el chat bubble. */
+export async function sendContactMessage(data: {
+  name: string;
+  email: string;
+  message: string;
+}): Promise<{ success: true; message: string } | ApiError> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/contact/message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok || !result.success) {
+      return { success: false, error: result.error || "Error al enviar mensaje" };
+    }
+    return result as { success: true; message: string };
+  } catch {
+    return { success: false, error: "Error de conexión" };
+  }
+}
+
+// ─── Waitlist ─────────────────────────────────────────────────────────────────
+
+/** Suscribirse a la waitlist de una tecnología (resina, SLS, etc.). */
+export async function subscribeWaitlist(data: {
+  email: string;
+  technology: string;
+}): Promise<{ success: true; message: string; already_subscribed: boolean } | ApiError> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/waitlist/subscribe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok || !result.success) {
+      return { success: false, error: result.error || "Error al suscribirse" };
+    }
+    return result as { success: true; message: string; already_subscribed: boolean };
+  } catch {
+    return { success: false, error: "Error de conexión" };
+  }
+}
