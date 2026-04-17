@@ -1,26 +1,41 @@
-import { BadgeCheck, ShieldCheck } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { QuoteOptionBadge } from "@/lib/api";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { TrayectoriaVerificada10Icon } from "@/components/icons/TrayectoriaVerificada10Icon";
+import { TrayectoriaVerificada5Icon } from "@/components/icons/TrayectoriaVerificada5Icon";
+
+// Tipo unificado que cubre Lucide icons y nuestros SVG propios
+type IconComponent =
+  | LucideIcon
+  | ((props: { size?: number; className?: string }) => React.ReactNode);
 
 interface BadgeMeta {
   label: string;
   labelShort: string;
   tooltip: string;
-  icon: LucideIcon;
+  icon: IconComponent;
   tone: "trust" | "certified";
 }
 
+const BADGE_ICON_MAP: Record<string, IconComponent> = {
+  trayectoria_tier_10: TrayectoriaVerificada10Icon,
+  trayectoria_tier_5: TrayectoriaVerificada5Icon,
+  certificado_organico: BadgeCheck,
+};
+
 function getBadgeMeta(badge: QuoteOptionBadge): BadgeMeta {
   if (badge.badge_type === "seleccion_fundador") {
-    const tier = badge.badge_tier === "10+" ? "10+ años" : "5+ años";
+    const is10 = badge.badge_tier === "10+";
+    const tier = is10 ? "10+ años" : "5+ años";
     const tierShort = badge.badge_tier ?? "";
+    const iconKey = is10 ? "trayectoria_tier_10" : "trayectoria_tier_5";
     return {
       label: `Trayectoria Verificada · ${tier}`,
       labelShort: `Trayectoria · ${tierShort}`,
       tooltip:
         "Este proveedor presentó documentación (facturación histórica, trabajos previos, referencias comerciales) que Comparo3D validó al momento del alta.",
-      icon: ShieldCheck,
+      icon: BADGE_ICON_MAP[iconKey],
       tone: "trust",
     };
   }
@@ -29,7 +44,7 @@ function getBadgeMeta(badge: QuoteOptionBadge): BadgeMeta {
     labelShort: "Certificado",
     tooltip:
       "Este proveedor alcanzó la certificación orgánica al cumplir: 4+ meses activo, 20+ órdenes completadas, rating promedio ≥ 4.3, al menos 15 reviews, y ≥88% de entregas a tiempo.",
-    icon: BadgeCheck,
+    icon: BADGE_ICON_MAP["certificado_organico"],
     tone: "certified",
   };
 }

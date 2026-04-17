@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QA Preview — Isotipos Trayectoria Verificada</title>
+<style>
+  :root {
+    --primary: 221 83% 53%;
+    --accent: 26 95% 55%;
+    --foreground: 222 47% 11%;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f1f5f9; color: hsl(222 47% 11%); }
+  h1 { padding: 24px 32px 8px; font-size: 18px; font-weight: 700; color: hsl(222 47% 11%); }
+  p.sub { padding: 0 32px 24px; font-size: 13px; color: #64748b; }
+
+  .section { margin: 0 32px 40px; }
+  .section h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 16px; }
+
+  .bg-grid { display: flex; gap: 16px; flex-wrap: wrap; }
+  .bg-card { padding: 24px 32px; border-radius: 12px; display: flex; flex-direction: column; gap: 20px; }
+  .bg-light { background: #ffffff; border: 1px solid #e2e8f0; }
+  .bg-dark  { background: hsl(222 47% 11%); }
+  .bg-blue  { background: hsl(221 83% 53%); }
+
+  .sizes-row { display: flex; align-items: center; gap: 20px; }
+  .size-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .size-label { font-size: 11px; color: #94a3b8; }
+
+  /* On dark bg, currentColor = white */
+  .bg-dark  svg, .bg-blue svg { color: #ffffff; }
+  .bg-light svg { color: hsl(var(--primary)); }
+
+  .badge-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    background: hsl(221 83% 53% / 0.1);
+    color: hsl(221 83% 53%);
+    border: 1px solid hsl(221 83% 53% / 0.2);
+  }
+  .chip-5 {
+    background: hsl(221 83% 53% / 0.06);
+    border-color: hsl(221 83% 53% / 0.15);
+    color: hsl(221 83% 53% / 0.8);
+  }
+  .chip svg { flex-shrink: 0; }
+
+  hr { border: none; border-top: 1px solid #e2e8f0; margin: 0 32px 32px; }
+</style>
+</head>
+<body>
+
+<h1>Isotipos — Trayectoria Verificada</h1>
+<p class="sub">QA visual: 2 variantes × 4 tamaños × 3 fondos</p>
+
+<!-- SVGs inline -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="tv10" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3 L5.5 6.5 L5.5 13 C5.5 17.5 8.5 21 12 22.5 C15.5 21 18.5 17.5 18.5 13 L18.5 6.5 Z" fill="currentColor" fill-opacity="0.12"/>
+    <path d="M9.5 11 L14.5 16 M14.5 11 L9.5 16" stroke="hsl(var(--accent))" stroke-width="2" fill="none"/>
+  </symbol>
+  <symbol id="tv5" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3 L5.5 6.5 L5.5 13 C5.5 17.5 8.5 21 12 22.5 C15.5 21 18.5 17.5 18.5 13 L18.5 6.5 Z"/>
+    <path d="M9.5 10.5 L12 15 L14.5 10.5" stroke="hsl(var(--accent))" stroke-width="1.75" fill="none" stroke-opacity="0.85"/>
+  </symbol>
+</svg>
+
+<!-- SECTION: Tamaños — 10+ años -->
+<div class="section">
+  <h2>Trayectoria Verificada 10+ años</h2>
+  <div class="bg-grid">
+    <div class="bg-card bg-light">
+      <p style="font-size:12px;color:#64748b;margin-bottom:4px">Fondo claro</p>
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="16" height="16" stroke-width="1.5"><use href="#tv10"/></svg>
+          <span class="size-label">16px</span>
+        </div>
+        <div class="size-item">
+          <svg width="20" height="20" stroke-width="1.5"><use href="#tv10"/></svg>
+          <span class="size-label">20px</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" stroke-width="1.5"><use href="#tv10"/></svg>
+          <span class="size-label">32px</span>
+        </div>
+        <div class="size-item">
+          <svg width="64" height="64" stroke-width="1.5"><use href="#tv10"/></svg>
+          <span class="size-label">64px</span>
+        </div>
+      </div>
+    </div>
+    <div class="bg-card bg-dark">
+      <p style="font-size:12px;color:#94a3b8;margin-bottom:4px">Fondo oscuro</p>
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="16" height="16" stroke-width="1.5"><use href="#tv10"/></svg>
+          <span class="size-label" style="color:#475569">16px</span>
+        </div>
+        <div class="size-item">
+          <svg width="20" height="20" stroke-width="1.5"><use href="#tv10"/></svg>
+          <span class="size-label" style="color:#475569">20px</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" stroke-width="1.5"><use href="#tv10"/></svg>
+          <span class="size-label" style="color:#475569">32px</span>
+        </div>
+        <div class="size-item">
+          <svg width="64" height="64" stroke-width="1.5"><use href="#tv10"/></svg>
+          <span class="size-label" style="color:#475569">64px</span>
+        </div>
+      </div>
+    </div>
+    <div class="bg-card bg-blue">
+      <p style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:4px">Fondo primario</p>
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="16" height="16" stroke-width="1.5"><use href="#tv10"/></svg>
+          <span class="size-label" style="color:rgba(255,255,255,0.5)">16px</span>
+        </div>
+        <div class="size-item">
+          <svg width="20" height="20" stroke-width="1.5"><use href="#tv10"/></svg>
+          <span class="size-label" style="color:rgba(255,255,255,0.5)">20px</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" stroke-width="1.5"><use href="#tv10"/></svg>
+          <span class="size-label" style="color:rgba(255,255,255,0.5)">32px</span>
+        </div>
+        <div class="size-item">
+          <svg width="64" height="64" stroke-width="1.5"><use href="#tv10"/></svg>
+          <span class="size-label" style="color:rgba(255,255,255,0.5)">64px</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION: Tamaños — 5+ años -->
+<div class="section">
+  <h2>Trayectoria Verificada 5+ años</h2>
+  <div class="bg-grid">
+    <div class="bg-card bg-light">
+      <p style="font-size:12px;color:#64748b;margin-bottom:4px">Fondo claro</p>
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="16" height="16" stroke-width="1.5"><use href="#tv5"/></svg>
+          <span class="size-label">16px</span>
+        </div>
+        <div class="size-item">
+          <svg width="20" height="20" stroke-width="1.5"><use href="#tv5"/></svg>
+          <span class="size-label">20px</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" stroke-width="1.5"><use href="#tv5"/></svg>
+          <span class="size-label">32px</span>
+        </div>
+        <div class="size-item">
+          <svg width="64" height="64" stroke-width="1.5"><use href="#tv5"/></svg>
+          <span class="size-label">64px</span>
+        </div>
+      </div>
+    </div>
+    <div class="bg-card bg-dark">
+      <p style="font-size:12px;color:#94a3b8;margin-bottom:4px">Fondo oscuro</p>
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="16" height="16" stroke-width="1.5"><use href="#tv5"/></svg>
+          <span class="size-label" style="color:#475569">16px</span>
+        </div>
+        <div class="size-item">
+          <svg width="20" height="20" stroke-width="1.5"><use href="#tv5"/></svg>
+          <span class="size-label" style="color:#475569">20px</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" stroke-width="1.5"><use href="#tv5"/></svg>
+          <span class="size-label" style="color:#475569">32px</span>
+        </div>
+        <div class="size-item">
+          <svg width="64" height="64" stroke-width="1.5"><use href="#tv5"/></svg>
+          <span class="size-label" style="color:#475569">64px</span>
+        </div>
+      </div>
+    </div>
+    <div class="bg-card bg-blue">
+      <p style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:4px">Fondo primario</p>
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="16" height="16" stroke-width="1.5"><use href="#tv5"/></svg>
+          <span class="size-label" style="color:rgba(255,255,255,0.5)">16px</span>
+        </div>
+        <div class="size-item">
+          <svg width="20" height="20" stroke-width="1.5"><use href="#tv5"/></svg>
+          <span class="size-label" style="color:rgba(255,255,255,0.5)">20px</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" stroke-width="1.5"><use href="#tv5"/></svg>
+          <span class="size-label" style="color:rgba(255,255,255,0.5)">32px</span>
+        </div>
+        <div class="size-item">
+          <svg width="64" height="64" stroke-width="1.5"><use href="#tv5"/></svg>
+          <span class="size-label" style="color:rgba(255,255,255,0.5)">64px</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr/>
+
+<!-- SECTION: Comparación lado a lado -->
+<div class="section">
+  <h2>Comparación lado a lado — 10+ vs 5+</h2>
+  <div class="bg-card bg-light" style="display:inline-flex;flex-direction:column;gap:20px">
+    <div class="sizes-row">
+      <div class="size-item">
+        <svg width="32" height="32" stroke-width="1.5"><use href="#tv10"/></svg>
+        <span class="size-label">10+ años</span>
+      </div>
+      <div class="size-item">
+        <svg width="32" height="32" stroke-width="1.5"><use href="#tv5"/></svg>
+        <span class="size-label">5+ años</span>
+      </div>
+    </div>
+    <div class="badge-row">
+      <span class="chip">
+        <svg width="12" height="12" stroke-width="1.5"><use href="#tv10"/></svg>
+        Trayectoria Verificada · 10+
+      </span>
+      <span class="chip chip-5">
+        <svg width="12" height="12" stroke-width="1.5"><use href="#tv5"/></svg>
+        Trayectoria Verificada · 5+
+      </span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
