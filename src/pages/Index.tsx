@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { AudienceProvider, useAudience } from "@/contexts/AudienceContext";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import TrustStrip from "@/components/landing/TrustStrip";
 import ProvidersSection from "@/components/landing/ProvidersSection";
 import HowItWorks from "@/components/landing/HowItWorks";
-import QuoteSection from "@/components/landing/QuoteSection";
+import QuoteSection, { CatalogInjection } from "@/components/landing/QuoteSection";
 import CompaniesSection from "@/components/landing/CompaniesSection";
+import NoSTLSection from "@/components/landing/NoSTLSection";
 import ProjectsGallery from "@/components/landing/ProjectsGallery";
 import MaterialsSection from "@/components/landing/MaterialsSection";
 import FAQ from "@/components/landing/FAQ";
@@ -13,9 +15,40 @@ import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
 import FloatingCTA from "@/components/FloatingCTA";
 import BackToTop from "@/components/BackToTop";
+import ChatBubble from "@/components/ChatBubble";
+import { quickQuoteFromCatalog, isApiError } from "@/lib/api";
 
 const LandingContent = () => {
   const { audience } = useAudience();
+
+  // ── Estado para inyección desde catálogo ─────────────────────────────────
+  const [catalogInjection, setCatalogInjection] = useState<CatalogInjection | null>(null);
+  const [isLoadingCatalogItem, setIsLoadingCatalogItem] = useState(false);
+
+  const handleCatalogItemSelect = async (slug: string) => {
+    setIsLoadingCatalogItem(true);
+    const result = await quickQuoteFromCatalog(slug);
+    setIsLoadingCatalogItem(false);
+
+    if (isApiError(result)) {
+      console.error("[catalog] quick-quote error:", result.error);
+      // TODO: mostrar toast de error cuando esté disponible
+      return;
+    }
+
+    setCatalogInjection({
+      sessionId:    result.session_id,
+      tempName:     result.temp_name,
+      stlSha256:    result.stl_sha256,
+      thumbnailUrl: result.thumbnail_base64 ?? "",
+      fileName:     `${result.catalog_item.title}.stl`,
+      material:     result.catalog_item.material,
+      catalogTitle: result.catalog_item.title,
+    });
+
+    // Scroll a la sección de cotización
+    document.getElementById("cotizar")?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -26,8 +59,12 @@ const LandingContent = () => {
         <TrustStrip />
         <ProvidersSection />
         <HowItWorks />
-        <QuoteSection />
+        <QuoteSection catalogInjection={catalogInjection} />
         {audience === "empresa" && <CompaniesSection />}
+        <NoSTLSection
+          onCatalogItemSelect={handleCatalogItemSelect}
+          isLoadingCatalogItem={isLoadingCatalogItem}
+        />
         <ProjectsGallery />
         <MaterialsSection />
         <FAQ />
@@ -37,6 +74,7 @@ const LandingContent = () => {
       <Footer />
       <FloatingCTA />
       <BackToTop />
+      <ChatBubble />
     </div>
   );
 };
