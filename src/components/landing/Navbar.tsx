@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
 
@@ -29,6 +30,7 @@ const Navbar = () => {
           <a href="#como-funciona" className="text-sm text-hero-muted hover:text-hero-foreground transition-colors">Cómo funciona</a>
           <a href="#empresas" className="text-sm text-hero-muted hover:text-hero-foreground transition-colors">Empresas</a>
           <a href="#materiales" className="text-sm text-hero-muted hover:text-hero-foreground transition-colors">Materiales</a>
+          <Link to="/proveedores" className="text-sm text-hero-muted hover:text-hero-foreground transition-colors">Proveedores</Link>
           <a href="#faq" className="text-sm text-hero-muted hover:text-hero-foreground transition-colors">FAQ</a>
           <a
             href="#cotizar"
@@ -53,6 +55,7 @@ const Navbar = () => {
             <a href="#como-funciona" className="text-sm text-hero-muted py-2" onClick={() => setMobileOpen(false)}>Cómo funciona</a>
             <a href="#empresas" className="text-sm text-hero-muted py-2" onClick={() => setMobileOpen(false)}>Empresas</a>
             <a href="#materiales" className="text-sm text-hero-muted py-2" onClick={() => setMobileOpen(false)}>Materiales</a>
+            <Link to="/proveedores" className="text-sm text-hero-muted py-2" onClick={() => setMobileOpen(false)}>Proveedores</Link>
             <a href="#faq" className="text-sm text-hero-muted py-2" onClick={() => setMobileOpen(false)}>FAQ</a>
             <a
               href="#cotizar"

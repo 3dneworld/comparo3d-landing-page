@@ -18,6 +18,7 @@ import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ProviderDashboardV2 from "./pages/ProviderDashboardV2.tsx";
 import ProveedoresLogin from "./pages/ProveedoresLogin.tsx";
+import ProviderListing from "./pages/ProviderListing.tsx";
 import ProviderProfile from "./pages/ProviderProfile.tsx";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,8 @@ const App = () => (
           <Route path="/portfolio" element={<Navigate to="/proveedores-v2/portfolio" replace />} />
           <Route path="/certificacion" element={<Navigate to="/proveedores-v2/certificacion" replace />} />
           <Route path="/competitividad" element={<Navigate to="/proveedores-v2/competitividad" replace />} />
+          {/* Directorio público de proveedores */}
+          <Route path="/proveedores" element={<ProviderListing />} />
           <Route path="/proveedores/login" element={<ProveedoresLogin />} />
           <Route path="/proveedores-v2" element={<ProviderDashboardV2 />}>
             <Route path="resumen" element={<ProviderSummaryView />} />
