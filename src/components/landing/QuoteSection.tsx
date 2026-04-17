@@ -96,7 +96,17 @@ function saveData(data: QuoteData): void {
   );
 }
 
-const QuoteSection = () => {
+export interface CatalogInjection {
+  sessionId: string;
+  tempName: string;
+  stlSha256: string;
+  thumbnailUrl: string;
+  fileName: string;
+  material: string;
+  catalogTitle: string;
+}
+
+const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjection | null }) => {
   const { audience } = useAudience();
   const isEmpresa = audience === "empresa";
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -302,6 +312,36 @@ const QuoteSection = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.step, data.sessionId, isCheckingSavedSession]);
+
+  // ── Inyección desde catálogo ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!catalogInjection) return;
+
+    // Reset de sesión previa
+    localStorage.removeItem(STORAGE_KEY);
+    polledSessionRef.current = "";
+    thumbnailFetchedRef.current = "";
+    restoredSessionCheckedRef.current = "";
+
+    // Inyectar datos del catálogo
+    const next: QuoteData = {
+      ...defaultData,
+      sessionId: catalogInjection.sessionId,
+      tempName: catalogInjection.tempName,
+      stlSha256: catalogInjection.stlSha256,
+      thumbnailUrl: catalogInjection.thumbnailUrl,
+      fileName: catalogInjection.fileName,
+      material: catalogInjection.material,
+      step: 2,
+    };
+    saveData(next);
+    setDataRaw(next);
+    setHasSaved(true);
+    setIsCheckingSavedSession(false);
+    setSelectedQuote(null);
+    setMpBanner(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalogInjection]);
 
   // --- Handlers de cada step ---
   const handleStep1Continue = async () => {
@@ -528,6 +568,22 @@ const QuoteSection = () => {
               >
                 Continuar
               </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {catalogInjection && data.step === 2 && (
+          <div className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            <div className="flex items-center gap-3">
+              <span className="text-lg">📦</span>
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Pieza del catálogo: {catalogInjection.catalogTitle}
+                </p>
+                <p className="text-[11px] text-muted-foreground/70">
+                  STL pre-cargado — completá tus datos para ver cotizaciones
+                </p>
               </div>
             </div>
           </div>
