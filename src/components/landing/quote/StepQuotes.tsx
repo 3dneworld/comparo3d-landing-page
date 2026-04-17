@@ -12,7 +12,15 @@ import {
   Star,
   Truck,
 } from "lucide-react";
-import { geocodeAddress, isApiError, QuoteOption } from "@/lib/api";
+import { geocodeAddress, isApiError, type QuoteOption } from "@/lib/api";
+import { BadgeChip, sortBadges } from "./BadgeChip";
+import { RankingExplainer } from "@/components/shared/RankingExplainer";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Switch } from "@/components/ui/switch";
 import { TrimmedThumbnail } from "./TrimmedThumbnail";
 
@@ -129,26 +137,7 @@ const haversineKm = (
   return earthRadiusKm * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 
-function calculateSR(quote: QuoteOption, allQuotes: QuoteOption[]): number {
-  const prices = allQuotes.map((q) => q.price_ars);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
-  const range = maxPrice - minPrice || 1;
-
-  const priceScore = 1 - (quote.price_ars - minPrice) / range;
-  const ratingScore = (quote.trust_metrics.score || 0) / 5;
-
-  let deliveryScore = 0.1;
-  if (quote.delivery_days <= 3) deliveryScore = 1.0;
-  else if (quote.delivery_days <= 5) deliveryScore = 0.7;
-  else if (quote.delivery_days <= 7) deliveryScore = 0.4;
-
-  const certScore = quote.is_certified ? 1 : 0;
-
-  return priceScore * 0.4 + ratingScore * 0.25 + deliveryScore * 0.15 + certScore * 0.2;
-}
-
-function compareBySortMode(sortMode: SortMode, quotes: QuoteOption[]) {
+function compareBySortMode(sortMode: SortMode) {
   return (a: QuoteOption, b: QuoteOption) => {
     if (sortMode === "price") {
       return a.price_ars - b.price_ars;
@@ -161,7 +150,9 @@ function compareBySortMode(sortMode: SortMode, quotes: QuoteOption[]) {
       );
     }
 
-    return calculateSR(b, quotes) - calculateSR(a, quotes) || a.price_ars - b.price_ars;
+    const aPos = a.ranking_position ?? Number.POSITIVE_INFINITY;
+    const bPos = b.ranking_position ?? Number.POSITIVE_INFINITY;
+    return aPos - bPos || a.price_ars - b.price_ars;
   };
 }
 
@@ -279,12 +270,9 @@ function ProviderCard({
                 {option.delivery_days} {option.delivery_days === 1 ? "dia" : "dias"}
               </span>
 
-              {option.is_certified && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                  <ShieldCheck size={12} />
-                  Certificado
-                </span>
-              )}
+              {sortBadges(option.badges ?? []).map((badge) => (
+                <BadgeChip key={badge.badge_type} badge={badge} />
+              ))}
             </div>
           </div>
         </div>
@@ -403,7 +391,13 @@ export function StepQuotes({
     let next = [...quotesWithDistance];
 
     if (filterCertified) {
-      next = next.filter((quote) => quote.is_certified);
+      next = next.filter((quote) =>
+        quote.badges?.some(
+          (b) =>
+            b.badge_type === "certificado_organico" ||
+            b.badge_type === "seleccion_fundador",
+        ),
+      );
     }
 
     if (filterNearby && userLocation) {
@@ -413,7 +407,7 @@ export function StepQuotes({
       }
     }
 
-    const compare = compareBySortMode(sortMode, next);
+    const compare = compareBySortMode(sortMode);
     next.sort((a, b) => {
       if (filterNearby && userLocation) {
         return (
@@ -640,7 +634,7 @@ export function StepQuotes({
             <div className="flex flex-wrap items-center gap-4 md:ml-auto">
               <label className="inline-flex items-center gap-2 text-[13px] font-medium text-foreground">
                 <BadgeCheck size={16} className="text-emerald-500" />
-                <span>Solo certificados</span>
+                <span>Solo con badge de confianza</span>
                 <Switch checked={filterCertified} onCheckedChange={setFilterCertified} />
               </label>
 
@@ -852,8 +846,42 @@ export function StepQuotes({
             </div>
           )}
 
+          {visibleQuotes.length > 0 && (
+            <section
+              id="politica-mediacion"
+              className="mx-auto mt-8 max-w-3xl scroll-mt-24 border-t border-border pt-6 text-[13px] text-muted-foreground"
+            >
+              <Accordion type="single" collapsible>
+                <AccordionItem value="politica" className="border-none">
+                  <AccordionTrigger className="justify-start gap-2 py-2 text-[13px] font-semibold text-foreground hover:no-underline">
+                    Política de Mediación Transparente
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-2 text-[13px] leading-relaxed">
+                    <p>
+                      Comparo3D conecta a compradores con proveedores de impresión 3D
+                      independientes. La ejecución, calidad y garantía del trabajo son
+                      responsabilidad del proveedor que elijas.
+                    </p>
+                    <p className="mt-3">
+                      Si surge un problema con tu pedido, Comparo3D actúa como mediador:
+                      revisamos el caso, facilitamos la comunicación con el proveedor y,
+                      cuando corresponda, aplicamos sanciones en su ranking o lo removemos
+                      de la plataforma. Nuestro sistema de Trayectoria Verificada, ratings
+                      reales y certificación por desempeño existe justamente para que elijas
+                      con información.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </section>
+          )}
+
           <p className="mt-4 text-center text-[11px] text-muted-foreground/60">Sesion {sessionId}</p>
         </>
+      )}
+
+      {quotes.length > 0 && (
+        <RankingExplainer mediationLinkTarget="#politica-mediacion" />
       )}
     </div>
   );

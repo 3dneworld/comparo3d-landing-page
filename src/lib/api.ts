@@ -71,6 +71,12 @@ export interface InitDraftResponse {
   message: string;
 }
 
+export interface QuoteOptionBadge {
+  badge_type: "seleccion_fundador" | "certificado_organico";
+  badge_tier?: string | null;
+  granted_at: string;
+}
+
 export interface QuoteOption {
   quote_option_uid: string;
   provider_id: number;
@@ -88,6 +94,19 @@ export interface QuoteOption {
     score: number;
     reviews_count: number;
     on_time_pct: number;
+  };
+  sr_score?: number;
+  ranking_position?: number;
+  ranking_mode?: "bootstrap" | "production";
+  badges?: QuoteOptionBadge[];
+  score_breakdown?: {
+    seleccion_fundador: number;
+    certificado: number;
+    portfolio: number;
+    tier_capability: number;
+    precio: number;
+    rating: number;
+    ventas: number;
   };
 }
 
