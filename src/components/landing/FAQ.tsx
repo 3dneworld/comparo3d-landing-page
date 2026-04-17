@@ -4,10 +4,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import AnimateOnScroll from "@/components/AnimateOnScroll";
 import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
+import WaitlistFAQAnswer from "@/components/landing/WaitlistFAQAnswer";
 
 interface FAQItem {
   q: string;
-  a: string;
+  a: string | "__SPECIAL_WAITLIST__";
 }
 
 const sectionCopy: Record<Audience, { eyebrow: string; title: string; support: string }> = {
@@ -59,6 +60,10 @@ const faqsByAudience: Record<Audience, FAQItem[]> = {
       q: "¿Emiten factura?",
       a: "Sí. En operaciones para particulares se emite la factura que corresponda según el caso y la condición fiscal aplicable.",
     },
+    {
+      q: "¿Imprimen en resina o SLS (impresión con polvo)?",
+      a: "__SPECIAL_WAITLIST__",
+    },
   ],
   empresa: [
     {
@@ -92,6 +97,10 @@ const faqsByAudience: Record<Audience, FAQItem[]> = {
     {
       q: "¿Cómo se coordina el seguimiento y la entrega?",
       a: "La propuesta contempla coordinación de entrega y seguimiento del pedido para evitar dispersión operativa entre múltiples proveedores.",
+    },
+    {
+      q: "¿Imprimen en resina o SLS (impresión con polvo)?",
+      a: "__SPECIAL_WAITLIST__",
     },
   ],
 };
@@ -154,9 +163,13 @@ const FAQ = () => {
                       className="overflow-hidden"
                     >
                       <div className="pb-5 pl-11 pr-10 md:pb-6">
-                        <p className="text-[14px] leading-[1.75] text-muted-foreground md:text-[15px]">
-                          {faq.a}
-                        </p>
+                        {faq.a === "__SPECIAL_WAITLIST__" ? (
+                          <WaitlistFAQAnswer />
+                        ) : (
+                          <p className="text-[14px] leading-[1.75] text-muted-foreground md:text-[15px]">
+                            {faq.a}
+                          </p>
+                        )}
                       </div>
                     </motion.div>
                   )}
