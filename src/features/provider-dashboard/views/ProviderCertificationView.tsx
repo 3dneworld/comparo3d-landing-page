@@ -27,6 +27,7 @@ import {
   fetchProviderReviews,
   fetchProviderScoreBreakdown,
 } from "@/features/provider-dashboard/api";
+import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
 import { DashboardPanel } from "@/features/provider-dashboard/components/DashboardPanel";
 import { DashboardStatePill } from "@/features/provider-dashboard/components/DashboardStatePill";
@@ -204,33 +205,6 @@ function scoreComponentEntries(score?: DashboardScoreBreakdown | null) {
     .slice(0, 8);
 }
 
-function SnapshotCard({
-  title,
-  value,
-  support,
-  icon,
-}: {
-  title: string;
-  value: string;
-  support: string;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
-          <p className="font-[Montserrat] text-xl font-bold tracking-tight text-foreground">{value}</p>
-          <p className="text-sm leading-relaxed text-muted-foreground">{support}</p>
-        </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function ProgressRing({ progress, mode }: { progress: number; mode?: string | null }) {
   const safeProgress = Math.max(0, Math.min(100, Number(progress) || 0));
   const radius = 56;
@@ -278,7 +252,7 @@ function RequirementCard({
   const progress = requirementProgress(data, requirement.inverse);
 
   return (
-    <div className="rounded-[1.15rem] border border-border/70 bg-background/70 p-4">
+    <div className="rounded-[1.15rem] border border-border/70 bg-white p-4 shadow-card">
       <div className="flex items-start gap-3">
         <div
           className={cn(
@@ -314,7 +288,7 @@ function RequirementCard({
 
 function MetricItem({ label, value, support }: { label: string; value: string; support: string }) {
   return (
-    <div className="rounded-[1rem] border border-border/70 bg-background/70 px-4 py-3">
+    <div className="rounded-[1rem] border border-border/70 bg-white px-4 py-3 shadow-card">
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
       <p className="mt-2 font-[Montserrat] text-lg font-bold tracking-tight text-foreground">{value}</p>
       <p className="mt-1 text-sm text-muted-foreground">{support}</p>
@@ -326,7 +300,7 @@ function BadgeCard({ badge }: { badge: DashboardProviderBadge }) {
   const tier = badge.badge_tier || "basic";
 
   return (
-    <div className="rounded-[1.15rem] border border-border/70 bg-background/70 p-4">
+    <div className="rounded-[1.15rem] border border-border/70 bg-white p-4 shadow-card">
       <div className="flex items-start gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Award className="h-5 w-5" />
@@ -348,7 +322,7 @@ function ReviewCard({ review }: { review: DashboardProviderReview }) {
   const rating = Math.max(0, Math.min(5, Number(review.rating) || 0));
 
   return (
-    <div className="rounded-[1.15rem] border border-border/70 bg-background/70 p-4">
+    <div className="rounded-[1.15rem] border border-border/70 bg-white p-4 shadow-card">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -433,10 +407,10 @@ function CertificationContent({
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SnapshotCard title="Progreso organico" value={`${progress}%`} support={`${completedRequirements}/${requirements.length} requisitos cumplidos`} icon={<ShieldCheck className="h-5 w-5" />} />
-        <SnapshotCard title="Rating publico" value={averageRating} support={`${metrics.reviews_count || raw?.total_reviews || 0} reviews visibles`} icon={<Star className="h-5 w-5" />} />
-        <SnapshotCard title="Portfolio" value={String(metrics.portfolio_count || 0)} support="Trabajos publicados que suman confianza visual." icon={<BriefcaseBusiness className="h-5 w-5" />} />
-        <SnapshotCard title="SR score" value={formatNumber(metrics.current_sr_score ?? score?.sr_score ?? 0, 2)} support={`Modo ${modeLabel(metrics.ranking_mode || score?.ranking_mode)}`} icon={<BarChart3 className="h-5 w-5" />} />
+        <DashboardMetricCard title="Progreso organico" value={`${progress}%`} support={`${completedRequirements}/${requirements.length} requisitos cumplidos`} icon={<ShieldCheck className="h-5 w-5" />} />
+        <DashboardMetricCard title="Rating publico" value={averageRating} support={`${metrics.reviews_count || raw?.total_reviews || 0} reviews visibles`} icon={<Star className="h-5 w-5" />} />
+        <DashboardMetricCard title="Portfolio" value={String(metrics.portfolio_count || 0)} support="Trabajos publicados que suman confianza visual." icon={<BriefcaseBusiness className="h-5 w-5" />} />
+        <DashboardMetricCard title="SR score" value={formatNumber(metrics.current_sr_score ?? score?.sr_score ?? 0, 2)} support={`Modo ${modeLabel(metrics.ranking_mode || score?.ranking_mode)}`} icon={<BarChart3 className="h-5 w-5" />} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
@@ -455,7 +429,7 @@ function CertificationContent({
                 {nextSteps.map((item, index) => (
                   <div
                     key={item}
-                    className="flex items-start gap-3 rounded-[1.15rem] border border-border/70 bg-background/70 px-4 py-3"
+                    className="flex items-start gap-3 rounded-[1.15rem] border border-border/70 bg-white px-4 py-3 shadow-card"
                   >
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
                       {index + 1}
@@ -501,7 +475,7 @@ function CertificationContent({
           {scoreEntries.length ? (
             <div className="space-y-3">
               {scoreEntries.map(([key, value]) => (
-                <div key={key} className="flex items-center justify-between gap-4 rounded-[1rem] border border-border/70 bg-background/70 px-4 py-3">
+                <div key={key} className="flex items-center justify-between gap-4 rounded-[1rem] border border-border/70 bg-white px-4 py-3 shadow-card">
                   <span className="text-sm font-medium capitalize text-foreground">{key.replaceAll("_", " ")}</span>
                   <DashboardStatePill tone="info">{String(value)}</DashboardStatePill>
                 </div>

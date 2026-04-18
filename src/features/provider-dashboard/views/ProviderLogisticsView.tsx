@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -25,6 +25,7 @@ import {
   validateProviderPostalAddress,
 } from "@/features/provider-dashboard/api";
 import { DashboardField } from "@/features/provider-dashboard/components/DashboardField";
+import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
 import { DashboardPanel } from "@/features/provider-dashboard/components/DashboardPanel";
 import { DashboardStatePill } from "@/features/provider-dashboard/components/DashboardStatePill";
@@ -146,33 +147,6 @@ function FeedbackBanner({ feedback }: { feedback: SaveFeedback }) {
     >
       <p className="text-sm font-semibold">{feedback.title}</p>
       <p className="mt-1 text-sm leading-relaxed">{feedback.description}</p>
-    </div>
-  );
-}
-
-function SnapshotCard({
-  title,
-  value,
-  support,
-  icon,
-}: {
-  title: string;
-  value: string;
-  support: string;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
-          <p className="font-[Montserrat] text-xl font-bold tracking-tight text-foreground">{value}</p>
-          <p className="text-sm leading-relaxed text-muted-foreground">{support}</p>
-        </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          {icon}
-        </div>
-      </div>
     </div>
   );
 }
@@ -319,25 +293,25 @@ function LogisticsContent({
       {saveFeedback ? <FeedbackBanner feedback={saveFeedback} /> : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SnapshotCard
+        <DashboardMetricCard
           title="Modo de cobertura"
           value={coverageModeLabel(formState)}
           support={provider.coverage_mode || "Sin modo persistido"}
           icon={<Truck className="h-5 w-5" />}
         />
-        <SnapshotCard
+        <DashboardMetricCard
           title="Despacho"
           value={formState.dispatch_days.trim() ? `${formState.dispatch_days} dias` : "Pendiente"}
           support={formState.envio_local || formState.correo_argentino ? "Tiempo de salida declarado" : "Aun sin envios activos"}
           icon={<PackageCheck className="h-5 w-5" />}
         />
-        <SnapshotCard
+        <DashboardMetricCard
           title="Direccion"
           value={postalStatus}
           support={normalizedAddress}
           icon={<BadgeCheck className="h-5 w-5" />}
         />
-        <SnapshotCard
+        <DashboardMetricCard
           title="Base operativa"
           value={locationLabel}
           support={provider.geo_captured_at ? `Geo ${formatDateTime(provider.geo_captured_at)}` : "Todavia sin geocaptura"}
@@ -552,8 +526,12 @@ export function ProviderLogisticsView() {
 
   useEffect(() => {
     if (!logisticsQuery.data) return;
-    if (formState && initialFormState && JSON.stringify(formState) !== JSON.stringify(initialFormState)) return;
+    const currentState = formState ? JSON.stringify(formState) : "";
+    const initialState = initialFormState ? JSON.stringify(initialFormState) : "";
+    if (formState && initialFormState && currentState !== initialState) return;
     const nextState = logisticsToFormState(logisticsQuery.data);
+    const nextStateSnapshot = JSON.stringify(nextState);
+    if (currentState === nextStateSnapshot && initialState === nextStateSnapshot) return;
     setFormState(nextState);
     setInitialFormState(nextState);
   }, [formState, initialFormState, logisticsQuery.data]);

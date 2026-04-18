@@ -29,6 +29,11 @@ import {
   updateProviderShipmentTracking,
 } from "@/features/provider-dashboard/api";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
+import {
+  DashboardDataRow,
+  DashboardDataValue,
+} from "@/features/provider-dashboard/components/DashboardDataRow";
+import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
 import { DashboardPanel } from "@/features/provider-dashboard/components/DashboardPanel";
 import { DashboardStatePill } from "@/features/provider-dashboard/components/DashboardStatePill";
 import {
@@ -38,7 +43,6 @@ import {
 } from "@/features/provider-dashboard/components/DashboardStates";
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
 import type { DashboardNotification, DashboardShipment } from "@/features/provider-dashboard/types";
-import { cn } from "@/lib/utils";
 
 const shipmentStatusOptions = [
   { value: "", label: "Todos los estados" },
@@ -128,33 +132,6 @@ function publicTrackingPath(shipment: DashboardShipment) {
   return shipment.cotizacion_id ? `/tracking/${shipment.cotizacion_id}` : "";
 }
 
-function SnapshotCard({
-  title,
-  value,
-  support,
-  icon,
-}: {
-  title: string;
-  value: string;
-  support: string;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
-          <p className="font-[Montserrat] text-xl font-bold tracking-tight text-foreground">{value}</p>
-          <p className="text-sm leading-relaxed text-muted-foreground">{support}</p>
-        </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function DetailRow({ label, value, icon }: { label: string; value?: ReactNode; icon?: ReactNode }) {
   return (
     <div className="rounded-[1rem] border border-border/70 bg-background/70 p-3">
@@ -180,35 +157,34 @@ function ShipmentRow({
   const overdue = isOverdue(shipment);
 
   return (
-    <button
-      type="button"
+    <DashboardDataRow
       onClick={onSelect}
-      className={cn(
-        "grid w-full gap-3 border-b border-border/70 px-4 py-4 text-left transition-colors last:border-b-0 lg:grid-cols-[0.55fr_0.7fr_0.95fr_0.9fr_1.05fr_0.85fr_0.9fr]",
-        selected ? "bg-primary/8" : "bg-white hover:bg-muted/50"
-      )}
+      selected={selected}
+      columnsClassName="lg:grid-cols-[0.68fr_0.92fr_0.9fr_1.05fr_1.15fr_0.82fr]"
     >
-      <div>
+      <DashboardDataValue label="Envio">
         <p className="text-sm font-semibold text-foreground">#{shipment.id}</p>
         <p className="text-xs text-muted-foreground">Cot #{safeText(shipment.cotizacion_id)}</p>
-      </div>
-      <div className="flex items-center">
+      </DashboardDataValue>
+      <DashboardDataValue label="Estado" className="flex flex-col items-start">
         <DashboardStatePill tone={meta.tone}>{meta.label}</DashboardStatePill>
-      </div>
-      <div className="text-sm text-muted-foreground">{methodLabel(shipment.shipping_method)}</div>
-      <div>
+      </DashboardDataValue>
+      <DashboardDataValue label="Metodo" className="text-sm text-muted-foreground">
+        {methodLabel(shipment.shipping_method)}
+      </DashboardDataValue>
+      <DashboardDataValue label="Tracking">
         <p className="text-sm font-medium text-foreground">{safeText(shipment.tracking_code, "Sin tracking")}</p>
         <p className="text-xs text-muted-foreground">{shipment.tracking_loaded_at ? "Tracking cargado" : "Pendiente"}</p>
-      </div>
-      <div>
+      </DashboardDataValue>
+      <DashboardDataValue label="Destino">
         <p className="text-sm font-medium text-foreground">{shipmentDestination(shipment)}</p>
         <p className="text-xs text-muted-foreground">CP {safeText(shipment.destino_cp)}</p>
-      </div>
-      <div className="text-sm text-muted-foreground">{formatDateTime(shipment.fecha_limite_despacho)}</div>
-      <div className="flex items-center">
+      </DashboardDataValue>
+      <DashboardDataValue label="Plazo" className="flex flex-col items-start gap-2">
+        <span className="text-sm text-muted-foreground">{formatDateTime(shipment.fecha_limite_despacho)}</span>
         <DashboardStatePill tone={overdue ? "danger" : "muted"}>{overdue ? "Vencido" : "En plazo"}</DashboardStatePill>
-      </div>
-    </button>
+      </DashboardDataValue>
+    </DashboardDataRow>
   );
 }
 
@@ -520,29 +496,20 @@ function ShipmentsContent({
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SnapshotCard title="Envios activos" value={String(activeShipments.length)} support="Pendientes, listos, en transito o con revision." icon={<Route className="h-5 w-5" />} />
-        <SnapshotCard title="Listos para despacho" value={String(readyShipments.length)} support="Requieren tracking o salida operativa." icon={<Truck className="h-5 w-5" />} />
-        <SnapshotCard title="Con tracking" value={`${withTracking.length}/${items.length}`} support="Codigos cargados sobre el filtro actual." icon={<Search className="h-5 w-5" />} />
-        <SnapshotCard title="Vencidos" value={String(overdueCount)} support={`Ultima actividad: ${formatDateTime(latestShipment?.updated_at || latestShipment?.created_at)}`} icon={<CalendarClock className="h-5 w-5" />} />
+        <DashboardMetricCard title="Envios activos" value={String(activeShipments.length)} support="Pendientes, listos, en transito o con revision." icon={<Route className="h-5 w-5" />} />
+        <DashboardMetricCard title="Listos para despacho" value={String(readyShipments.length)} support="Requieren tracking o salida operativa." icon={<Truck className="h-5 w-5" />} />
+        <DashboardMetricCard title="Con tracking" value={`${withTracking.length}/${items.length}`} support="Codigos cargados sobre el filtro actual." icon={<Search className="h-5 w-5" />} />
+        <DashboardMetricCard title="Vencidos" value={String(overdueCount)} support={`Ultima actividad: ${formatDateTime(latestShipment?.updated_at || latestShipment?.created_at)}`} icon={<CalendarClock className="h-5 w-5" />} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <DashboardPanel
           title="Listado de shipments"
-          description="Click en una fila para abrir instrucciones, destino y acciones permitidas."
-          contentClassName="p-0"
+          description="Click en un envio para abrir instrucciones, destino y acciones permitidas."
+          contentClassName="p-4 pt-0 md:p-5 md:pt-0"
         >
           {items.length ? (
-            <div className="overflow-hidden rounded-b-[1.25rem]">
-              <div className="hidden border-b border-border/70 bg-muted/40 px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground lg:grid lg:grid-cols-[0.55fr_0.7fr_0.95fr_0.9fr_1.05fr_0.85fr_0.9fr]">
-                <span>ID</span>
-                <span>Estado</span>
-                <span>Metodo</span>
-                <span>Tracking</span>
-                <span>Destino</span>
-                <span>Fecha limite</span>
-                <span>Plazo</span>
-              </div>
+            <div className="space-y-3">
               {items.map((shipment) => (
                 <ShipmentRow
                   key={shipment.id}

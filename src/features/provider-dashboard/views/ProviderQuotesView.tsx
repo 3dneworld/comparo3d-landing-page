@@ -21,9 +21,13 @@ import {
   DashboardErrorState,
   DashboardLoadingState,
 } from "@/features/provider-dashboard/components/DashboardStates";
+import {
+  DashboardDataRow,
+  DashboardDataValue,
+} from "@/features/provider-dashboard/components/DashboardDataRow";
+import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
 import type { DashboardQuoteMatch } from "@/features/provider-dashboard/types";
-import { cn } from "@/lib/utils";
 
 const quoteStatusOptions = [
   { value: "", label: "Todos los estados" },
@@ -90,33 +94,6 @@ function quoteDate(quote: DashboardQuoteMatch) {
 
 function quoteDisplayId(quote: DashboardQuoteMatch) {
   return quote.quote_uid || `#${quote.cotizacion_id || quote.id}`;
-}
-
-function SnapshotCard({
-  title,
-  value,
-  support,
-  icon,
-}: {
-  title: string;
-  value: string;
-  support: string;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
-          <p className="font-[Montserrat] text-xl font-bold tracking-tight text-foreground">{value}</p>
-          <p className="text-sm leading-relaxed text-muted-foreground">{support}</p>
-        </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function DetailRow({ label, value }: { label: string; value?: ReactNode }) {
@@ -217,30 +194,33 @@ function QuoteRow({
   const meta = statusMeta(quote.estado);
 
   return (
-    <button
-      type="button"
+    <DashboardDataRow
       onClick={onSelect}
-      className={cn(
-        "grid w-full gap-3 border-b border-border/70 px-4 py-4 text-left transition-colors last:border-b-0 lg:grid-cols-[0.9fr_0.9fr_0.75fr_0.65fr_0.75fr_0.65fr_0.8fr]",
-        selected ? "bg-primary/8" : "bg-white hover:bg-muted/50"
-      )}
+      selected={selected}
+      columnsClassName="lg:grid-cols-[1.05fr_0.9fr_1fr_0.72fr_0.85fr_0.78fr]"
     >
-      <div>
+      <DashboardDataValue label="Quote">
         <p className="text-sm font-semibold text-foreground">{quoteDisplayId(quote)}</p>
         <p className="text-xs text-muted-foreground">Match #{quote.id}</p>
-      </div>
-      <div className="flex items-center">
+      </DashboardDataValue>
+      <DashboardDataValue label="Estado" className="flex flex-col items-start">
         <DashboardStatePill tone={meta.tone}>{meta.label}</DashboardStatePill>
-      </div>
-      <div>
+      </DashboardDataValue>
+      <DashboardDataValue label="Material">
         <p className="text-sm font-medium text-foreground">{quote.material || "Sin material"}</p>
         <p className="text-xs text-muted-foreground">{quote.color || "Sin color"}</p>
-      </div>
-      <div className="text-sm text-muted-foreground">{formatNumber(quote.cantidad)}</div>
-      <div className="text-sm font-semibold text-foreground">{formatMoney(quote.precio_final)}</div>
-      <div className="text-sm text-muted-foreground">{formatMinutes(quote.print_time_min)}</div>
-      <div className="text-sm text-muted-foreground">{formatDateTime(quoteDate(quote))}</div>
-    </button>
+      </DashboardDataValue>
+      <DashboardDataValue label="Cantidad" className="text-sm text-muted-foreground">
+        {formatNumber(quote.cantidad)}
+      </DashboardDataValue>
+      <DashboardDataValue label="Precio" className="text-sm font-semibold text-foreground">
+        {formatMoney(quote.precio_final)}
+      </DashboardDataValue>
+      <DashboardDataValue label="Actividad" className="text-sm text-muted-foreground">
+        <span className="block">{formatMinutes(quote.print_time_min)}</span>
+        <span className="mt-1 block text-xs">{formatDateTime(quoteDate(quote))}</span>
+      </DashboardDataValue>
+    </DashboardDataRow>
   );
 }
 
@@ -315,29 +295,20 @@ function QuotesContent({
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SnapshotCard title="Oportunidades" value={String(items.length)} support="Matches visibles para el proveedor." icon={<ReceiptText className="h-5 w-5" />} />
-        <SnapshotCard title="Cotizadas" value={String(quotedCount)} support="Aun disponibles o esperando decision." icon={<FileText className="h-5 w-5" />} />
-        <SnapshotCard title="Valor listado" value={formatMoney(totalValue)} support="Suma de precios de la vista actual." icon={<Wallet className="h-5 w-5" />} />
-        <SnapshotCard title="Ultima actividad" value={formatDateTime(quoteDate(lastQuote || {}))} support="Segun el filtro aplicado." icon={<Clock3 className="h-5 w-5" />} />
+        <DashboardMetricCard title="Oportunidades" value={String(items.length)} support="Matches visibles para el proveedor." icon={<ReceiptText className="h-5 w-5" />} />
+        <DashboardMetricCard title="Cotizadas" value={String(quotedCount)} support="Aun disponibles o esperando decision." icon={<FileText className="h-5 w-5" />} />
+        <DashboardMetricCard title="Valor listado" value={formatMoney(totalValue)} support="Suma de precios de la vista actual." icon={<Wallet className="h-5 w-5" />} />
+        <DashboardMetricCard title="Ultima actividad" value={formatDateTime(quoteDate(lastQuote || {}))} support="Segun el filtro aplicado." icon={<Clock3 className="h-5 w-5" />} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <DashboardPanel
           title="Listado comercial"
-          description="Click en una fila para abrir el detalle permitido. La tabla no muestra datos sensibles del cliente."
-          contentClassName="p-0"
+          description="Click en una oportunidad para abrir el detalle permitido. Cliente y archivos se mantienen protegidos hasta pedido confirmado."
+          contentClassName="p-4 pt-0 md:p-5 md:pt-0"
         >
           {items.length ? (
-            <div className="overflow-hidden rounded-b-[1.25rem]">
-              <div className="hidden border-b border-border/70 bg-muted/40 px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground lg:grid lg:grid-cols-[0.9fr_0.9fr_0.75fr_0.65fr_0.75fr_0.65fr_0.8fr]">
-                <span>Quote</span>
-                <span>Estado</span>
-                <span>Material</span>
-                <span>Cantidad</span>
-                <span>Precio</span>
-                <span>Tiempo</span>
-                <span>Actualizado</span>
-              </div>
+            <div className="space-y-3">
               {items.map((quote) => (
                 <QuoteRow
                   key={quote.id}

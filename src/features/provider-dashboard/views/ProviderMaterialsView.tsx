@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
 import { fetchProviderMaterials, updateProviderMaterials } from "@/features/provider-dashboard/api";
 import { DashboardField } from "@/features/provider-dashboard/components/DashboardField";
+import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
 import { DashboardPanel } from "@/features/provider-dashboard/components/DashboardPanel";
 import { DashboardStatePill } from "@/features/provider-dashboard/components/DashboardStatePill";
@@ -259,33 +260,6 @@ function FeedbackBanner({ feedback }: { feedback: SaveFeedback }) {
   );
 }
 
-function SnapshotCard({
-  title,
-  value,
-  support,
-  icon,
-}: {
-  title: string;
-  value: string;
-  support: string;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
-          <p className="font-[Montserrat] text-xl font-bold tracking-tight text-foreground">{value}</p>
-          <p className="text-sm leading-relaxed text-muted-foreground">{support}</p>
-        </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function MaterialEditor({
   material,
   materialIndex,
@@ -310,7 +284,7 @@ function MaterialEditor({
   onRemoveMaterial: (index: number) => void;
 }) {
   return (
-    <article className="rounded-[1.5rem] border border-border/70 bg-background/70 p-5 shadow-card">
+    <article className="rounded-[1.5rem] border border-border/70 bg-white p-5 shadow-card">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -467,7 +441,7 @@ function MaterialEditor({
             {material.colores.map((color, colorIndex) => (
               <div
                 key={`${color.color_name}-${colorIndex}`}
-                className="grid gap-3 rounded-[1rem] border border-border/70 bg-background/70 p-3 md:grid-cols-[1fr_0.8fr_0.9fr_0.7fr_auto]"
+                className="grid gap-3 rounded-[1rem] border border-border/70 bg-white p-3 md:grid-cols-[1fr_0.8fr_0.9fr_0.7fr_auto]"
               >
                 <Input
                   aria-label="Nombre del color"
@@ -549,7 +523,7 @@ function MaterialEditor({
             ))}
           </div>
         ) : (
-          <div className="mt-4 rounded-[1rem] border border-dashed border-border/80 bg-background/70 px-4 py-3 text-sm text-muted-foreground">
+          <div className="mt-4 rounded-[1rem] border border-dashed border-border/80 bg-white/80 px-4 py-3 text-sm text-muted-foreground">
             Todavia no hay colores cargados para este material.
           </div>
         )}
@@ -661,25 +635,25 @@ function MaterialsContent({
       ) : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SnapshotCard
+        <DashboardMetricCard
           title="Catalogo activo"
           value={`${activeMaterials.length}/${formState.length}`}
           support="Materiales habilitados para trabajar desde esta ficha."
           icon={<PackageCheck className="h-5 w-5" />}
         />
-        <SnapshotCard
+        <DashboardMetricCard
           title="Stock declarado"
           value={totalStockKg > 0 ? `${totalStockKg.toFixed(1)} kg` : "Pendiente"}
           support="Suma de gramos cargados a nivel material."
           icon={<Boxes className="h-5 w-5" />}
         />
-        <SnapshotCard
+        <DashboardMetricCard
           title="Colores cargados"
           value={String(colorCount)}
           support="Variantes de color con stock propio por material."
           icon={<Palette className="h-5 w-5" />}
         />
-        <SnapshotCard
+        <DashboardMetricCard
           title="Ultima actualizacion"
           value={formatDateTime(provider.last_stock_update_at)}
           support="Marca de persistencia de stock/precios del backend."
@@ -730,7 +704,7 @@ function MaterialsContent({
             description="Lectura compacta del impacto sobre cotizacion y visibilidad."
           >
             <div className="space-y-4">
-              <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
+              <div className="rounded-[1.25rem] border border-border/70 bg-white p-4 shadow-card">
                 <p className="text-sm font-semibold text-foreground">Estado para cotizar</p>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                   {quoteMaterials.length
@@ -746,7 +720,7 @@ function MaterialsContent({
                   </DashboardStatePill>
                 </div>
               </div>
-              <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
+              <div className="rounded-[1.25rem] border border-border/70 bg-white p-4 shadow-card">
                 <p className="text-sm font-semibold text-foreground">Visibles por backend</p>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                   {(data.readiness.visible_materials || []).join(", ") ||
@@ -777,7 +751,7 @@ function MaterialsContent({
                 {nextSteps.map((item) => (
                   <div
                     key={item}
-                    className="rounded-[1.15rem] border border-border/70 bg-background/70 px-4 py-3 text-sm leading-relaxed text-muted-foreground"
+                    className="rounded-[1.15rem] border border-border/70 bg-white px-4 py-3 text-sm leading-relaxed text-muted-foreground shadow-card"
                   >
                     {item}
                   </div>
@@ -796,7 +770,7 @@ function MaterialsContent({
                 {data.readiness.blocking_reasons.slice(0, 6).map((reason, index) => (
                   <div
                     key={reason}
-                    className="flex items-start gap-3 rounded-[1.15rem] border border-border/70 bg-background/70 px-4 py-3"
+                    className="flex items-start gap-3 rounded-[1.15rem] border border-border/70 bg-white px-4 py-3 shadow-card"
                   >
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
                       {index + 1}
@@ -836,8 +810,12 @@ export function ProviderMaterialsView() {
 
   useEffect(() => {
     if (!materialsQuery.data) return;
-    if (JSON.stringify(formState) !== JSON.stringify(initialFormState)) return;
+    const currentState = JSON.stringify(formState);
+    const initialState = JSON.stringify(initialFormState);
+    if (currentState !== initialState) return;
     const nextState = materialsToFormState(materialsQuery.data);
+    const nextStateSnapshot = JSON.stringify(nextState);
+    if (currentState === nextStateSnapshot && initialState === nextStateSnapshot) return;
     setFormState(nextState);
     setInitialFormState(nextState);
   }, [formState, initialFormState, materialsQuery.data]);

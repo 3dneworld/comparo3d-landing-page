@@ -20,6 +20,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { fetchProviderOrderDetail, fetchProviderOrders } from "@/features/provider-dashboard/api";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
+import {
+  DashboardDataRow,
+  DashboardDataValue,
+} from "@/features/provider-dashboard/components/DashboardDataRow";
+import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
 import { DashboardPanel } from "@/features/provider-dashboard/components/DashboardPanel";
 import { DashboardStatePill } from "@/features/provider-dashboard/components/DashboardStatePill";
 import {
@@ -29,7 +34,6 @@ import {
 } from "@/features/provider-dashboard/components/DashboardStates";
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
 import type { DashboardOrder } from "@/features/provider-dashboard/types";
-import { cn } from "@/lib/utils";
 
 const orderStatusOptions = [
   { value: "", label: "Todos los estados" },
@@ -98,33 +102,6 @@ function parseDeliveryAddress(value?: DashboardOrder["delivery_address_json"]) {
 
 function orderDate(order: DashboardOrder) {
   return order.updated_at || order.confirmed_at || order.created_at || null;
-}
-
-function SnapshotCard({
-  title,
-  value,
-  support,
-  icon,
-}: {
-  title: string;
-  value: string;
-  support: string;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
-          <p className="font-[Montserrat] text-xl font-bold tracking-tight text-foreground">{value}</p>
-          <p className="text-sm leading-relaxed text-muted-foreground">{support}</p>
-        </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function DetailRow({ label, value, icon }: { label: string; value?: ReactNode; icon?: ReactNode }) {
@@ -257,32 +234,35 @@ function OrderRow({
   const paymentStatus = paymentMeta(order.payment_status);
 
   return (
-    <button
-      type="button"
+    <DashboardDataRow
       onClick={onSelect}
-      className={cn(
-        "grid w-full gap-3 border-b border-border/70 px-4 py-4 text-left transition-colors last:border-b-0 lg:grid-cols-[0.6fr_0.9fr_0.8fr_1fr_0.85fr_0.8fr_0.55fr]",
-        selected ? "bg-primary/8" : "bg-white hover:bg-muted/50"
-      )}
+      selected={selected}
+      columnsClassName="lg:grid-cols-[0.72fr_0.9fr_0.82fr_1.15fr_0.9fr_0.85fr]"
     >
-      <div>
+      <DashboardDataValue label="Pedido">
         <p className="text-sm font-semibold text-foreground">#{order.id}</p>
         <p className="text-xs text-muted-foreground">Cot #{safeText(order.cotizacion_id)}</p>
-      </div>
-      <div className="flex items-center">
+      </DashboardDataValue>
+      <DashboardDataValue label="Estado" className="flex flex-col items-start">
         <DashboardStatePill tone={orderStatus.tone}>{orderStatus.label}</DashboardStatePill>
-      </div>
-      <div className="flex items-center">
+      </DashboardDataValue>
+      <DashboardDataValue label="Pago" className="flex flex-col items-start">
         <DashboardStatePill tone={paymentStatus.tone}>{paymentStatus.label}</DashboardStatePill>
-      </div>
-      <div>
+      </DashboardDataValue>
+      <DashboardDataValue label="Cliente">
         <p className="text-sm font-medium text-foreground">{safeText(order.client_name, "Cliente no cargado")}</p>
         <p className="text-xs text-muted-foreground">{safeText(order.client_email, "sin email")}</p>
-      </div>
-      <div className="text-sm text-muted-foreground">{safeText(order.delivery_method)}</div>
-      <div className="text-sm text-muted-foreground">{formatDateTime(order.created_at)}</div>
-      <div className="text-sm font-medium text-foreground">{formatCount(order.files_count)}</div>
-    </button>
+      </DashboardDataValue>
+      <DashboardDataValue label="Entrega" className="text-sm text-muted-foreground">
+        {safeText(order.delivery_method)}
+      </DashboardDataValue>
+      <DashboardDataValue label="Actividad" className="text-sm text-muted-foreground">
+        <span className="block">{formatDateTime(order.created_at)}</span>
+        <span className="mt-1 block text-xs font-medium text-foreground">
+          {formatCount(order.files_count)} archivos
+        </span>
+      </DashboardDataValue>
+    </DashboardDataRow>
   );
 }
 
@@ -355,29 +335,20 @@ function OrdersContent({
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SnapshotCard title="Pedidos abiertos" value={String(activeOrders.length)} support="Pendientes de produccion, entrega o cierre." icon={<PackageOpen className="h-5 w-5" />} />
-        <SnapshotCard title="Completados" value={String(completedOrders.length)} support="Pedidos cerrados en la vista actual." icon={<CheckCircle2 className="h-5 w-5" />} />
-        <SnapshotCard title="Archivos visibles" value={String(filesCount)} support="STL/GCODE disponibles para operar." icon={<FileArchive className="h-5 w-5" />} />
-        <SnapshotCard title="Ultima actividad" value={formatDateTime(orderDate(lastOrder || {}))} support="Segun el filtro aplicado." icon={<ClipboardList className="h-5 w-5" />} />
+        <DashboardMetricCard title="Pedidos abiertos" value={String(activeOrders.length)} support="Pendientes de produccion, entrega o cierre." icon={<PackageOpen className="h-5 w-5" />} />
+        <DashboardMetricCard title="Completados" value={String(completedOrders.length)} support="Pedidos cerrados en la vista actual." icon={<CheckCircle2 className="h-5 w-5" />} />
+        <DashboardMetricCard title="Archivos visibles" value={String(filesCount)} support="STL/GCODE disponibles para operar." icon={<FileArchive className="h-5 w-5" />} />
+        <DashboardMetricCard title="Ultima actividad" value={formatDateTime(orderDate(lastOrder || {}))} support="Segun el filtro aplicado." icon={<ClipboardList className="h-5 w-5" />} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <DashboardPanel
           title="Listado operativo"
-          description="Click en una fila para abrir cliente, entrega y archivos permitidos por backend."
-          contentClassName="p-0"
+          description="Click en un pedido para abrir cliente, entrega y archivos permitidos por backend."
+          contentClassName="p-4 pt-0 md:p-5 md:pt-0"
         >
           {items.length ? (
-            <div className="overflow-hidden rounded-b-[1.25rem]">
-              <div className="hidden border-b border-border/70 bg-muted/40 px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground lg:grid lg:grid-cols-[0.6fr_0.9fr_0.8fr_1fr_0.85fr_0.8fr_0.55fr]">
-                <span>ID</span>
-                <span>Estado</span>
-                <span>Pago</span>
-                <span>Cliente</span>
-                <span>Entrega</span>
-                <span>Creado</span>
-                <span>Archivos</span>
-              </div>
+            <div className="space-y-3">
               {items.map((order) => (
                 <OrderRow
                   key={order.id}

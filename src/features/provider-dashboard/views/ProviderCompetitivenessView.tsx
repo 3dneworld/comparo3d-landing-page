@@ -18,6 +18,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { fetchProviderCompetitiveness } from "@/features/provider-dashboard/api";
+import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
 import { DashboardPanel } from "@/features/provider-dashboard/components/DashboardPanel";
 import { DashboardStatePill } from "@/features/provider-dashboard/components/DashboardStatePill";
@@ -118,33 +119,6 @@ function benchmarkSpread(benchmark?: DashboardCompetitivenessBenchmark) {
   return Math.round(((p75 - p25) / p25) * 100);
 }
 
-function SnapshotCard({
-  title,
-  value,
-  support,
-  icon,
-}: {
-  title: string;
-  value: string;
-  support: string;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
-          <p className="font-[Montserrat] text-xl font-bold tracking-tight text-foreground">{value}</p>
-          <p className="text-sm leading-relaxed text-muted-foreground">{support}</p>
-        </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function RangeBar({ ownPrice, benchmark }: { ownPrice?: number | null; benchmark?: DashboardCompetitivenessBenchmark }) {
   const p25 = Number(benchmark?.p25);
   const p75 = Number(benchmark?.p75);
@@ -222,10 +196,10 @@ function BenchmarkAvailable({ data }: { data: ProviderCompetitivenessResponse })
   return (
     <div className="space-y-6">
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SnapshotCard title="Precio propio" value={formatMoney(data.own_price)} support="Fuente legacy viva del proveedor." icon={<WalletCards className="h-5 w-5" />} />
-        <SnapshotCard title="Mediana cohorte" value={formatMoney(benchmark.median)} support={cohortLabel(data.cohort)} icon={<BarChart3 className="h-5 w-5" />} />
-        <SnapshotCard title="Percentil" value={formatPercentile(benchmark.percentile)} support="Posicion del precio propio contra pares." icon={<Target className="h-5 w-5" />} />
-        <SnapshotCard title="Muestra" value={formatNumber(benchmark.sample_size)} support={`Spread P25-P75 ${spread == null ? "sin dato" : `${spread}%`}`} icon={<Layers3 className="h-5 w-5" />} />
+        <DashboardMetricCard title="Precio propio" value={formatMoney(data.own_price)} support="Fuente legacy viva del proveedor." icon={<WalletCards className="h-5 w-5" />} />
+        <DashboardMetricCard title="Mediana cohorte" value={formatMoney(benchmark.median)} support={cohortLabel(data.cohort)} icon={<BarChart3 className="h-5 w-5" />} />
+        <DashboardMetricCard title="Percentil" value={formatPercentile(benchmark.percentile)} support="Posicion del precio propio contra pares." icon={<Target className="h-5 w-5" />} />
+        <DashboardMetricCard title="Muestra" value={formatNumber(benchmark.sample_size)} support={`Spread P25-P75 ${spread == null ? "sin dato" : `${spread}%`}`} icon={<Layers3 className="h-5 w-5" />} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">

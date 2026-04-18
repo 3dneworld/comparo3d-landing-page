@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -24,6 +24,7 @@ import {
   validateProviderPostalAddress,
 } from "@/features/provider-dashboard/api";
 import { DashboardField } from "@/features/provider-dashboard/components/DashboardField";
+import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
 import { DashboardPanel } from "@/features/provider-dashboard/components/DashboardPanel";
 import { DashboardStatePill } from "@/features/provider-dashboard/components/DashboardStatePill";
@@ -265,33 +266,6 @@ function FeedbackBanner({ feedback }: { feedback: SaveFeedback }) {
   );
 }
 
-function SnapshotCard({
-  title,
-  value,
-  support,
-  icon,
-}: {
-  title: string;
-  value: string;
-  support: string;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
-          <p className="font-[Montserrat] text-xl font-bold tracking-tight text-foreground">{value}</p>
-          <p className="text-sm leading-relaxed text-muted-foreground">{support}</p>
-        </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function ProfileContent({
   profile,
   formState,
@@ -402,20 +376,20 @@ function ProfileContent({
       ) : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SnapshotCard title="Nombre visible" value={provider.nombre || "Pendiente"} support={locationLabel} icon={<Store className="h-5 w-5" />} />
-        <SnapshotCard
+        <DashboardMetricCard title="Nombre visible" value={provider.nombre || "Pendiente"} support={locationLabel} icon={<Store className="h-5 w-5" />} />
+        <DashboardMetricCard
           title="Promesa de entrega"
           value={provider.tiempo_entrega_dias != null ? `${provider.tiempo_entrega_dias} dias` : "Pendiente"}
           support={`Trabajo minimo ${formatMoney(provider.min_trabajo)}`}
           icon={<ShieldCheck className="h-5 w-5" />}
         />
-        <SnapshotCard
+        <DashboardMetricCard
           title="Geo capturada"
           value={provider.geo_source || "Sin fuente"}
           support={provider.geo_captured_at ? formatDateTime(provider.geo_captured_at) : "Todavia sin coordenadas"}
           icon={<LocateFixed className="h-5 w-5" />}
         />
-        <SnapshotCard
+        <DashboardMetricCard
           title="Direccion postal"
           value={profile.postal_validation.postal_normalized_cpa || "Sin CPA"}
           support={normalizedAddress}
@@ -575,8 +549,12 @@ export function ProviderProfileView() {
 
   useEffect(() => {
     if (!profileQuery.data?.provider) return;
-    if (formState && initialFormState && JSON.stringify(formState) !== JSON.stringify(initialFormState)) return;
+    const currentState = formState ? JSON.stringify(formState) : "";
+    const initialState = initialFormState ? JSON.stringify(initialFormState) : "";
+    if (formState && initialFormState && currentState !== initialState) return;
     const nextState = providerToFormState(profileQuery.data.provider);
+    const nextStateSnapshot = JSON.stringify(nextState);
+    if (currentState === nextStateSnapshot && initialState === nextStateSnapshot) return;
     setFormState(nextState);
     setInitialFormState(nextState);
   }, [profileQuery.data, formState, initialFormState]);

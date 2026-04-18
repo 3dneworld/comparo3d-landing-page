@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -22,6 +22,7 @@ import {
   updateProviderProduction,
 } from "@/features/provider-dashboard/api";
 import { DashboardField } from "@/features/provider-dashboard/components/DashboardField";
+import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
 import { DashboardPanel } from "@/features/provider-dashboard/components/DashboardPanel";
 import { DashboardStatePill } from "@/features/provider-dashboard/components/DashboardStatePill";
@@ -172,33 +173,6 @@ function FeedbackBanner({ feedback }: { feedback: SaveFeedback }) {
   );
 }
 
-function SnapshotCard({
-  title,
-  value,
-  support,
-  icon,
-}: {
-  title: string;
-  value: string;
-  support: string;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
-          <p className="font-[Montserrat] text-xl font-bold tracking-tight text-foreground">{value}</p>
-          <p className="text-sm leading-relaxed text-muted-foreground">{support}</p>
-        </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function ProductionContent({
   data,
   formState,
@@ -291,25 +265,25 @@ function ProductionContent({
       {saveFeedback ? <FeedbackBanner feedback={saveFeedback} /> : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SnapshotCard
+        <DashboardMetricCard
           title="Parque activo"
           value={`${activePrinters.length}/${formState.length}`}
           support="Impresoras habilitadas dentro de la ficha productiva."
           icon={<Printer className="h-5 w-5" />}
         />
-        <SnapshotCard
+        <DashboardMetricCard
           title="Unidades operativas"
           value={String(totalUnits || 0)}
           support="Suma de equipos activos disponibles para produccion."
           icon={<Gauge className="h-5 w-5" />}
         />
-        <SnapshotCard
+        <DashboardMetricCard
           title="Cama principal"
           value={formatBed(primaryPrinter)}
           support={primaryPrinter?.nombre_impresora || "Sin impresora principal definida"}
           icon={<CheckCircle2 className="h-5 w-5" />}
         />
-        <SnapshotCard
+        <DashboardMetricCard
           title="Tecnologias declaradas"
           value={supportedMaterials.length ? supportedMaterials.slice(0, 3).join(", ") : "Sin limite"}
           support={supportedMaterials.length > 3 ? `+${supportedMaterials.length - 3} adicionales` : "Tomado de materiales permitidos por impresora."}
@@ -567,8 +541,12 @@ export function ProviderProductionView() {
 
   useEffect(() => {
     if (!productionQuery.data) return;
-    if (JSON.stringify(formState) !== JSON.stringify(initialFormState)) return;
+    const currentState = JSON.stringify(formState);
+    const initialState = JSON.stringify(initialFormState);
+    if (currentState !== initialState) return;
     const nextState = printersToFormState(productionQuery.data);
+    const nextStateSnapshot = JSON.stringify(nextState);
+    if (currentState === nextStateSnapshot && initialState === nextStateSnapshot) return;
     setFormState(nextState);
     setInitialFormState(nextState);
   }, [formState, initialFormState, productionQuery.data]);
