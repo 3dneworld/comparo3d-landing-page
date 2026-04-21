@@ -2,10 +2,18 @@
 import { useNavigate } from "react-router-dom";
 import { Star, Clock, ChevronRight, ShieldCheck, BadgeCheck } from "lucide-react";
 import { AvatarFallback } from "@/features/provider-profile/components/AvatarFallback";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { ListingProvider, ListingProviderBadge } from "../types";
 
 const BADGE_MAX = 2;
 const MATERIAL_MAX = 5;
+
+const BADGE_TOOLTIPS: Record<string, string> = {
+  seleccion_fundador:
+    "Este proveedor presentó documentación (facturación histórica, trabajos previos, referencias comerciales) que Comparo3D validó al momento del alta.",
+  certificado_organico:
+    "Este proveedor alcanzó la certificación orgánica al cumplir: 4+ meses activo, 20+ órdenes completadas, rating promedio ≥ 4.3, al menos 15 reviews, y ≥88% de entregas a tiempo.",
+};
 
 function BadgePill({ badge }: { badge: ListingProviderBadge }) {
   const isTrayectoria = badge.type === "seleccion_fundador";
@@ -13,12 +21,31 @@ function BadgePill({ badge }: { badge: ListingProviderBadge }) {
   const classes = isTrayectoria
     ? "bg-primary/10 text-primary ring-1 ring-primary/20"
     : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
+  const tooltip = BADGE_TOOLTIPS[badge.type];
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${classes}`}
     >
       <Icon size={11} aria-hidden="true" />
       {badge.label}
+      {tooltip && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`Más información sobre ${badge.label}`}
+              className="ml-0.5 grid h-4 w-4 place-items-center rounded-full border border-current text-[10px] font-bold opacity-70 hover:opacity-100"
+            >
+              ?
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 text-[12px] leading-relaxed text-foreground">
+            <p className="mb-1 font-semibold">{badge.label}</p>
+            <p>{tooltip}</p>
+          </PopoverContent>
+        </Popover>
+      )}
     </span>
   );
 }
