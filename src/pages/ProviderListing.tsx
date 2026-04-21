@@ -14,6 +14,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { fetchProviderListing } from "@/features/provider-listing/api";
+import { RankingExplainer } from "@/components/shared/RankingExplainer";
 import { ListingHero } from "@/features/provider-listing/components/ListingHero";
 import { ListingFilters } from "@/features/provider-listing/components/ListingFilters";
 import { ListingSearchBar } from "@/features/provider-listing/components/ListingSearchBar";
@@ -233,6 +234,7 @@ export default function ProviderListing() {
       </main>
 
       <Footer />
+      <RankingExplainer />
     </div>
   );
 }
