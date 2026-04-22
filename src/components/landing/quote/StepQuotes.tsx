@@ -109,12 +109,6 @@ function FilamentIcon({ className = "h-4 w-4" }: { className?: string }) {
   );
 }
 
-const getDeliveryDotClass = (days: number) => {
-  if (days <= 3) return "bg-emerald-500";
-  if (days <= 7) return "bg-amber-400";
-  return "bg-sky-500";
-};
-
 const haversineKm = (
   from: UserLocation,
   to: { lat: number | null | undefined; lng: number | null | undefined }
@@ -207,24 +201,24 @@ function ProviderAvatar({ option }: { option: QuoteOption }) {
 
 function ProviderCard({
   option,
-  isBestPrice,
+  isRecommended,
   onSelect,
 }: {
   option: DisplayQuote;
-  isBestPrice: boolean;
+  isRecommended: boolean;
   onSelect: () => void;
 }) {
   return (
     <div
       className={`relative rounded-xl border p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-card-hover ${
-        isBestPrice
+        isRecommended
           ? "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white"
           : "border-border bg-card"
       }`}
     >
-      {isBestPrice && (
+      {isRecommended && (
         <span className="absolute -top-2.5 left-4 rounded-full bg-gradient-to-r from-emerald-500 to-green-600 px-3 py-0.5 text-[11px] font-bold text-white">
-          Mejor precio
+          Oferta Recomendada
         </span>
       )}
 
@@ -265,7 +259,6 @@ function ProviderCard({
               )}
 
               <span className="flex items-center gap-1">
-                <span className={`h-2.5 w-2.5 rounded-full ${getDeliveryDotClass(option.delivery_days)}`} />
                 <Truck size={12} />
                 {option.delivery_days} {option.delivery_days === 1 ? "dia" : "dias"}
               </span>
@@ -420,9 +413,10 @@ export function StepQuotes({
     return next;
   }, [quotesWithDistance, filterCertified, filterNearby, sortMode, userLocation]);
 
-  const lowestVisiblePrice = useMemo(() => {
+  const recommendedQuoteUid = useMemo(() => {
     if (!visibleQuotes.length) return null;
-    return Math.min(...visibleQuotes.map((quote) => quote.price_ars));
+    const topRanked = visibleQuotes.find((quote) => quote.ranking_position === 1);
+    return (topRanked ?? visibleQuotes[0]).quote_option_uid;
   }, [visibleQuotes]);
 
   const dimensionsLabel = stlDimensions
@@ -632,7 +626,7 @@ export function StepQuotes({
             <div className="flex flex-wrap items-center gap-4 md:ml-auto">
               <label className="inline-flex items-center gap-2 text-[13px] font-medium text-foreground">
                 <BadgeCheck size={16} className="text-emerald-500" />
-                <span>Solo con badge de confianza</span>
+                <span>Proveedores Certificados</span>
                 <Switch checked={filterCertified} onCheckedChange={setFilterCertified} />
               </label>
 
@@ -807,7 +801,7 @@ export function StepQuotes({
                 <ProviderCard
                   key={quote.quote_option_uid}
                   option={quote}
-                  isBestPrice={lowestVisiblePrice !== null && quote.price_ars === lowestVisiblePrice}
+                  isRecommended={quote.quote_option_uid === recommendedQuoteUid}
                   onSelect={() => onSelectQuote(quote.quote_option_uid)}
                 />
               ))}

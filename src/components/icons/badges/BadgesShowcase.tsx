@@ -2,15 +2,15 @@
 export function BadgesShowcase() {
   const badges = [
     {
-      name: 'Trayectoria Verificada 10+',
+      name: '+10 años',
       src: '/badges/trayectoria-10.jpg',
-      alt: 'Badge Trayectoria Verificada 10+ años',
+      alt: 'Badge +10 años',
       desc: 'Proveedor con 10+ años de trayectoria verificada',
     },
     {
-      name: 'Trayectoria Verificada 5+',
+      name: '+5 años',
       src: '/badges/trayectoria-5.jpg',
-      alt: 'Badge Trayectoria Verificada 5+ años',
+      alt: 'Badge +5 años',
       desc: 'Proveedor con 5+ años de trayectoria verificada',
     },
     {

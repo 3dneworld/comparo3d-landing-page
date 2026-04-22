@@ -11,15 +11,15 @@ interface BadgeMeta {
 
 function getBadgeMeta(badge: QuoteOptionBadge): BadgeMeta {
   if (badge.badge_type === "seleccion_fundador") {
-    const is10 = badge.badge_tier === "10+";
-    const tier = is10 ? "10+ años" : "5+ años";
-    const tierShort = badge.badge_tier ?? "";
+    const is5 = badge.badge_tier === "5+";
+    const label = is5 ? "+5 años" : "+10 años";
     return {
-      label: `Trayectoria Verificada · ${tier}`,
-      labelShort: `Trayectoria · ${tierShort}`,
-      tooltip:
-        "Este proveedor presentó documentación (facturación histórica, trabajos previos, referencias comerciales) que Comparo3D validó al momento del alta.",
-      imgSrc: is10 ? "/badges/badge-10-anos.png" : "/badges/badge-5-anos.png",
+      label,
+      labelShort: label,
+      tooltip: is5
+        ? "Comparo3D validó que el proveedor posee una trayectoria de 5 años en el mercado de Impresión 3D"
+        : "Comparo3D validó que el proveedor posee una trayectoria de +10 años en el mercado de Impresión 3D",
+      imgSrc: is5 ? "/badges/badge-5-anos.png" : "/badges/badge-10-anos.png",
       tone: "trust",
     };
   }

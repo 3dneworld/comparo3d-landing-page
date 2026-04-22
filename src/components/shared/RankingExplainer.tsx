@@ -112,7 +112,7 @@ export function RankingExplainer({
                 <p>
                   Ordenamos por una combinación de precio, rating y cercanía.
                   Los proveedores con badges de confianza aparecen con
-                  prioridad, pero nunca escondemos el mejor precio.
+                  prioridad sin ocultar el resto de las cotizaciones.
                 </p>
               </AccordionContent>
             </AccordionItem>
