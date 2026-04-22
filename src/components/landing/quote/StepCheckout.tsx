@@ -24,6 +24,7 @@ import {
   type ShippingMethod,
 } from "@/lib/api";
 import { runNormalizeAddress } from "@/lib/normalizeAddressFlow";
+import { toast } from "@/components/ui/sonner";
 import { TrimmedThumbnail } from "./TrimmedThumbnail";
 
 interface AddressForm {
@@ -579,6 +580,11 @@ export function StepCheckout({
     setValidationWarningAcknowledged(false);
     setCheckoutWarning(null);
     setCheckoutError(null);
+    toast.success(
+      result.validation.correo_status === "validated"
+        ? "Dirección validada con Correo Argentino."
+        : "Dirección estructurada con datos oficiales."
+    );
     setLocalities((current) => {
       if (current.some((item) => item.id === result.normalized.locality_id)) {
         return current;
@@ -626,6 +632,16 @@ export function StepCheckout({
       ? thumbnailUrl
       : `data:image/png;base64,${thumbnailUrl}`
     : null;
+  const addressValidationIsValidated =
+    addressValidation?.validation.correo_status === "validated";
+  const addressValidationTitle = addressValidationIsValidated
+    ? "Dirección validada con Correo Argentino."
+    : "Dirección estructurada con datos oficiales.";
+  const addressValidationMessage = addressValidation
+    ? [addressValidation.normalized.full_address, addressValidation.validation.message]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
 
   const handlePay = async () => {
     if (!isFormValid || creatingCheckout) return;
@@ -883,20 +899,26 @@ export function StepCheckout({
 
                 {addressValidation && (
                   <div
-                    className={`sm:col-span-2 rounded-xl border px-4 py-3 ${
-                      addressValidation.validation.correo_status === "validated"
-                        ? "border-emerald-200 bg-emerald-50"
-                        : "border-amber-200 bg-amber-50"
+                    className={`sm:col-span-2 flex items-start gap-3 rounded-xl border px-4 py-3 ${
+                      addressValidationIsValidated
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                        : "border-amber-200 bg-amber-50 text-amber-900"
                     }`}
                   >
-                    <p className="text-[13px] font-semibold text-foreground">
-                      {addressValidation.validation.correo_status === "validated"
-                        ? "Direccion validada"
-                        : "Dirección sugerida"}
-                    </p>
-                    <p className="mt-1 text-[12px] text-muted-foreground">
-                      {addressValidation.normalized.full_address}
-                    </p>
+                    <span
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                        addressValidationIsValidated ? "bg-emerald-500" : "bg-amber-500"
+                      } text-white`}
+                      aria-hidden="true"
+                    >
+                      {addressValidationIsValidated ? <Check size={13} /> : <AlertCircle size={13} />}
+                    </span>
+                    <div>
+                      <p className="text-[13px] font-semibold">{addressValidationTitle}</p>
+                      <p className="mt-1 text-[12px] leading-relaxed">
+                        {addressValidationMessage}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>

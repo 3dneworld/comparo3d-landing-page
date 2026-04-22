@@ -20,8 +20,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
 import {
   captureProviderGeoLocation,
+  fetchProviderMiCorreoSuggestedAgency,
   fetchProviderLogistics,
   updateProviderLogistics,
+  updateProviderMiCorreo,
   validateProviderPostalAddress,
 } from "@/features/provider-dashboard/api";
 import { DashboardField } from "@/features/provider-dashboard/components/DashboardField";
@@ -39,6 +41,8 @@ import type {
   DashboardLogisticsFormPayload,
   ProviderGeoLocationPayload,
   ProviderLogisticsResponse,
+  ProviderMiCorreoAgencyResponse,
+  ProviderMiCorreoPayload,
 } from "@/features/provider-dashboard/types";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +55,13 @@ type LogisticsFormState = {
   dispatch_days: string;
   instrucciones_retiro: string;
   notas: string;
+};
+
+type MiCorreoFormState = {
+  api_user: string;
+  api_password: string;
+  customer_id: string;
+  province_code: string;
 };
 
 type SaveFeedback = {
@@ -79,6 +90,27 @@ function logisticsToFormState(payload: ProviderLogisticsResponse): LogisticsForm
     instrucciones_retiro: safeString(logistica.instrucciones_retiro),
     notas: safeString(logistica.notas),
   };
+}
+
+function micorreoToFormState(payload: ProviderLogisticsResponse): MiCorreoFormState {
+  const logistica = payload.logistica || {};
+  return {
+    api_user: safeString(logistica.micorreo_api_user),
+    api_password: "",
+    customer_id: safeString(logistica.micorreo_customer_id),
+    province_code: "",
+  };
+}
+
+function buildMiCorreoPayload(formState: MiCorreoFormState): ProviderMiCorreoPayload {
+  const api_user = formState.api_user.trim();
+  const api_password = formState.api_password.trim();
+  const customer_id = formState.customer_id.trim();
+  const province_code = formState.province_code.trim().toUpperCase();
+  if (!api_user || !api_password || !customer_id) {
+    throw new Error("Completa usuario, password y customerId de MiCorreo.");
+  }
+  return { api_user, api_password, customer_id, province_code };
 }
 
 function parseNullableNumber(value: string) {
@@ -151,6 +183,128 @@ function FeedbackBanner({ feedback }: { feedback: SaveFeedback }) {
   );
 }
 
+function MiCorreoPanel({
+  data,
+  formState,
+  agencyData,
+  isAgencyLoading,
+  isSaving,
+  onFieldChange,
+  onSave,
+  onRefreshAgency,
+}: {
+  data: ProviderLogisticsResponse;
+  formState: MiCorreoFormState;
+  agencyData?: ProviderMiCorreoAgencyResponse;
+  isAgencyLoading: boolean;
+  isSaving: boolean;
+  onFieldChange: (field: keyof MiCorreoFormState, value: string) => void;
+  onSave: () => void;
+  onRefreshAgency: () => void;
+}) {
+  const logistica = data.logistica || {};
+  const configured = Boolean(logistica.micorreo_configured || logistica.micorreo_customer_id);
+  const agency = agencyData?.agency;
+  const agencyAddress = agency?.address || {};
+  const agencyAddressText = [
+    safeString(agencyAddress.streetName),
+    safeString(agencyAddress.streetNumber),
+    safeString(agencyAddress.locality || agencyAddress.city),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <DashboardPanel
+      title="Integracion Correo Argentino"
+      description="Credenciales MiCorreo del proveedor para cotizar y registrar envios PAQ.AR."
+      headerAction={
+        <DashboardStatePill tone={configured ? "success" : "warning"}>
+          {configured ? "Validado" : "No configurado"}
+        </DashboardStatePill>
+      }
+    >
+      <div className="grid gap-5 md:grid-cols-3">
+        <DashboardField label="Usuario API" htmlFor="micorreo_api_user">
+          <Input
+            id="micorreo_api_user"
+            value={formState.api_user}
+            onChange={(event) => onFieldChange("api_user", event.target.value)}
+            className="h-11 rounded-xl border-border/80 bg-white"
+            autoComplete="off"
+          />
+        </DashboardField>
+        <DashboardField label="Password API" htmlFor="micorreo_api_password">
+          <Input
+            id="micorreo_api_password"
+            type="password"
+            value={formState.api_password}
+            onChange={(event) => onFieldChange("api_password", event.target.value)}
+            className="h-11 rounded-xl border-border/80 bg-white"
+            autoComplete="new-password"
+          />
+        </DashboardField>
+        <DashboardField label="Customer ID" htmlFor="micorreo_customer_id">
+          <Input
+            id="micorreo_customer_id"
+            value={formState.customer_id}
+            onChange={(event) => onFieldChange("customer_id", event.target.value)}
+            className="h-11 rounded-xl border-border/80 bg-white"
+            inputMode="numeric"
+          />
+        </DashboardField>
+        <DashboardField label="Provincia smoke test" htmlFor="micorreo_province_code">
+          <Input
+            id="micorreo_province_code"
+            value={formState.province_code}
+            onChange={(event) => onFieldChange("province_code", event.target.value)}
+            className="h-11 rounded-xl border-border/80 bg-white uppercase"
+            maxLength={1}
+          />
+        </DashboardField>
+        <div className="flex items-end gap-3 md:col-span-2">
+          <Button
+            type="button"
+            className="h-11 rounded-xl bg-gradient-primary px-5 text-primary-foreground shadow-cta hover:opacity-95"
+            onClick={onSave}
+            disabled={isSaving}
+          >
+            {isSaving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Validar y guardar
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
+            onClick={onRefreshAgency}
+            disabled={!configured || isAgencyLoading}
+          >
+            {isAgencyLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <MapPinned className="h-4 w-4" />}
+            Sucursal sugerida
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-[1.15rem] border border-border/70 bg-background/70 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">{agency?.name || "Sucursal sugerida para despacho"}</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              {agency ? agencyAddressText || agency.code || "Sucursal sin direccion publicada" : "Se calcula con el CP operativo del proveedor."}
+            </p>
+          </div>
+          {agency?.code ? <DashboardStatePill tone="info">{agency.code}</DashboardStatePill> : null}
+        </div>
+        {logistica.micorreo_validation_warning ? (
+          <div className="mt-3 rounded-[1rem] border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            {logistica.micorreo_validation_warning}
+          </div>
+        ) : null}
+      </div>
+    </DashboardPanel>
+  );
+}
+
 function ToggleCard({
   active,
   label,
@@ -188,12 +342,19 @@ function LogisticsContent({
   data,
   formState,
   initialFormState,
+  micorreoFormState,
+  agencyData,
   onFieldChange,
+  onMiCorreoFieldChange,
   onToggle,
   onSave,
+  onSaveMiCorreo,
+  onRefreshAgency,
   onCaptureGeo,
   onValidatePostal,
   isSaving,
+  isSavingMiCorreo,
+  isAgencyLoading,
   isCapturingGeo,
   isValidatingPostal,
   saveFeedback,
@@ -201,12 +362,19 @@ function LogisticsContent({
   data: ProviderLogisticsResponse;
   formState: LogisticsFormState;
   initialFormState: LogisticsFormState;
+  micorreoFormState: MiCorreoFormState;
+  agencyData?: ProviderMiCorreoAgencyResponse;
   onFieldChange: (field: keyof LogisticsFormState, value: string) => void;
+  onMiCorreoFieldChange: (field: keyof MiCorreoFormState, value: string) => void;
   onToggle: (field: "retiro_taller" | "envio_local" | "correo_argentino") => void;
   onSave: () => void;
+  onSaveMiCorreo: () => void;
+  onRefreshAgency: () => void;
   onCaptureGeo: () => void;
   onValidatePostal: () => void;
   isSaving: boolean;
+  isSavingMiCorreo: boolean;
+  isAgencyLoading: boolean;
   isCapturingGeo: boolean;
   isValidatingPostal: boolean;
   saveFeedback: SaveFeedback | null;
@@ -415,6 +583,17 @@ function LogisticsContent({
               </DashboardField>
             </div>
           </DashboardPanel>
+
+          <MiCorreoPanel
+            data={data}
+            formState={micorreoFormState}
+            agencyData={agencyData}
+            isAgencyLoading={isAgencyLoading}
+            isSaving={isSavingMiCorreo}
+            onFieldChange={onMiCorreoFieldChange}
+            onSave={onSaveMiCorreo}
+            onRefreshAgency={onRefreshAgency}
+          />
         </div>
 
         <div className="space-y-6">
@@ -515,6 +694,7 @@ export function ProviderLogisticsView() {
   const { providerId } = useProviderDashboardSession();
   const [formState, setFormState] = useState<LogisticsFormState | null>(null);
   const [initialFormState, setInitialFormState] = useState<LogisticsFormState | null>(null);
+  const [micorreoFormState, setMiCorreoFormState] = useState<MiCorreoFormState | null>(null);
   const [saveFeedback, setSaveFeedback] = useState<SaveFeedback | null>(null);
 
   const logisticsQuery = useQuery({
@@ -524,16 +704,25 @@ export function ProviderLogisticsView() {
     staleTime: 30_000,
   });
 
+  const agencyQuery = useQuery({
+    queryKey: ["provider-dashboard", "micorreo-agency", providerId],
+    queryFn: () => fetchProviderMiCorreoSuggestedAgency(providerId!),
+    enabled: providerId != null && Boolean(logisticsQuery.data?.logistica?.micorreo_configured),
+    staleTime: 60_000,
+  });
+
   useEffect(() => {
     if (!logisticsQuery.data) return;
     const currentState = formState ? JSON.stringify(formState) : "";
     const initialState = initialFormState ? JSON.stringify(initialFormState) : "";
     if (formState && initialFormState && currentState !== initialState) return;
     const nextState = logisticsToFormState(logisticsQuery.data);
+    const nextMiCorreoState = micorreoToFormState(logisticsQuery.data);
     const nextStateSnapshot = JSON.stringify(nextState);
     if (currentState === nextStateSnapshot && initialState === nextStateSnapshot) return;
     setFormState(nextState);
     setInitialFormState(nextState);
+    setMiCorreoFormState((current) => current || nextMiCorreoState);
   }, [formState, initialFormState, logisticsQuery.data]);
 
   const applySnapshot = (payload: ProviderLogisticsResponse) => {
@@ -543,6 +732,7 @@ export function ProviderLogisticsView() {
     const nextState = logisticsToFormState(payload);
     setFormState(nextState);
     setInitialFormState(nextState);
+    setMiCorreoFormState(micorreoToFormState(payload));
   };
 
   const saveMutation = useMutation({
@@ -610,6 +800,32 @@ export function ProviderLogisticsView() {
     },
   });
 
+  const micorreoMutation = useMutation({
+    mutationFn: async () => {
+      if (!providerId || !micorreoFormState) throw new Error("No encontramos un proveedor valido para MiCorreo.");
+      return updateProviderMiCorreo(providerId, buildMiCorreoPayload(micorreoFormState));
+    },
+    onSuccess: (payload) => {
+      applySnapshot(payload);
+      setSaveFeedback({
+        tone: "success",
+        title: "MiCorreo validado",
+        description: "Las credenciales quedaron cifradas y listas para cotizar y registrar envios.",
+      });
+      toast.success("MiCorreo validado");
+      void agencyQuery.refetch();
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "No pudimos validar MiCorreo.";
+      setSaveFeedback({
+        tone: "danger",
+        title: "No pudimos validar MiCorreo",
+        description: message,
+      });
+      toast.error(message);
+    },
+  });
+
   const postalMutation = useMutation({
     mutationFn: async () => {
       if (!providerId) throw new Error("No encontramos un proveedor valido para validar la direccion.");
@@ -637,7 +853,7 @@ export function ProviderLogisticsView() {
 
   const data = useMemo(() => logisticsQuery.data, [logisticsQuery.data]);
 
-  if (logisticsQuery.isLoading || (logisticsQuery.isFetching && !data) || !formState || !initialFormState) {
+  if (logisticsQuery.isLoading || (logisticsQuery.isFetching && !data) || !formState || !initialFormState || !micorreoFormState) {
     return (
       <DashboardLoadingState
         title="Armando la logistica del proveedor"
@@ -670,9 +886,15 @@ export function ProviderLogisticsView() {
       data={data}
       formState={formState}
       initialFormState={initialFormState}
+      micorreoFormState={micorreoFormState}
+      agencyData={agencyQuery.data}
       onFieldChange={(field, value) => {
         setSaveFeedback(null);
         setFormState((current) => (current ? { ...current, [field]: value } : current));
+      }}
+      onMiCorreoFieldChange={(field, value) => {
+        setSaveFeedback(null);
+        setMiCorreoFormState((current) => (current ? { ...current, [field]: value } : current));
       }}
       onToggle={(field) => {
         setSaveFeedback(null);
@@ -681,6 +903,13 @@ export function ProviderLogisticsView() {
       onSave={() => {
         setSaveFeedback(null);
         void saveMutation.mutateAsync();
+      }}
+      onSaveMiCorreo={() => {
+        setSaveFeedback(null);
+        void micorreoMutation.mutateAsync();
+      }}
+      onRefreshAgency={() => {
+        void agencyQuery.refetch();
       }}
       onCaptureGeo={() => {
         setSaveFeedback(null);
@@ -691,6 +920,8 @@ export function ProviderLogisticsView() {
         void postalMutation.mutateAsync();
       }}
       isSaving={saveMutation.isPending}
+      isSavingMiCorreo={micorreoMutation.isPending}
+      isAgencyLoading={agencyQuery.isFetching}
       isCapturingGeo={geoMutation.isPending}
       isValidatingPostal={postalMutation.isPending}
       saveFeedback={saveFeedback}

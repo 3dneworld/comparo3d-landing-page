@@ -322,7 +322,6 @@ export function StepQuotes({
   progressMessage,
   error,
   quotes,
-  sessionId,
   thumbnailUrl,
   material,
   cantidad,
@@ -579,7 +578,6 @@ export function StepQuotes({
             Nuestro equipo esta coordinando con proveedores verificados. Recibis la propuesta
             consolidada en hasta 72 hs habiles.
           </p>
-          <p className="mt-4 text-center text-[11px] text-muted-foreground/60">Sesion {sessionId}</p>
         </div>
       ) : (
         <>
@@ -858,8 +856,8 @@ export function StepQuotes({
                   </AccordionTrigger>
                   <AccordionContent className="pt-2 text-[13px] leading-relaxed">
                     <p>
-                      Comparo3D conecta a compradores con proveedores de impresión 3D
-                      independientes. La ejecución, calidad y garantía del trabajo son
+                      Comparo3D conecta a compradores con proveedores de impresión 3D.
+                      La ejecución, calidad y garantía del trabajo son
                       responsabilidad del proveedor que elijas.
                     </p>
                     <p className="mt-3">
@@ -876,7 +874,6 @@ export function StepQuotes({
             </section>
           )}
 
-          <p className="mt-4 text-center text-[11px] text-muted-foreground/60">Sesion {sessionId}</p>
         </>
       )}
 

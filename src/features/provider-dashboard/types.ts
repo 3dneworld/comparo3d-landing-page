@@ -214,6 +214,11 @@ export interface DashboardLogistica {
   dispatch_days?: number | null;
   instrucciones_retiro?: string | null;
   notas?: string | null;
+  micorreo_api_user?: string | null;
+  micorreo_customer_id?: string | null;
+  micorreo_validated_at?: string | null;
+  micorreo_validation_warning?: string | null;
+  micorreo_configured?: boolean;
 }
 
 export interface DashboardLogisticsFormPayload {
@@ -241,6 +246,37 @@ export interface ProviderProfileResponse {
 }
 
 export type ProviderLogisticsResponse = ProviderProfileResponse;
+
+export interface ProviderMiCorreoPayload {
+  api_user: string;
+  api_password: string;
+  customer_id: string;
+  province_code?: string;
+}
+
+export interface ProviderMiCorreoAgency {
+  code?: string | null;
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  status?: string | null;
+  address?: Record<string, unknown>;
+  hours?: Record<string, unknown>;
+  nearByPostalCode?: string | null;
+  services?: Record<string, unknown>;
+  location?: {
+    latitude?: string | number | null;
+    longitude?: string | number | null;
+  };
+}
+
+export interface ProviderMiCorreoAgencyResponse {
+  success: true;
+  province_code?: string;
+  postal_code?: string;
+  agency?: ProviderMiCorreoAgency | null;
+  items?: ProviderMiCorreoAgency[];
+}
 
 export type ProviderProductionResponse = ProviderProfileResponse;
 
@@ -290,6 +326,7 @@ export interface ProviderQuoteDetailResponse {
 export type DashboardOrderStatus =
   | "paid_confirmed"
   | "in_production"
+  | "en_transito"
   | "completed"
   | "cancelled"
   | "pending_confirmation"
@@ -331,6 +368,28 @@ export interface ProviderOrdersResponse {
 export interface ProviderOrderDetailResponse {
   success: true;
   item: DashboardOrder;
+}
+
+export interface ProviderOrderPrintingResponse {
+  success: true;
+  pedido_id: number;
+  proveedor_id: number;
+  previous_status?: string;
+  order_status: "in_production" | string;
+  already_printing?: boolean;
+  email_sent?: boolean;
+}
+
+export interface ProviderOrderDispatchResponse {
+  success: true;
+  order_id: number;
+  shipment_id: number;
+  trackingNumber: string;
+  tracking_url?: string;
+  product_type?: string;
+  estimated_days?: string;
+  email_sent?: boolean;
+  shipment?: DashboardShipment;
 }
 
 export type DashboardShipmentStatus =

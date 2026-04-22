@@ -134,15 +134,14 @@ export default {
       return serveSpaShell(request, env, url);
     }
 
+    // Listado público de proveedores — SPA, sin auth
     if (url.pathname === "/proveedores" || url.pathname === "/proveedores/") {
-      if (!hasAuthCookie) {
-        return Response.redirect(new URL("/proveedores/login", url.origin).toString(), 302);
-      }
+      return serveSpaShell(request, env, url);
+    }
 
-      const hasSession = await hasProviderSession(request);
-      if (!hasSession) {
-        return Response.redirect(new URL("/proveedores/login", url.origin).toString(), 302);
-      }
+    // Perfil público de proveedor — /proveedores/123-nombre → SPA, sin auth
+    if (/^\/proveedores\/\d+-.+/.test(url.pathname)) {
+      return serveSpaShell(request, env, url);
     }
 
     if (url.pathname === "/login") {

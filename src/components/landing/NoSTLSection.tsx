@@ -189,9 +189,47 @@ export default function NoSTLSection({ onCatalogItemSelect, isLoadingCatalogItem
                   ¿Tenés una idea o una foto?
                 </h3>
                 <p className="text-muted-foreground mb-5 leading-relaxed">
-                  Usando herramientas de inteligencia artificial podemos generar modelos 3D a partir de fotos,
-                  bocetos, descripciones o planos simples. Contactanos y te asesoramos sobre viabilidad y presupuesto.
+                  A partir de fotos, bocetos o planos simples podemos generar el archivo para que puedas luego
+                  cotizar con nuestros proveedores en la plataforma. Contactanos y te asesoramos sobre viabilidad
+                  y presupuesto.
                 </p>
+
+                <div className="mb-6 rounded-xl border border-border/80 bg-muted/30 p-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4">
+                    <figure className="min-w-0">
+                      <div className="aspect-[4/3] rounded-lg bg-white overflow-hidden flex items-center justify-center">
+                        <img
+                          src="/no-stl/brick-orig.webp"
+                          alt="Foto a color del ladrillo enviada por el cliente"
+                          className="h-full w-full object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                      <figcaption className="mt-2 text-xs font-medium text-muted-foreground text-center">
+                        Foto del cliente
+                      </figcaption>
+                    </figure>
+
+                    <div className="flex items-center justify-center text-primary" aria-hidden="true">
+                      <ArrowRight size={28} strokeWidth={2.4} className="hidden sm:block" />
+                      <ArrowRight size={28} strokeWidth={2.4} className="sm:hidden rotate-90" />
+                    </div>
+
+                    <figure className="min-w-0">
+                      <div className="aspect-[4/3] rounded-lg bg-white overflow-hidden flex items-center justify-center">
+                        <img
+                          src="/no-stl/brick-stl.png"
+                          alt="Representación del archivo STL generado a partir de la foto del ladrillo"
+                          className="h-full w-full object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                      <figcaption className="mt-2 text-xs font-medium text-muted-foreground text-center">
+                        STL listo para cotizar
+                      </figcaption>
+                    </figure>
+                  </div>
+                </div>
 
                 {/* Ejemplos */}
                 <ul className="space-y-2 mb-6">
@@ -208,12 +246,6 @@ export default function NoSTLSection({ onCatalogItemSelect, isLoadingCatalogItem
                     </li>
                   ))}
                 </ul>
-
-                {/* Alcance honesto */}
-                <p className="text-xs text-muted-foreground/70 leading-relaxed border-l-2 border-border pl-3">
-                  La generación por IA funciona mejor para piezas decorativas y orgánicas.
-                  Para piezas mecánicas con tolerancias ajustadas también podemos coordinar un diseño CAD profesional.
-                </p>
               </div>
 
               {/* CTA WhatsApp */}
@@ -229,9 +261,6 @@ export default function NoSTLSection({ onCatalogItemSelect, isLoadingCatalogItem
                   </svg>
                   Escribinos por WhatsApp
                 </a>
-                <p className="text-xs text-muted-foreground text-center md:text-left">
-                  Respondemos en el día
-                </p>
               </div>
 
             </div>

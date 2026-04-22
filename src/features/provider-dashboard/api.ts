@@ -11,7 +11,11 @@ import type {
   ProviderNotificationReadResponse,
   ProviderNotificationsResponse,
   ProviderOrderDetailResponse,
+  ProviderOrderDispatchResponse,
+  ProviderOrderPrintingResponse,
   ProviderOrdersResponse,
+  ProviderMiCorreoAgencyResponse,
+  ProviderMiCorreoPayload,
   ProviderQuoteDetailResponse,
   ProviderQuotesResponse,
   ProviderProductionResponse,
@@ -152,6 +156,25 @@ export function fetchProviderOrderDetail(providerId: number, orderId: number) {
   );
 }
 
+export function markProviderOrderPrinting(providerId: number, orderId: number, resendEmail = false) {
+  return dashboardFetch<ProviderOrderPrintingResponse>(
+    `/api/provider-dashboard/proveedores/${providerId}/pedidos/${orderId}/printing`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ resend_email: resendEmail }),
+    }
+  );
+}
+
+export function dispatchProviderOrder(orderId: number) {
+  return dashboardFetch<ProviderOrderDispatchResponse>(`/api/shipping/orders/${orderId}/dispatch`, {
+    method: "POST",
+  });
+}
+
 export function fetchProviderShipments(providerId: number, estado?: string) {
   const params = new URLSearchParams();
   if (estado) params.set("estado", estado);
@@ -286,6 +309,22 @@ export function updateProviderLogistics(providerId: number, payload: DashboardLo
     },
     body: JSON.stringify(payload),
   });
+}
+
+export function updateProviderMiCorreo(providerId: number, payload: ProviderMiCorreoPayload) {
+  return dashboardFetch<ProviderLogisticsResponse>(`/api/provider-dashboard/proveedores/${providerId}/micorreo`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function fetchProviderMiCorreoSuggestedAgency(providerId: number) {
+  return dashboardFetch<ProviderMiCorreoAgencyResponse>(
+    `/api/provider-dashboard/proveedores/${providerId}/micorreo/sucursal-sugerida`
+  );
 }
 
 export async function logoutDashboardSession() {

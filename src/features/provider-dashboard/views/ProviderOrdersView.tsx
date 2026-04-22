@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CalendarCheck,
@@ -11,6 +11,7 @@ import {
   MapPinned,
   PackageOpen,
   Phone,
+  Printer,
   RefreshCcw,
   Search,
   Truck,
@@ -18,7 +19,13 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { fetchProviderOrderDetail, fetchProviderOrders } from "@/features/provider-dashboard/api";
+import { toast } from "@/components/ui/sonner";
+import {
+  dispatchProviderOrder,
+  fetchProviderOrderDetail,
+  fetchProviderOrders,
+  markProviderOrderPrinting,
+} from "@/features/provider-dashboard/api";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
 import {
   DashboardDataRow,
@@ -39,6 +46,7 @@ const orderStatusOptions = [
   { value: "", label: "Todos los estados" },
   { value: "paid_confirmed", label: "Pago confirmado" },
   { value: "in_production", label: "En produccion" },
+  { value: "en_transito", label: "En transito" },
   { value: "completed", label: "Completados" },
   { value: "cancelled", label: "Cancelados" },
 ];
@@ -46,6 +54,7 @@ const orderStatusOptions = [
 const orderStatusCopy: Record<string, { label: string; tone: "success" | "warning" | "danger" | "info" | "muted" }> = {
   paid_confirmed: { label: "Pago confirmado", tone: "success" },
   in_production: { label: "En produccion", tone: "info" },
+  en_transito: { label: "En transito", tone: "info" },
   completed: { label: "Completado", tone: "success" },
   cancelled: { label: "Cancelado", tone: "danger" },
   pending_confirmation: { label: "Pendiente", tone: "warning" },
@@ -120,10 +129,18 @@ function OrderDetailPanel({
   order,
   isLoading,
   error,
+  onMarkPrinting,
+  isMarkingPrinting,
+  onDispatch,
+  isDispatching,
 }: {
   order?: DashboardOrder | null;
   isLoading: boolean;
   error: unknown;
+  onMarkPrinting: () => void;
+  isMarkingPrinting: boolean;
+  onDispatch: () => void;
+  isDispatching: boolean;
 }) {
   if (isLoading) {
     return (
@@ -155,6 +172,8 @@ function OrderDetailPanel({
   const orderStatus = orderMeta(order.order_status);
   const paymentStatus = paymentMeta(order.payment_status);
   const files = order.files || [];
+  const canMarkPrinting = ["paid_confirmed", "preparing", "ready_to_ship", "listo_para_envio"].includes(String(order.order_status || ""));
+  const canDispatch = ["in_production", "ready_to_ship", "listo_para_envio"].includes(String(order.order_status || ""));
 
   return (
     <div className="space-y-4">
@@ -169,6 +188,33 @@ function OrderDetailPanel({
             <DashboardStatePill tone={paymentStatus.tone}>Pago {paymentStatus.label}</DashboardStatePill>
           </div>
         </div>
+        {canMarkPrinting || canDispatch ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {canMarkPrinting ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
+                onClick={onMarkPrinting}
+                disabled={isMarkingPrinting}
+              >
+                {isMarkingPrinting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+                Empezo impresion
+              </Button>
+            ) : null}
+            {canDispatch ? (
+              <Button
+                type="button"
+                className="h-10 rounded-xl bg-gradient-primary px-4 text-primary-foreground shadow-cta hover:opacity-95"
+                onClick={onDispatch}
+                disabled={isDispatching}
+              >
+                {isDispatching ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
+                Confirmar despacho
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -276,7 +322,11 @@ function OrdersContent({
   onStatusChange,
   onRefresh,
   onSelectOrder,
+  onMarkPrintingSelected,
+  onDispatchSelected,
   isFetching,
+  isMarkingPrinting,
+  isDispatching,
 }: {
   items: DashboardOrder[];
   selectedOrder?: DashboardOrder | null;
@@ -287,7 +337,11 @@ function OrdersContent({
   onStatusChange: (status: string) => void;
   onRefresh: () => void;
   onSelectOrder: (id: number) => void;
+  onMarkPrintingSelected: () => void;
+  onDispatchSelected: () => void;
   isFetching: boolean;
+  isMarkingPrinting: boolean;
+  isDispatching: boolean;
 }) {
   const activeOrders = items.filter((item) => !["completed", "cancelled"].includes(String(item.order_status || "")));
   const completedOrders = items.filter((item) => item.order_status === "completed");
@@ -370,7 +424,15 @@ function OrdersContent({
 
         <div className="space-y-6">
           <DashboardPanel title="Detalle del pedido" description="Datos operativos confirmados para producir y entregar.">
-            <OrderDetailPanel order={selectedOrder} isLoading={detailLoading} error={detailError} />
+            <OrderDetailPanel
+              order={selectedOrder}
+              isLoading={detailLoading}
+              error={detailError}
+              onMarkPrinting={onMarkPrintingSelected}
+              isMarkingPrinting={isMarkingPrinting}
+              onDispatch={onDispatchSelected}
+              isDispatching={isDispatching}
+            />
           </DashboardPanel>
 
           <DashboardPanel title="Frontera operativa" description="Regla de exposicion de datos en el dashboard.">
@@ -390,6 +452,7 @@ function OrdersContent({
 }
 
 export function ProviderOrdersView() {
+  const queryClient = useQueryClient();
   const { providerId } = useProviderDashboardSession();
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -410,6 +473,39 @@ export function ProviderOrdersView() {
 
   const items = useMemo(() => ordersQuery.data?.items || [], [ordersQuery.data]);
   const selectedOrder = detailQuery.data?.item || items.find((item) => item.id === selectedId) || null;
+
+  const printingMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedId || providerId == null) throw new Error("Elegi un pedido para marcar impresion.");
+      return markProviderOrderPrinting(providerId, selectedId);
+    },
+    onSuccess: (payload) => {
+      toast.success(payload.email_sent ? "Pedido en impresion. Email enviado al cliente." : "Pedido en impresion.");
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "orders", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "order-detail", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "notifications", providerId] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "No pudimos marcar el pedido en impresion.");
+    },
+  });
+
+  const dispatchMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedId) throw new Error("Elegí un pedido para confirmar despacho.");
+      return dispatchProviderOrder(selectedId);
+    },
+    onSuccess: (payload) => {
+      toast.success(`Despacho confirmado. Tracking ${payload.trackingNumber}`);
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "orders", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "order-detail", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "shipments", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "notifications", providerId] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "No pudimos confirmar el despacho.");
+    },
+  });
 
   if (ordersQuery.error) {
     return (
@@ -456,7 +552,19 @@ export function ProviderOrdersView() {
         if (selectedId != null) void detailQuery.refetch();
       }}
       onSelectOrder={setSelectedId}
+      onMarkPrintingSelected={() => {
+        if (!selectedOrder) return;
+        if (!window.confirm(`Marcar el pedido #${selectedOrder.id} como en impresion y enviar email al cliente?`)) return;
+        void printingMutation.mutateAsync();
+      }}
+      onDispatchSelected={() => {
+        if (!selectedOrder) return;
+        if (!window.confirm(`Confirmar despacho del pedido #${selectedOrder.id}?`)) return;
+        void dispatchMutation.mutateAsync();
+      }}
       isFetching={ordersQuery.isFetching}
+      isMarkingPrinting={printingMutation.isPending}
+      isDispatching={dispatchMutation.isPending}
     />
   );
 }

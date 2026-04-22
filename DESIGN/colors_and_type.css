@@ -1,0 +1,234 @@
+/* ============================================================
+   Comparo3D — colors_and_type.css
+   Source of truth: comparo3d-landing-page/src/index.css + docs/DESIGN.md
+   ============================================================ */
+
+/* ----------  Fonts  ---------- */
+@font-face {
+  font-family: "Montserrat";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/Montserrat-Regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Montserrat";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("fonts/Montserrat-Medium.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Montserrat";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("fonts/Montserrat-SemiBold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Montserrat";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("fonts/Montserrat-Bold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Montserrat";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("fonts/Montserrat-ExtraBold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Montserrat";
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("fonts/Montserrat-Black.ttf") format("truetype");
+}
+
+/* Body + display fallback fonts come from Google Fonts (matches landing). */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+/* ----------  Tokens  ---------- */
+:root {
+  /* ---- Color (HSL triplets, wrap in hsl() when used) ---- */
+  --background: 220 20% 97%;       /* #f5f6f8  page bg */
+  --foreground: 220 30% 12%;       /* #161d2b  text base */
+
+  --card: 0 0% 100%;               /* #ffffff  surface */
+  --card-foreground: 220 30% 12%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 30% 12%;
+
+  --primary: 220 70% 45%;          /* #2260c9  brand blue */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 220 15% 92%;        /* #e7e9ed  */
+  --secondary-foreground: 220 30% 12%;
+
+  --muted: 220 15% 94%;            /* #edeef1  */
+  --muted-foreground: 220 10% 46%; /* #6a7085  */
+
+  --accent: 38 92% 55%;            /* #f0a118  warm orange */
+  --accent-foreground: 220 30% 12%;
+
+  --destructive: 0 84% 60%;        /* #ef4444  */
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 220 15% 88%;           /* #dcdfe5  */
+  --input: 220 15% 88%;
+  --ring: 220 70% 45%;
+
+  /* Dark hero surface */
+  --hero-bg: 220 30% 8%;           /* #0e1219  */
+  --hero-foreground: 220 15% 95%;  /* #f0f1f3  */
+  --hero-muted: 220 15% 65%;       /* #97a0b3  */
+  --surface-elevated: 0 0% 100%;
+
+  /* Status (used in provider cards / state pills) */
+  --success: 152 68% 40%;          /* emerald-600-ish */
+  --warning: 38 92% 55%;
+  --info:    199 89% 48%;
+
+  /* ---- Gradients ---- */
+  --gradient-primary: linear-gradient(135deg, hsl(220, 70%, 45%), hsl(200, 80%, 50%));
+  --gradient-accent:  linear-gradient(135deg, hsl(38, 92%, 55%), hsl(28, 90%, 50%));
+  --gradient-dark:    linear-gradient(180deg, hsl(220, 30%, 8%), hsl(220, 25%, 14%));
+
+  /* ---- Shadows ---- */
+  --shadow-card:       0 1px 3px hsl(220 30% 12% / 0.06), 0 4px 12px hsl(220 30% 12% / 0.04);
+  --shadow-card-hover: 0 4px 16px hsl(220 30% 12% / 0.10), 0 8px 32px hsl(220 30% 12% / 0.06);
+  --shadow-cta:        0 4px 20px hsl(220 70% 45% / 0.35);
+
+  /* ---- Radii ---- */
+  --radius: 0.625rem;              /* 10px base */
+  --radius-sm: 0.375rem;           /* 6  chips */
+  --radius-md: 0.505rem;           /* 8  buttons (shadcn default) */
+  --radius-lg: 0.625rem;           /* 10 CTAs, inputs */
+  --radius-xl: 0.75rem;            /* 12 cards */
+  --radius-2xl: 1rem;              /* 16 sections / panels */
+  --radius-panel: 1.25rem;         /* 20 dashboard panel */
+  --radius-page:  1.5rem;          /* 24 dashboard page header */
+  --radius-feedback: 1.75rem;      /* 28 feedback / empty states */
+  --radius-full: 9999px;
+
+  /* ---- Spacing (shortcut; Tailwind-compatible names) ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+
+  /* ---- Type ---- */
+  --font-display: "Montserrat", system-ui, sans-serif;  /* h1/h2/h3 */
+  --font-body:    "Inter", system-ui, sans-serif;       /* body, UI */
+  --font-alt:     "Space Grotesk", system-ui, sans-serif; /* footer headings, h4-h6 */
+
+  /* ---- Easing (Framer spec) ---- */
+  --ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 400ms;
+
+  /* ---- Container ---- */
+  --container-max: 1280px;
+  --container-px: 1.5rem;
+}
+
+/* ----------  Semantic element styles  ---------- */
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.875rem, 3vw + 1rem, 3rem); /* 30 → 48 */
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: hsl(var(--foreground));
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2rem, 2.2vw + 1rem, 2.625rem); /* 32 → 42 */
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: hsl(var(--foreground));
+}
+
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.375rem; /* 22 */
+  line-height: 1.15;
+  color: hsl(var(--foreground));
+}
+
+h4, h5, h6 {
+  font-family: var(--font-alt);
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+h4 { font-size: 1rem; }
+h5 { font-size: 0.875rem; }
+h6 { font-size: 0.75rem; }
+
+p {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.7;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Eyebrow — uppercase label above h1/h2 */
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: hsl(var(--primary));
+}
+
+/* Uppercase form label */
+.label-uppercase {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: hsl(var(--muted-foreground));
+}
+
+code, kbd, samp, pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.875em;
+}
+
+/* ----------  Utility classes  ---------- */
+.text-gradient-primary {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.bg-gradient-primary { background: var(--gradient-primary); }
+.bg-gradient-accent  { background: var(--gradient-accent); }
+.bg-gradient-dark    { background: var(--gradient-dark); }
+.shadow-card         { box-shadow: var(--shadow-card); }
+.shadow-card-hover   { box-shadow: var(--shadow-card-hover); }
+.shadow-cta          { box-shadow: var(--shadow-cta); }
