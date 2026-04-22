@@ -1,6 +1,6 @@
 // ListingCard.tsx — Tarjeta compacta de proveedor para el directorio
 import { useNavigate } from "react-router-dom";
-import { Star, Clock, ChevronRight, ShieldCheck, BadgeCheck } from "lucide-react";
+import { Star, Clock, ChevronRight } from "lucide-react";
 import { AvatarFallback } from "@/features/provider-profile/components/AvatarFallback";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { ListingProvider, ListingProviderBadge } from "../types";
@@ -15,9 +15,15 @@ const BADGE_TOOLTIPS: Record<string, string> = {
     "Este proveedor alcanzó la certificación orgánica al cumplir: 4+ meses activo, 20+ órdenes completadas, rating promedio ≥ 4.3, al menos 15 reviews, y ≥88% de entregas a tiempo.",
 };
 
+function badgeImgSrc(badge: ListingProviderBadge): string {
+  if (badge.type === "seleccion_fundador") {
+    return badge.tier === "10+" ? "/badges/badge-10-anos.png" : "/badges/badge-5-anos.png";
+  }
+  return "/badges/badge-organico.png";
+}
+
 function BadgePill({ badge }: { badge: ListingProviderBadge }) {
   const isTrayectoria = badge.type === "seleccion_fundador";
-  const Icon = isTrayectoria ? ShieldCheck : BadgeCheck;
   const classes = isTrayectoria
     ? "bg-primary/10 text-primary ring-1 ring-primary/20"
     : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
@@ -26,7 +32,7 @@ function BadgePill({ badge }: { badge: ListingProviderBadge }) {
     <span
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${classes}`}
     >
-      <Icon size={11} aria-hidden="true" />
+      <img src={badgeImgSrc(badge)} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
       {badge.label}
       {tooltip && (
         <Popover>
