@@ -3,11 +3,11 @@ import { type CSSProperties } from "react";
 import AnimateOnScroll from "@/components/AnimateOnScroll";
 
 const providers = [
-  { name: "PAL", logo: "/logos/PAL.png" },
+  { name: "Printalot", logo: "/logos/PAL.png" },
   { name: "Piscobot", logo: "/logos/Piscobot.png" },
-  { name: "Nost3rD", logo: "/logos/Nost3rd.jpg" },
-  { name: "Joaco3D", logo: "/logos/JOACO3D.png" },
-  { name: "MEGA 3D", logo: "/logos/Mega3D.jpeg" },
+  { name: "NOSTER", logo: "/logos/Nost3rd.jpg" },
+  { name: "JOACO3D", logo: "/logos/JOACO3D.png" },
+  { name: "MEGA3D", logo: "/logos/Mega3D.jpeg" },
 ];
 
 const ProvidersSection = () => {

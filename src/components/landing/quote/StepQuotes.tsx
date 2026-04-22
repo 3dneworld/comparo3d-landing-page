@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -333,6 +333,10 @@ export function StepQuotes({
   const [draftQuantity, setDraftQuantity] = useState(clampQuantity(cantidad ?? 1));
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const [showRankingExplainer, setShowRankingExplainer] = useState(false);
+  const [mediationAccordionValue, setMediationAccordionValue] = useState<string | undefined>();
+  const quotesListRef = useRef<HTMLDivElement | null>(null);
+  const mediationRef = useRef<HTMLElement | null>(null);
   const [addressForm, setAddressForm] = useState<NearbyAddressForm>(() => {
     try {
       const raw = localStorage.getItem(LOCATION_ADDRESS_STORAGE_KEY);
@@ -412,6 +416,49 @@ export function StepQuotes({
 
     return next;
   }, [quotesWithDistance, filterCertified, filterNearby, sortMode, userLocation]);
+
+  useEffect(() => {
+    const node = quotesListRef.current;
+    if (!node || visibleQuotes.length === 0 || isProcessing) {
+      setShowRankingExplainer(false);
+      return;
+    }
+
+    const updateVisibility = () => {
+      const rect = node.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      setShowRankingExplainer(rect.bottom > 0 && rect.top < viewportHeight);
+    };
+
+    updateVisibility();
+
+    if (!("IntersectionObserver" in window)) {
+      window.addEventListener("scroll", updateVisibility, { passive: true });
+      window.addEventListener("resize", updateVisibility);
+      return () => {
+        window.removeEventListener("scroll", updateVisibility);
+        window.removeEventListener("resize", updateVisibility);
+      };
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowRankingExplainer(entry.isIntersecting);
+      },
+      { threshold: 0 }
+    );
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [visibleQuotes.length, isProcessing]);
+
+  const openMediationPolicy = () => {
+    setMediationAccordionValue("politica");
+    window.setTimeout(() => {
+      mediationRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      mediationRef.current?.focus({ preventScroll: true });
+    }, 0);
+  };
 
   const recommendedQuoteUid = useMemo(() => {
     if (!visibleQuotes.length) return null;
@@ -796,7 +843,7 @@ export function StepQuotes({
           )}
 
           {!isProcessing && visibleQuotes.length > 0 && (
-            <div className="mt-6 space-y-3">
+            <div ref={quotesListRef} className="mt-6 space-y-3">
               {visibleQuotes.map((quote) => (
                 <ProviderCard
                   key={quote.quote_option_uid}
@@ -841,9 +888,16 @@ export function StepQuotes({
           {visibleQuotes.length > 0 && (
             <section
               id="politica-mediacion"
-              className="mx-auto mt-8 max-w-3xl scroll-mt-24 border-t border-border pt-6 text-[13px] text-muted-foreground"
+              ref={mediationRef}
+              tabIndex={-1}
+              className="mx-auto mt-8 max-w-3xl scroll-mt-24 border-t border-border pt-6 text-[13px] text-muted-foreground focus:outline-none"
             >
-              <Accordion type="single" collapsible>
+              <Accordion
+                type="single"
+                collapsible
+                value={mediationAccordionValue}
+                onValueChange={setMediationAccordionValue}
+              >
                 <AccordionItem value="politica" className="border-none">
                   <AccordionTrigger className="justify-start gap-2 py-2 text-[13px] font-semibold text-foreground hover:no-underline">
                     Política de Mediación Transparente
@@ -857,8 +911,8 @@ export function StepQuotes({
                     <p className="mt-3">
                       Si surge un problema con tu pedido, Comparo3D actúa como mediador:
                       revisamos el caso, facilitamos la comunicación con el proveedor y,
-                      cuando corresponda, aplicamos sanciones en su ranking o lo removemos
-                      de la plataforma. Nuestro sistema de Trayectoria Verificada, ratings
+                      cuando corresponda, aplicamos sanciones en su ranking. Nuestro sistema
+                      de Trayectoria Verificada, ratings
                       reales y certificación por desempeño existe justamente para que elijas
                       con información.
                     </p>
@@ -871,8 +925,11 @@ export function StepQuotes({
         </>
       )}
 
-      {quotes.length > 0 && (
-        <RankingExplainer mediationLinkTarget="#politica-mediacion" />
+      {visibleQuotes.length > 0 && showRankingExplainer && (
+        <RankingExplainer
+          mediationLinkTarget="#politica-mediacion"
+          onMediationClick={openMediationPolicy}
+        />
       )}
     </div>
   );

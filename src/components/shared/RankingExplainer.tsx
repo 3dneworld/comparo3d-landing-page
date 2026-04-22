@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { BadgeCheck, ShieldCheck, X } from "lucide-react";
 import {
   Popover,
@@ -23,8 +23,9 @@ export function RankingExplainer({
 }: RankingExplainerProps) {
   const [open, setOpen] = useState(false);
 
-  const handleMediationClick = () => {
+  const handleMediationClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (onMediationClick) {
+      event.preventDefault();
       onMediationClick();
     }
     setOpen(false);
@@ -94,10 +95,9 @@ export function RankingExplainer({
                         Certificado Orgánico
                       </p>
                       <p className="mt-0.5">
-                        Este proveedor alcanzó la certificación orgánica al
-                        cumplir: 4+ meses activo, 20+ órdenes completadas,
-                        rating promedio ≥ 4.3, al menos 15 reviews, y ≥88% de
-                        entregas a tiempo.
+                        Sello que Comparo3D otorga a proveedores con trayectoria
+                        operativa sostenida: entregas a tiempo, rating consistente
+                        y volumen real de órdenes completadas.
                       </p>
                     </div>
                   </div>
@@ -126,7 +126,7 @@ export function RankingExplainer({
             onClick={handleMediationClick}
             className="text-[12px] font-medium text-primary transition-colors hover:text-primary/80"
           >
-            Leer la Política de Mediación Transparente
+            Política de Mediación Transparente
           </a>
         </div>
       </PopoverContent>

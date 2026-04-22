@@ -27,7 +27,7 @@ function getBadgeMeta(badge: QuoteOptionBadge): BadgeMeta {
     label: "Certificado Orgánico",
     labelShort: "Certificado",
     tooltip:
-      "Este proveedor alcanzó la certificación orgánica al cumplir: 4+ meses activo, 20+ órdenes completadas, rating promedio ≥ 4.3, al menos 15 reviews, y ≥88% de entregas a tiempo.",
+      "Sello que Comparo3D otorga a proveedores con trayectoria operativa sostenida: entregas a tiempo, rating consistente y volumen real de órdenes completadas.",
     imgSrc: "/badges/badge-organico.png",
     tone: "certified",
   };

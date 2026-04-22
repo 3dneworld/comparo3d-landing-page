@@ -112,6 +112,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
   const sectionRef = useRef<HTMLElement | null>(null);
   const contentCardRef = useRef<HTMLDivElement | null>(null);
   const restoredScrollKeyRef = useRef<string>("");
+  const previousStepRef = useRef<number>(1);
 
   const [data, setDataRaw] = useState<QuoteData>(() => loadSaved() ?? defaultData);
   const [hasSaved, setHasSaved] = useState(() => !!loadSaved());
@@ -171,7 +172,20 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
     setData({ [field]: value } as Partial<QuoteData>);
   };
 
+  const canNavigateToStep = (step: number) => {
+    if (step <= data.step) return true;
+    if (step === 3) return data.step >= 3 && Boolean(data.sessionId);
+    if (step === 4) return Boolean(data.orderId && (selectedQuote || data.selectedQuote));
+    if (step === 5) return data.step >= 5 && Boolean(data.orderId);
+    return false;
+  };
+
   const goToStep = (step: number) => setData({ step });
+
+  const navigateToStep = (step: number) => {
+    if (!canNavigateToStep(step)) return;
+    goToStep(step);
+  };
 
   const resetQuote = () => {
     localStorage.removeItem(STORAGE_KEY);
@@ -430,6 +444,24 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
     return () => window.clearTimeout(timer);
   }, [data.sessionId, data.step, hasSaved, isCheckingSavedSession, scrollToActiveStep]);
 
+  useEffect(() => {
+    const previousStep = previousStepRef.current;
+    previousStepRef.current = data.step;
+    if (previousStep !== 2 || data.step !== 3) return;
+
+    const firstTimer = window.setTimeout(() => {
+      scrollToActiveStep("auto");
+    }, 0);
+    const secondTimer = window.setTimeout(() => {
+      scrollToActiveStep("smooth");
+    }, 90);
+
+    return () => {
+      window.clearTimeout(firstTimer);
+      window.clearTimeout(secondTimer);
+    };
+  }, [data.step, scrollToActiveStep]);
+
   return (
     <section id="cotizar" ref={sectionRef} className="scroll-mt-24 bg-muted/50 py-16 md:scroll-mt-28 md:py-24">
       <div className="container max-w-4xl">
@@ -597,27 +629,39 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
             const isDone = data.step > stepNum;
             return (
               <Fragment key={s.label}>
-                <div className="flex shrink-0 flex-col items-center">
-                  <div
-                    className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-all md:h-10 md:w-10 ${
+                <button
+                  type="button"
+                  onClick={() => navigateToStep(stepNum)}
+                  disabled={!canNavigateToStep(stepNum)}
+                  aria-current={isActive ? "step" : undefined}
+                  className="group flex shrink-0 flex-col items-center text-center outline-none disabled:cursor-not-allowed"
+                >
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-all group-focus-visible:ring-2 group-focus-visible:ring-primary group-focus-visible:ring-offset-2 md:h-10 md:w-10 ${
                       isActive
                         ? "bg-gradient-primary text-primary-foreground shadow-cta"
                         : isDone
                         ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-muted-foreground"
+                        : canNavigateToStep(stepNum)
+                        ? "bg-secondary text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                        : "bg-secondary text-muted-foreground/45"
                     }`}
                   >
                     <s.icon size={15} className="md:h-[17px] md:w-[17px]" />
-                  </div>
+                  </span>
                   <span
-                    className={`mt-2 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.08em] md:text-[11px] ${
-                      isActive ? "text-primary" : "text-muted-foreground"
+                    className={`mt-2 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.08em] transition-colors md:text-[11px] ${
+                      isActive
+                        ? "text-primary"
+                        : canNavigateToStep(stepNum)
+                        ? "text-muted-foreground group-hover:text-primary"
+                        : "text-muted-foreground/45"
                     }`}
                   >
                     <span className="hidden sm:inline">{s.label}</span>
                     <span className="sm:hidden">{s.short}</span>
                   </span>
-                </div>
+                </button>
                 {i < stepLabels.length - 1 && (
                   <div className={`mx-1 h-[2px] flex-1 self-start mt-4 md:mt-5 ${isDone ? "bg-primary" : "bg-border"}`} />
                 )}
