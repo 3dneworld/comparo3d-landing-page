@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,6 +22,13 @@ import ProviderListing from "./pages/ProviderListing.tsx";
 import ProviderProfile from "./pages/ProviderProfile.tsx";
 
 const queryClient = new QueryClient();
+const DASHBOARD_BASE_PATH = "/dashboard/proveedores";
+
+function LegacyProviderDashboardRedirect() {
+  const location = useLocation();
+  const suffix = location.pathname.replace(/^\/proveedores-v2/, "");
+  return <Navigate to={`${DASHBOARD_BASE_PATH}${suffix || ""}${location.search}`} replace />;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -31,17 +38,17 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/materiales" element={<Navigate to="/proveedores-v2/materiales" replace />} />
-          <Route path="/cotizaciones" element={<Navigate to="/proveedores-v2/cotizaciones" replace />} />
-          <Route path="/pedidos" element={<Navigate to="/proveedores-v2/pedidos" replace />} />
-          <Route path="/envios" element={<Navigate to="/proveedores-v2/envios" replace />} />
-          <Route path="/portfolio" element={<Navigate to="/proveedores-v2/portfolio" replace />} />
-          <Route path="/certificacion" element={<Navigate to="/proveedores-v2/certificacion" replace />} />
-          <Route path="/competitividad" element={<Navigate to="/proveedores-v2/competitividad" replace />} />
+          <Route path="/materiales" element={<Navigate to={`${DASHBOARD_BASE_PATH}/materiales`} replace />} />
+          <Route path="/cotizaciones" element={<Navigate to={`${DASHBOARD_BASE_PATH}/cotizaciones`} replace />} />
+          <Route path="/pedidos" element={<Navigate to={`${DASHBOARD_BASE_PATH}/pedidos`} replace />} />
+          <Route path="/envios" element={<Navigate to={`${DASHBOARD_BASE_PATH}/envios`} replace />} />
+          <Route path="/portfolio" element={<Navigate to={`${DASHBOARD_BASE_PATH}/portfolio`} replace />} />
+          <Route path="/certificacion" element={<Navigate to={`${DASHBOARD_BASE_PATH}/certificacion`} replace />} />
+          <Route path="/competitividad" element={<Navigate to={`${DASHBOARD_BASE_PATH}/competitividad`} replace />} />
           {/* Directorio público de proveedores */}
           <Route path="/proveedores" element={<ProviderListing />} />
           <Route path="/proveedores/login" element={<ProveedoresLogin />} />
-          <Route path="/proveedores-v2" element={<ProviderDashboardV2 />}>
+          <Route path={DASHBOARD_BASE_PATH} element={<ProviderDashboardV2 />}>
             <Route path="resumen" element={<ProviderSummaryView />} />
             <Route path="perfil" element={<ProviderProfileView />} />
             <Route path="produccion" element={<ProviderProductionView />} />
@@ -54,6 +61,8 @@ const App = () => (
             <Route path="certificacion" element={<ProviderCertificationView />} />
             <Route path="competitividad" element={<ProviderCompetitivenessView />} />
           </Route>
+          <Route path="/proveedores-v2" element={<LegacyProviderDashboardRedirect />} />
+          <Route path="/proveedores-v2/*" element={<LegacyProviderDashboardRedirect />} />
           {/* Perfil público de proveedor — /proveedores/42-proveedor-nombre */}
           <Route path="/proveedores/:idslug" element={<ProviderProfile />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

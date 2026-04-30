@@ -634,7 +634,7 @@ function LogisticsContent({
                 variant="outline"
                 className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
               >
-                <a href="/proveedores-v2/perfil" rel="noreferrer">
+                <a href="/dashboard/proveedores/perfil" rel="noreferrer">
                   Ir a Perfil
                   <ArrowUpRight className="h-4 w-4" />
                 </a>

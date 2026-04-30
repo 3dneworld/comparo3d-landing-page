@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -15,6 +15,7 @@ import {
   RefreshCcw,
   Search,
   Truck,
+  Upload,
   WalletCards,
 } from "lucide-react";
 
@@ -25,6 +26,7 @@ import {
   fetchProviderOrderDetail,
   fetchProviderOrders,
   markProviderOrderPrinting,
+  markProviderOrderReadyToShip,
 } from "@/features/provider-dashboard/api";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
 import {
@@ -46,6 +48,7 @@ const orderStatusOptions = [
   { value: "", label: "Todos los estados" },
   { value: "paid_confirmed", label: "Pago confirmado" },
   { value: "in_production", label: "En produccion" },
+  { value: "ready_to_ship", label: "Listo para despachar" },
   { value: "en_transito", label: "En transito" },
   { value: "completed", label: "Completados" },
   { value: "cancelled", label: "Cancelados" },
@@ -54,6 +57,7 @@ const orderStatusOptions = [
 const orderStatusCopy: Record<string, { label: string; tone: "success" | "warning" | "danger" | "info" | "muted" }> = {
   paid_confirmed: { label: "Pago confirmado", tone: "success" },
   in_production: { label: "En produccion", tone: "info" },
+  ready_to_ship: { label: "Listo para despachar", tone: "warning" },
   en_transito: { label: "En transito", tone: "info" },
   completed: { label: "Completado", tone: "success" },
   cancelled: { label: "Cancelado", tone: "danger" },
@@ -131,6 +135,14 @@ function OrderDetailPanel({
   error,
   onMarkPrinting,
   isMarkingPrinting,
+  onOpenReadyToShip,
+  showReadyToShipComposer,
+  readyToShipFiles,
+  onAppendReadyToShipFiles,
+  onRemoveReadyToShipFile,
+  onCancelReadyToShip,
+  onConfirmReadyToShip,
+  isReadyingToShip,
   onDispatch,
   isDispatching,
 }: {
@@ -139,6 +151,14 @@ function OrderDetailPanel({
   error: unknown;
   onMarkPrinting: () => void;
   isMarkingPrinting: boolean;
+  onOpenReadyToShip: () => void;
+  showReadyToShipComposer: boolean;
+  readyToShipFiles: File[];
+  onAppendReadyToShipFiles: (files: File[]) => void;
+  onRemoveReadyToShipFile: (index: number) => void;
+  onCancelReadyToShip: () => void;
+  onConfirmReadyToShip: () => void;
+  isReadyingToShip: boolean;
   onDispatch: () => void;
   isDispatching: boolean;
 }) {
@@ -172,8 +192,9 @@ function OrderDetailPanel({
   const orderStatus = orderMeta(order.order_status);
   const paymentStatus = paymentMeta(order.payment_status);
   const files = order.files || [];
-  const canMarkPrinting = ["paid_confirmed", "preparing", "ready_to_ship", "listo_para_envio"].includes(String(order.order_status || ""));
-  const canDispatch = ["in_production", "ready_to_ship", "listo_para_envio"].includes(String(order.order_status || ""));
+  const canMarkPrinting = ["paid_confirmed", "preparing"].includes(String(order.order_status || ""));
+  const canReadyToShip = ["in_production"].includes(String(order.order_status || ""));
+  const canDispatch = ["ready_to_ship", "listo_para_envio"].includes(String(order.order_status || ""));
 
   return (
     <div className="space-y-4">
@@ -202,6 +223,18 @@ function OrderDetailPanel({
                 Empezo impresion
               </Button>
             ) : null}
+            {canReadyToShip ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
+                onClick={onOpenReadyToShip}
+                disabled={isReadyingToShip}
+              >
+                {isReadyingToShip ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                Termino impresion
+              </Button>
+            ) : null}
             {canDispatch ? (
               <Button
                 type="button"
@@ -214,6 +247,16 @@ function OrderDetailPanel({
               </Button>
             ) : null}
           </div>
+        ) : null}
+        {showReadyToShipComposer ? (
+          <ReadyToShipComposer
+            files={readyToShipFiles}
+            onAppendFiles={onAppendReadyToShipFiles}
+            onRemoveFile={onRemoveReadyToShipFile}
+            onCancel={onCancelReadyToShip}
+            onConfirm={onConfirmReadyToShip}
+            isSubmitting={isReadyingToShip}
+          />
         ) : null}
       </div>
 
@@ -312,6 +355,138 @@ function OrderRow({
   );
 }
 
+function dedupeFiles(existing: File[], incoming: File[]) {
+  const seen = new Set(existing.map((file) => `${file.name}:${file.size}:${file.lastModified}`));
+  const next = [...existing];
+  for (const file of incoming) {
+    const key = `${file.name}:${file.size}:${file.lastModified}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    next.push(file);
+  }
+  return next;
+}
+
+function ReadyToShipComposer({
+  files,
+  onAppendFiles,
+  onRemoveFile,
+  onCancel,
+  onConfirm,
+  isSubmitting,
+}: {
+  files: File[];
+  onAppendFiles: (files: File[]) => void;
+  onRemoveFile: (index: number) => void;
+  onCancel: () => void;
+  onConfirm: () => void;
+  isSubmitting: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleFiles = (list: FileList | null) => {
+    const nextFiles = Array.from(list || []).filter((file) => file.type.startsWith("image/"));
+    if (!nextFiles.length) return;
+    onAppendFiles(nextFiles);
+  };
+
+  return (
+    <div className="mt-4 rounded-[1.1rem] border border-border/70 bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Fin de impresion</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            Sube fotos opcionales de la impresion terminada. Si las cargas, se incluyen en el mail al cliente antes del tracking.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-9 rounded-xl border-border/80 bg-white px-3 text-foreground hover:bg-muted"
+          onClick={() => inputRef.current?.click()}
+          disabled={isSubmitting}
+        >
+          <Upload className="h-4 w-4" />
+          Subir fotos
+        </Button>
+      </div>
+
+      <div
+        onDragOver={(event) => {
+          event.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={(event) => {
+          event.preventDefault();
+          setIsDragging(false);
+          handleFiles(event.dataTransfer.files);
+        }}
+        className={`mt-4 rounded-[1rem] border-2 border-dashed px-5 py-6 text-center transition-colors ${
+          isDragging ? "border-primary bg-primary/5" : "border-border/80 bg-background/40"
+        }`}
+      >
+        <p className="text-sm font-medium text-foreground">
+          Arrastra fotos aca o usa el boton de upload
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          JPG, PNG o WEBP. Puedes seguir sin fotos y se enviara el mail base.
+        </p>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          multiple
+          className="hidden"
+          onChange={(event) => {
+            handleFiles(event.target.files);
+            event.currentTarget.value = "";
+          }}
+        />
+      </div>
+
+      {files.length ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {files.map((file, index) => (
+            <button
+              key={`${file.name}-${file.size}-${file.lastModified}`}
+              type="button"
+              className="inline-flex max-w-full items-center gap-2 rounded-full border border-border/80 bg-background px-3 py-2 text-xs text-foreground"
+              onClick={() => onRemoveFile(index)}
+              disabled={isSubmitting}
+            >
+              <span className="truncate">{file.name}</span>
+              <span className="text-muted-foreground">Quitar</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button
+          type="button"
+          className="h-10 rounded-xl bg-gradient-primary px-4 text-primary-foreground shadow-cta hover:opacity-95"
+          onClick={onConfirm}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+          Avisar fin de impresion
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 rounded-xl border-border/80 bg-white px-4 text-foreground hover:bg-muted"
+          onClick={onCancel}
+          disabled={isSubmitting}
+        >
+          Cancelar
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function OrdersContent({
   items,
   selectedOrder,
@@ -323,9 +498,17 @@ function OrdersContent({
   onRefresh,
   onSelectOrder,
   onMarkPrintingSelected,
+  onOpenReadyToShipComposer,
+  showReadyToShipComposer,
+  readyToShipFiles,
+  onAppendReadyToShipFiles,
+  onRemoveReadyToShipFile,
+  onCancelReadyToShip,
+  onConfirmReadyToShip,
   onDispatchSelected,
   isFetching,
   isMarkingPrinting,
+  isReadyingToShip,
   isDispatching,
 }: {
   items: DashboardOrder[];
@@ -338,9 +521,17 @@ function OrdersContent({
   onRefresh: () => void;
   onSelectOrder: (id: number) => void;
   onMarkPrintingSelected: () => void;
+  onOpenReadyToShipComposer: () => void;
+  showReadyToShipComposer: boolean;
+  readyToShipFiles: File[];
+  onAppendReadyToShipFiles: (files: File[]) => void;
+  onRemoveReadyToShipFile: (index: number) => void;
+  onCancelReadyToShip: () => void;
+  onConfirmReadyToShip: () => void;
   onDispatchSelected: () => void;
   isFetching: boolean;
   isMarkingPrinting: boolean;
+  isReadyingToShip: boolean;
   isDispatching: boolean;
 }) {
   const activeOrders = items.filter((item) => !["completed", "cancelled"].includes(String(item.order_status || "")));
@@ -430,6 +621,14 @@ function OrdersContent({
               error={detailError}
               onMarkPrinting={onMarkPrintingSelected}
               isMarkingPrinting={isMarkingPrinting}
+              onOpenReadyToShip={onOpenReadyToShipComposer}
+              showReadyToShipComposer={showReadyToShipComposer}
+              readyToShipFiles={readyToShipFiles}
+              onAppendReadyToShipFiles={onAppendReadyToShipFiles}
+              onRemoveReadyToShipFile={onRemoveReadyToShipFile}
+              onCancelReadyToShip={onCancelReadyToShip}
+              onConfirmReadyToShip={onConfirmReadyToShip}
+              isReadyingToShip={isReadyingToShip}
               onDispatch={onDispatchSelected}
               isDispatching={isDispatching}
             />
@@ -456,6 +655,8 @@ export function ProviderOrdersView() {
   const { providerId } = useProviderDashboardSession();
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [showReadyToShipComposer, setShowReadyToShipComposer] = useState(false);
+  const [readyToShipFiles, setReadyToShipFiles] = useState<File[]>([]);
 
   const ordersQuery = useQuery({
     queryKey: ["provider-dashboard", "orders", providerId, statusFilter],
@@ -474,6 +675,11 @@ export function ProviderOrdersView() {
   const items = useMemo(() => ordersQuery.data?.items || [], [ordersQuery.data]);
   const selectedOrder = detailQuery.data?.item || items.find((item) => item.id === selectedId) || null;
 
+  useEffect(() => {
+    setShowReadyToShipComposer(false);
+    setReadyToShipFiles([]);
+  }, [selectedId]);
+
   const printingMutation = useMutation({
     mutationFn: async () => {
       if (!selectedId || providerId == null) throw new Error("Elegi un pedido para marcar impresion.");
@@ -490,13 +696,43 @@ export function ProviderOrdersView() {
     },
   });
 
+  const readyToShipMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedId || providerId == null) throw new Error("Elegi un pedido para avisar fin de impresion.");
+      return markProviderOrderReadyToShip(providerId, selectedId, { photos: readyToShipFiles });
+    },
+    onSuccess: (payload) => {
+      setShowReadyToShipComposer(false);
+      setReadyToShipFiles([]);
+      const uploaded = Number(payload.uploaded) || 0;
+      if (payload.email_sent && uploaded > 0) {
+        toast.success("Pedido listo para despachar. Fotos y email enviados al cliente.");
+      } else if (payload.email_sent) {
+        toast.success("Pedido listo para despachar. Email enviado al cliente.");
+      } else {
+        toast.success("Pedido listo para despachar.");
+      }
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "orders", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "order-detail", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "shipments", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "notifications", providerId] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "No pudimos marcar el pedido como listo para despachar.");
+    },
+  });
+
   const dispatchMutation = useMutation({
     mutationFn: async () => {
       if (!selectedId) throw new Error("Elegí un pedido para confirmar despacho.");
       return dispatchProviderOrder(selectedId);
     },
     onSuccess: (payload) => {
-      toast.success(`Despacho confirmado. Tracking ${payload.trackingNumber}`);
+      toast.success(
+        payload.email_sent
+          ? `Despacho confirmado. Tracking ${payload.trackingNumber} y mail enviado.`
+          : `Despacho confirmado. Tracking ${payload.trackingNumber}`
+      );
       void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "orders", providerId] });
       void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "order-detail", providerId] });
       void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "shipments", providerId] });
@@ -557,6 +793,29 @@ export function ProviderOrdersView() {
         if (!window.confirm(`Marcar el pedido #${selectedOrder.id} como en impresion y enviar email al cliente?`)) return;
         void printingMutation.mutateAsync();
       }}
+      onOpenReadyToShipComposer={() => {
+        setShowReadyToShipComposer(true);
+      }}
+      showReadyToShipComposer={showReadyToShipComposer}
+      readyToShipFiles={readyToShipFiles}
+      onAppendReadyToShipFiles={(files) => {
+        setReadyToShipFiles((current) => dedupeFiles(current, files));
+      }}
+      onRemoveReadyToShipFile={(index) => {
+        setReadyToShipFiles((current) => current.filter((_, currentIndex) => currentIndex !== index));
+      }}
+      onCancelReadyToShip={() => {
+        setShowReadyToShipComposer(false);
+        setReadyToShipFiles([]);
+      }}
+      onConfirmReadyToShip={() => {
+        if (!selectedOrder) return;
+        const confirmMessage = readyToShipFiles.length
+          ? `Avisar al cliente que el pedido #${selectedOrder.id} termino de imprimirse y adjuntar ${readyToShipFiles.length} foto(s)?`
+          : `Avisar al cliente que el pedido #${selectedOrder.id} termino de imprimirse sin adjuntar fotos?`;
+        if (!window.confirm(confirmMessage)) return;
+        void readyToShipMutation.mutateAsync();
+      }}
       onDispatchSelected={() => {
         if (!selectedOrder) return;
         if (!window.confirm(`Confirmar despacho del pedido #${selectedOrder.id}?`)) return;
@@ -564,6 +823,7 @@ export function ProviderOrdersView() {
       }}
       isFetching={ordersQuery.isFetching}
       isMarkingPrinting={printingMutation.isPending}
+      isReadyingToShip={readyToShipMutation.isPending}
       isDispatching={dispatchMutation.isPending}
     />
   );

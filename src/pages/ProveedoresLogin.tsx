@@ -24,7 +24,7 @@ const ProveedoresLogin = () => {
         const response = await fetch("/api/auth/me", { credentials: "include" });
         if (!response.ok) return;
         const user = await response.json();
-        if (!cancelled && user) navigate("/proveedores", { replace: true });
+        if (!cancelled && user) navigate("/dashboard/proveedores", { replace: true });
       } catch {
         // Keep the user on the login page if the session check fails.
       }
@@ -38,7 +38,7 @@ const ProveedoresLogin = () => {
   }, [navigate]);
 
   const handleGoogleLogin = () => {
-    window.location.href = "/api/auth/login?redirect=proveedores";
+    window.location.href = "/api/auth/login?redirect=dashboard-proveedores";
   };
 
   return (

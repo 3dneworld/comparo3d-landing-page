@@ -236,7 +236,7 @@ export function ProviderDashboardShell({
                     variant="outline"
                     className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
                   >
-                    <Link to="/proveedores/login">Login actual</Link>
+                    <Link to="/dashboard/proveedores/resumen">Ir al dashboard</Link>
                   </Button>
                   <Button
                     onClick={() => void handleLogout()}

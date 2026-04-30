@@ -40,7 +40,7 @@ function ProviderDashboardRouteContent() {
             className="h-11 rounded-xl border-border/80 bg-white/90 px-5 text-foreground hover:bg-muted"
           >
             <a href="/proveedores" target="_blank" rel="noreferrer">
-              Abrir dashboard legacy
+              Abrir directorio publico
             </a>
           </Button>
         }
@@ -66,11 +66,13 @@ function ProviderDashboardRouteContent() {
 
 export default function ProviderDashboardV2() {
   const location = useLocation();
+  const isDashboardRoot =
+    location.pathname === "/dashboard/proveedores" || location.pathname === "/dashboard/proveedores/";
 
   return (
     <ProviderDashboardSessionProvider>
-      {location.pathname === "/proveedores-v2" ? (
-        <Navigate to={`/proveedores-v2/resumen${location.search}`} replace />
+      {isDashboardRoot ? (
+        <Navigate to={`/dashboard/proveedores/resumen${location.search}`} replace />
       ) : (
         <ProviderDashboardRouteContent />
       )}

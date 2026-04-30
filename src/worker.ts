@@ -7,7 +7,8 @@
 const BACKEND = "https://api.3dneworld.com";
 
 const PROXY_PREFIXES = ["/onboarding", "/proveedores", "/client-dashboard", "/admin", "/login", "/static/", "/api/"];
-const PROVIDER_DASHBOARD_V2_PREFIX = "/proveedores-v2";
+const PROVIDER_DASHBOARD_PREFIX = "/dashboard/proveedores";
+const PROVIDER_DASHBOARD_LEGACY_PREFIX = "/proveedores-v2";
 
 interface WorkerEnv {
   ASSETS: {
@@ -91,25 +92,29 @@ export default {
     const url = new URL(request.url);
     const cookieHeader = request.headers.get("cookie") || "";
     const hasAuthCookie = /(?:^|;\s*)auth_token=/.test(cookieHeader);
-    const isProviderDashboardV2Route =
-      url.pathname === PROVIDER_DASHBOARD_V2_PREFIX ||
-      url.pathname === `${PROVIDER_DASHBOARD_V2_PREFIX}/` ||
-      url.pathname.startsWith(`${PROVIDER_DASHBOARD_V2_PREFIX}/`);
+    const isProviderDashboardRoute =
+      url.pathname === PROVIDER_DASHBOARD_PREFIX ||
+      url.pathname === `${PROVIDER_DASHBOARD_PREFIX}/` ||
+      url.pathname.startsWith(`${PROVIDER_DASHBOARD_PREFIX}/`);
+    const isLegacyProviderDashboardRoute =
+      url.pathname === PROVIDER_DASHBOARD_LEGACY_PREFIX ||
+      url.pathname === `${PROVIDER_DASHBOARD_LEGACY_PREFIX}/` ||
+      url.pathname.startsWith(`${PROVIDER_DASHBOARD_LEGACY_PREFIX}/`);
     const providerDashboardShortRoutes: Record<string, string> = {
-      "/materiales": "/proveedores-v2/materiales",
-      "/materiales/": "/proveedores-v2/materiales",
-      "/cotizaciones": "/proveedores-v2/cotizaciones",
-      "/cotizaciones/": "/proveedores-v2/cotizaciones",
-      "/pedidos": "/proveedores-v2/pedidos",
-      "/pedidos/": "/proveedores-v2/pedidos",
-      "/envios": "/proveedores-v2/envios",
-      "/envios/": "/proveedores-v2/envios",
-      "/portfolio": "/proveedores-v2/portfolio",
-      "/portfolio/": "/proveedores-v2/portfolio",
-      "/certificacion": "/proveedores-v2/certificacion",
-      "/certificacion/": "/proveedores-v2/certificacion",
-      "/competitividad": "/proveedores-v2/competitividad",
-      "/competitividad/": "/proveedores-v2/competitividad",
+      "/materiales": `${PROVIDER_DASHBOARD_PREFIX}/materiales`,
+      "/materiales/": `${PROVIDER_DASHBOARD_PREFIX}/materiales`,
+      "/cotizaciones": `${PROVIDER_DASHBOARD_PREFIX}/cotizaciones`,
+      "/cotizaciones/": `${PROVIDER_DASHBOARD_PREFIX}/cotizaciones`,
+      "/pedidos": `${PROVIDER_DASHBOARD_PREFIX}/pedidos`,
+      "/pedidos/": `${PROVIDER_DASHBOARD_PREFIX}/pedidos`,
+      "/envios": `${PROVIDER_DASHBOARD_PREFIX}/envios`,
+      "/envios/": `${PROVIDER_DASHBOARD_PREFIX}/envios`,
+      "/portfolio": `${PROVIDER_DASHBOARD_PREFIX}/portfolio`,
+      "/portfolio/": `${PROVIDER_DASHBOARD_PREFIX}/portfolio`,
+      "/certificacion": `${PROVIDER_DASHBOARD_PREFIX}/certificacion`,
+      "/certificacion/": `${PROVIDER_DASHBOARD_PREFIX}/certificacion`,
+      "/competitividad": `${PROVIDER_DASHBOARD_PREFIX}/competitividad`,
+      "/competitividad/": `${PROVIDER_DASHBOARD_PREFIX}/competitividad`,
     };
 
     const isProviderLoginRoute =
@@ -119,7 +124,7 @@ export default {
       if (hasAuthCookie) {
         const hasSession = await hasProviderSession(request);
         if (hasSession) {
-          return Response.redirect(new URL("/proveedores", url.origin).toString(), 302);
+          return Response.redirect(new URL(PROVIDER_DASHBOARD_PREFIX, url.origin).toString(), 302);
         }
       }
       return serveSpaShell(request, env, url);
@@ -130,7 +135,12 @@ export default {
       return Response.redirect(new URL(dashboardShortTarget + url.search, url.origin).toString(), 302);
     }
 
-    if (isProviderDashboardV2Route) {
+    if (isLegacyProviderDashboardRoute) {
+      const legacySuffix = url.pathname.slice(PROVIDER_DASHBOARD_LEGACY_PREFIX.length);
+      return Response.redirect(new URL(`${PROVIDER_DASHBOARD_PREFIX}${legacySuffix}${url.search}`, url.origin).toString(), 302);
+    }
+
+    if (isProviderDashboardRoute) {
       return serveSpaShell(request, env, url);
     }
 

@@ -470,7 +470,7 @@ function ProductionContent({
                 variant="outline"
                 className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
               >
-                <a href="/proveedores-v2/logistica" rel="noreferrer">
+                <a href="/dashboard/proveedores/logistica" rel="noreferrer">
                   Ir a Logistica
                   <ArrowUpRight className="h-4 w-4" />
                 </a>

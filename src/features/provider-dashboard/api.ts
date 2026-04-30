@@ -13,6 +13,7 @@ import type {
   ProviderOrderDetailResponse,
   ProviderOrderDispatchResponse,
   ProviderOrderPrintingResponse,
+  ProviderOrderReadyToShipResponse,
   ProviderOrdersResponse,
   ProviderMiCorreoAgencyResponse,
   ProviderMiCorreoPayload,
@@ -165,6 +166,27 @@ export function markProviderOrderPrinting(providerId: number, orderId: number, r
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ resend_email: resendEmail }),
+    }
+  );
+}
+
+export function markProviderOrderReadyToShip(
+  providerId: number,
+  orderId: number,
+  options?: { resendEmail?: boolean; photos?: File[] }
+) {
+  const formData = new FormData();
+  if (options?.resendEmail) {
+    formData.append("resend_email", "1");
+  }
+  for (const photo of options?.photos || []) {
+    formData.append("photos", photo);
+  }
+  return dashboardFetch<ProviderOrderReadyToShipResponse>(
+    `/api/provider-dashboard/proveedores/${providerId}/pedidos/${orderId}/ready-to-ship`,
+    {
+      method: "POST",
+      body: formData,
     }
   );
 }

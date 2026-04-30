@@ -326,6 +326,7 @@ export interface ProviderQuoteDetailResponse {
 export type DashboardOrderStatus =
   | "paid_confirmed"
   | "in_production"
+  | "ready_to_ship"
   | "en_transito"
   | "completed"
   | "cancelled"
@@ -378,6 +379,24 @@ export interface ProviderOrderPrintingResponse {
   order_status: "in_production" | string;
   already_printing?: boolean;
   email_sent?: boolean;
+}
+
+export interface ProviderOrderReadyToShipResponse {
+  success: true;
+  order_id: number;
+  shipment_id: number;
+  previous_status?: string;
+  order_status: "ready_to_ship" | string;
+  uploaded?: number;
+  email_sent?: boolean;
+  photos?: Array<{
+    id?: string;
+    path?: string;
+    url?: string;
+    filename?: string;
+    uploaded_at?: string;
+  }>;
+  shipment?: DashboardShipment;
 }
 
 export interface ProviderOrderDispatchResponse {
