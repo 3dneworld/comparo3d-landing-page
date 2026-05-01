@@ -6,13 +6,9 @@ import {
   ClipboardCheck,
   Network,
   Sparkles,
-  CheckCircle2,
-  Factory,
-  Layers,
 } from "lucide-react";
 
 import logoWhite from "@/assets/logo-white.png";
-import networkImg from "@/assets/provider-network.jpg";
 import farmBg from "@/assets/farm-opacity.jpg";
 
 const valueSignals = [
@@ -122,20 +118,20 @@ const ProveedoresOnboardingLogin = () => {
             transition={{ duration: 0.5 }}
             className="flex flex-col"
           >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
               Red de proveedores COMPARO3D
             </p>
 
-            <h1 className="mt-4 text-3xl font-extrabold leading-[1.1] tracking-tight text-hero-foreground sm:text-4xl lg:text-[44px]">
+            <h1 className="mt-4 text-3xl font-extrabold leading-[1.1] tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)] sm:text-4xl lg:text-[44px]">
               Ingresá al onboarding de proveedores
             </h1>
 
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-hero-muted md:text-lg">
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-200 drop-shadow-[0_1px_8px_rgba(0,0,0,0.55)] md:text-lg">
               Sumate a una red profesional de fabricación 3D con un proceso de
               alta claro, validación operativa y criterio comercial.
             </p>
 
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-hero-muted/75">
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-300/95 drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
               Pensado para talleres y granjas de impresión que quieren trabajar
               con una plataforma seria, ordenada y enfocada en calidad,
               cumplimiento y capacidad real de respuesta.
@@ -146,87 +142,22 @@ const ProveedoresOnboardingLogin = () => {
               {valueSignals.map((item) => (
                 <li
                   key={item.title}
-                  className="flex items-start gap-4 rounded-xl border border-hero-muted/10 bg-hero-muted/[0.04] p-4 transition-colors hover:border-hero-muted/15"
+                  className="flex items-start gap-4 rounded-xl border border-white/10 bg-hero/55 p-4 backdrop-blur-sm transition-colors hover:border-white/20"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
                     <item.icon size={18} strokeWidth={2.1} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-hero-foreground">
+                    <p className="text-sm font-semibold text-white">
                       {item.title}
                     </p>
-                    <p className="mt-1 text-[13px] leading-relaxed text-hero-muted/85">
+                    <p className="mt-1 text-[13px] leading-relaxed text-slate-300">
                       {item.desc}
                     </p>
                   </div>
                 </li>
               ))}
             </ul>
-
-            {/* Visual composition — qualification flow panel */}
-            <div className="relative mt-10 hidden lg:block">
-              <div
-                aria-hidden
-                className="absolute -inset-6 rounded-[2rem] bg-primary/5 blur-3xl"
-              />
-              <div className="relative overflow-hidden rounded-2xl border border-hero-muted/10 bg-hero-muted/5">
-                <div className="grid grid-cols-[1.2fr_1fr]">
-                  {/* Network image */}
-                  <div className="relative">
-                    <img
-                      src={networkImg}
-                      alt="Red curada de proveedores COMPARO3D"
-                      className="h-full w-full object-cover"
-                      width={800}
-                      height={1024}
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-hero/60" />
-                  </div>
-
-                  {/* Qualification flow */}
-                  <div className="space-y-3 border-l border-hero-muted/10 bg-hero-muted/[0.04] p-5">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-hero-muted/60">
-                      Flujo de calificación
-                    </p>
-                    {[
-                      { icon: Factory, label: "Capacidad productiva", state: "Verificada" },
-                      { icon: Layers, label: "Materiales y procesos", state: "Mapeados" },
-                      { icon: ShieldCheck, label: "Estándar de calidad", state: "Validado" },
-                    ].map((step, i) => (
-                      <div
-                        key={step.label}
-                        className="flex items-center gap-3 rounded-lg border border-hero-muted/8 bg-hero-muted/[0.04] px-3 py-2.5"
-                      >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/12 text-primary">
-                          <step.icon size={14} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[12px] font-medium text-hero-foreground">
-                            {step.label}
-                          </p>
-                          <p className="text-[10px] text-hero-muted/60">
-                            Etapa {i + 1}
-                          </p>
-                        </div>
-                        <CheckCircle2
-                          size={14}
-                          className="shrink-0 text-accent"
-                        />
-                      </div>
-                    ))}
-                    <div className="mt-2 rounded-lg border border-primary/15 bg-primary/[0.06] px-3 py-2.5">
-                      <p className="text-[11px] font-semibold text-primary">
-                        Alta aprobada
-                      </p>
-                      <p className="mt-0.5 text-[10px] text-hero-muted/70">
-                        Integración a la red activa
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </motion.div>
 
           {/* RIGHT — access card */}
