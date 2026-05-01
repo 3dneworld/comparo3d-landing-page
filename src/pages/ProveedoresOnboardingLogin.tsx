@@ -6,13 +6,9 @@ import {
   ClipboardCheck,
   Network,
   Sparkles,
-  CheckCircle2,
-  Factory,
-  Layers,
 } from "lucide-react";
 
 import logoWhite from "@/assets/logo-white.png";
-import networkImg from "@/assets/provider-network.jpg";
 import farmBg from "@/assets/farm-opacity.jpg";
 
 const valueSignals = [
