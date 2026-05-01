@@ -18,6 +18,7 @@ import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ProviderDashboardV2 from "./pages/ProviderDashboardV2.tsx";
 import ProveedoresLogin from "./pages/ProveedoresLogin.tsx";
+import ProveedoresOnboardingLogin from "./pages/ProveedoresOnboardingLogin.tsx";
 import ProviderListing from "./pages/ProviderListing.tsx";
 import ProviderProfile from "./pages/ProviderProfile.tsx";
 
@@ -48,6 +49,7 @@ const App = () => (
           {/* Directorio público de proveedores */}
           <Route path="/proveedores" element={<ProviderListing />} />
           <Route path="/proveedores/login" element={<ProveedoresLogin />} />
+          <Route path="/proveedores/onboarding/login" element={<ProveedoresOnboardingLogin />} />
           <Route path={DASHBOARD_BASE_PATH} element={<ProviderDashboardV2 />}>
             <Route path="resumen" element={<ProviderSummaryView />} />
             <Route path="perfil" element={<ProviderProfileView />} />
