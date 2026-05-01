@@ -13,6 +13,7 @@ import {
 
 import logoWhite from "@/assets/logo-white.png";
 import networkImg from "@/assets/provider-network.jpg";
+import farmBg from "@/assets/farm-opacity.jpg";
 
 const valueSignals = [
   {
@@ -40,10 +41,46 @@ const ProveedoresOnboardingLogin = () => {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-dark">
+      {/* Background photo — print farm, anchored right, fades into dark gradient */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+      >
+        {/* The image itself, anchored right, only visible on lg+ where the layout breathes */}
+        <div
+          className="absolute inset-y-0 right-0 hidden w-[72%] bg-cover bg-center bg-no-repeat opacity-90 lg:block"
+          style={{
+            backgroundImage: `url(${farmBg})`,
+            backgroundPosition: "right center",
+          }}
+        />
+        {/* Mobile / tablet: a softer, centered version so it never competes with text */}
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-25 lg:hidden"
+          style={{ backgroundImage: `url(${farmBg})` }}
+        />
+        {/* Left-to-right fade into the base gradient so text stays readable */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(90deg, hsl(var(--hero)) 0%, hsl(var(--hero) / 0.96) 32%, hsl(var(--hero) / 0.78) 52%, hsl(var(--hero) / 0.45) 72%, hsl(var(--hero) / 0.25) 100%)",
+          }}
+        />
+        {/* Slight top/bottom vignette to anchor header & footer edges */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, hsl(var(--hero) / 0.55) 0%, transparent 18%, transparent 82%, hsl(var(--hero) / 0.6) 100%)",
+          }}
+        />
+      </div>
+
       {/* Subtle grid */}
       <div
         aria-hidden
-        className="absolute inset-0 opacity-[0.035]"
+        className="absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage:
             "url(\"data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0z' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E\")",
@@ -52,7 +89,7 @@ const ProveedoresOnboardingLogin = () => {
       {/* Soft radial glow */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 left-1/2 h-[640px] w-[640px] -translate-x-1/2 rounded-full opacity-40 blur-3xl"
+        className="pointer-events-none absolute -top-32 left-[28%] h-[640px] w-[640px] -translate-x-1/2 rounded-full opacity-30 blur-3xl"
         style={{
           background:
             "radial-gradient(circle, hsl(220 70% 45% / 0.35) 0%, transparent 60%)",
