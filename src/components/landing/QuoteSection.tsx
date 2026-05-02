@@ -37,7 +37,7 @@ interface QuoteData {
   infill: string;
   alturaCapa: string;
   observaciones: string;
-  thumbnailUrl: string;  // ← persiste el thumbnail en localStorage para restaurar sesión
+  thumbnailUrl: string;
   step: number;
   sessionId: string;
   tempName: string;
@@ -68,6 +68,13 @@ function loadSaved(): QuoteData | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<QuoteData>;
+    const hasStaleUpload =
+      Boolean(parsed.fileName || parsed.thumbnailUrl || parsed.stlSha256) &&
+      (!parsed.sessionId || !parsed.tempName);
+    if (hasStaleUpload) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
     const normalizedMaterial =
       typeof parsed.material === "string" && VALID_MATERIALS.has(parsed.material)
         ? parsed.material
@@ -90,10 +97,15 @@ function loadSaved(): QuoteData | null {
 }
 
 function saveData(data: QuoteData): void {
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({ ...data, updatedAt: new Date().toISOString() })
-  );
+  try {
+    const { thumbnailUrl: _thumbnailUrl, ...persistedData } = data;
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...persistedData, updatedAt: new Date().toISOString() })
+    );
+  } catch (error) {
+    console.warn("[QUOTE] No se pudo persistir la cotizacion local:", error);
+  }
 }
 
 export interface CatalogInjection {
@@ -226,6 +238,25 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
     onSessionIdReady: handleSessionIdReady,
     onQuotesReady: handleQuotesReady,
   });
+
+  const removeUploadedStl = () => {
+    flow.resetUploadState();
+    thumbnailFetchedRef.current = "";
+    restoredSessionCheckedRef.current = "";
+    polledSessionRef.current = "";
+    setSelectedQuote(null);
+    setData((prev) => ({
+      ...prev,
+      fileName: "",
+      thumbnailUrl: "",
+      sessionId: "",
+      tempName: "",
+      stlSha256: "",
+      selectedQuote: null,
+      orderId: "",
+      step: 1,
+    }));
+  };
 
   useEffect(() => {
     if (flow.orderId && flow.orderId !== data.orderId) {
@@ -381,6 +412,12 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
       setData({ fileName: file.name });
       goToStep(2);
     }
+  };
+
+  const handleReplacementFileSelect = (file: File) => {
+    flow.setStlFile(file);
+    setData({ fileName: file.name });
+    void handleStep1AutoUpload(file);
   };
 
   const handleStep2Continue = async () => {
@@ -579,7 +616,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
         )}
 
         {hasSaved && !isCheckingSavedSession && data.step > 1 && (
-          <div className="mb-5 rounded-2xl border border-primary/20 bg-primary/[0.05] p-4">
+          <div className="mb-8 rounded-2xl border border-primary/20 bg-primary/[0.05] p-4 md:mb-9">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-foreground">
@@ -691,6 +728,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
                 updateField("fileName", file.name);
               }}
               onAutoUpload={handleStep1AutoUpload}
+              onRemoveFile={removeUploadedStl}
             />
           )}
 
@@ -710,6 +748,8 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
               progressMessage={flow.progressMessage}
               error={flow.error}
               onChange={updateField}
+              onRemoveFile={removeUploadedStl}
+              onReplacementFileSelect={handleReplacementFileSelect}
               onBack={() => goToStep(1)}
               onContinue={handleStep2Continue}
             />

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { CheckCircle2, Lock, Upload } from "lucide-react";
+import { CheckCircle2, Lock, Trash2, Upload } from "lucide-react";
 
 interface StepUploadProps {
   fileName: string;
@@ -8,6 +8,7 @@ interface StepUploadProps {
   error: string | null;
   onFileSelect: (file: File) => void;
   onAutoUpload: (file: File) => void | Promise<void>;
+  onRemoveFile?: () => void;
 }
 
 export function StepUpload({
@@ -17,6 +18,7 @@ export function StepUpload({
   error,
   onFileSelect,
   onAutoUpload,
+  onRemoveFile,
 }: StepUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,6 +76,20 @@ export function StepUpload({
               <p className="mt-2 text-[13px] text-muted-foreground">
                 Archivo detectado. Estamos procesandolo automaticamente.
               </p>
+              {onRemoveFile && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onRemoveFile();
+                  }}
+                  className="mt-4 inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-[12px] font-semibold text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/5 hover:text-destructive"
+                >
+                  <Trash2 size={14} />
+                  Quitar archivo
+                </button>
+              )}
             </>
           ) : (
             <>
