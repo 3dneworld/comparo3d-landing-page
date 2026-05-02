@@ -172,7 +172,7 @@ const ProveedoresOnboardingLogin = () => {
                 aria-hidden
                 className="absolute -inset-3 rounded-[1.75rem] bg-primary/8 blur-2xl"
               />
-              <div className="relative rounded-2xl border border-hero-muted/12 bg-hero-muted/[0.06] p-7 shadow-[0_24px_60px_-24px_rgba(15,23,42,0.6)] backdrop-blur-sm">
+              <div className="relative rounded-2xl border border-white/12 bg-hero/65 p-7 shadow-[0_24px_60px_-24px_rgba(15,23,42,0.7)] backdrop-blur-md">
                 <div className="flex items-center gap-2 text-primary">
                   <ShieldCheck size={16} />
                   <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
@@ -180,10 +180,10 @@ const ProveedoresOnboardingLogin = () => {
                   </span>
                 </div>
 
-                <h2 className="mt-3 text-xl font-bold tracking-tight text-hero-foreground">
+                <h2 className="mt-3 text-xl font-bold tracking-tight text-white">
                   Acceso al onboarding
                 </h2>
-                <p className="mt-2 text-sm leading-relaxed text-hero-muted">
+                <p className="mt-2 text-sm leading-relaxed text-slate-200">
                   Iniciá sesión con tu cuenta autorizada para comenzar o
                   continuar tu proceso de alta.
                 </p>
@@ -215,24 +215,24 @@ const ProveedoresOnboardingLogin = () => {
                   <ArrowRight size={16} className="ml-1 opacity-70" />
                 </button>
 
-                <p className="mt-4 text-[11px] leading-relaxed text-hero-muted/55">
+                <p className="mt-4 text-[11px] leading-relaxed text-slate-300/80">
                   Acceso exclusivo para proveedores que están iniciando su
                   evaluación dentro de COMPARO3D.
                 </p>
 
-                <div className="my-6 h-px bg-hero-muted/10" />
+                <div className="my-6 h-px bg-white/10" />
 
                 <div className="space-y-2.5 text-[12px]">
                   <a
                     href="/proveedores/login"
-                    className="flex items-center justify-between rounded-lg border border-hero-muted/10 bg-hero-muted/[0.04] px-3.5 py-2.5 text-hero-muted transition-colors hover:border-primary/25 hover:text-hero-foreground"
+                    className="flex items-center justify-between rounded-lg border border-white/10 bg-hero/55 px-3.5 py-2.5 text-slate-200 backdrop-blur-sm transition-colors hover:border-primary/30 hover:text-white"
                   >
                     <span>¿Ya sos proveedor activo? Ir al panel</span>
                     <ArrowRight size={13} className="opacity-60" />
                   </a>
                   <a
                     href="mailto:soporte@comparo3d.com"
-                    className="flex items-center justify-between rounded-lg border border-hero-muted/10 bg-hero-muted/[0.04] px-3.5 py-2.5 text-hero-muted transition-colors hover:border-primary/25 hover:text-hero-foreground"
+                    className="flex items-center justify-between rounded-lg border border-white/10 bg-hero/55 px-3.5 py-2.5 text-slate-200 backdrop-blur-sm transition-colors hover:border-primary/30 hover:text-white"
                   >
                     <span>¿Necesitás ayuda? Contactá al equipo</span>
                     <ArrowRight size={13} className="opacity-60" />
