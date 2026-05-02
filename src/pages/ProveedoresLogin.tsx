@@ -1,10 +1,35 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ShieldCheck,
+  ClipboardCheck,
+  Network,
+  Sparkles,
+} from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import logoWhite from "@/assets/logo-white.png";
-import networkImg from "@/assets/provider-network.jpg";
+import farmBg from "@/assets/farm-opacity.jpg";
+
+const valueSignals = [
+  {
+    icon: ClipboardCheck,
+    title: "Gestión operativa centralizada",
+    desc: "Cotizaciones, pedidos y seguimiento productivo en un único panel.",
+  },
+  {
+    icon: Sparkles,
+    title: "Trazabilidad y criterio profesional",
+    desc: "Estado claro de cada operación con reglas comerciales consistentes.",
+  },
+  {
+    icon: Network,
+    title: "Red curada de fabricación 3D",
+    desc: "Formás parte de una red verificada de talleres y granjas.",
+  },
+];
 
 const ProveedoresLogin = () => {
   const navigate = useNavigate();
@@ -43,11 +68,49 @@ const ProveedoresLogin = () => {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-dark">
+      {/* Background photo — print farm, anchored right, fades into dark gradient */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div
+          className="absolute inset-0 hidden bg-cover bg-no-repeat opacity-90 lg:block"
+          style={{
+            backgroundImage: `url(${farmBg})`,
+            backgroundPosition: "right center",
+          }}
+        />
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-25 lg:hidden"
+          style={{ backgroundImage: `url(${farmBg})` }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(90deg, hsl(var(--hero)) 0%, hsl(var(--hero) / 0.96) 32%, hsl(var(--hero) / 0.78) 52%, hsl(var(--hero) / 0.45) 72%, hsl(var(--hero) / 0.25) 100%)",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, hsl(var(--hero) / 0.55) 0%, transparent 18%, transparent 82%, hsl(var(--hero) / 0.6) 100%)",
+          }}
+        />
+      </div>
+
       <div
+        aria-hidden
         className="absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage:
             "url(\"data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0z' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E\")",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-32 left-[28%] h-[640px] w-[640px] -translate-x-1/2 rounded-full opacity-30 blur-3xl"
+        style={{
+          background:
+            "radial-gradient(circle, hsl(220 70% 45% / 0.35) 0%, transparent 60%)",
         }}
       />
 
@@ -66,72 +129,88 @@ const ProveedoresLogin = () => {
         </div>
       </header>
 
-      <div className="relative z-10 container flex min-h-[calc(100vh-4rem)] items-center justify-center">
-        <div className="grid w-full max-w-5xl items-center gap-12 py-12 lg:grid-cols-2 lg:gap-20">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="hidden flex-col items-center lg:flex"
-          >
-            <div className="relative w-full max-w-md">
-              <div className="absolute -inset-4 rounded-3xl bg-primary/5 blur-2xl" />
-              <img
-                src={networkImg}
-                alt="Red de proveedores COMPARO3D"
-                className="relative w-full rounded-2xl border border-hero-muted/10"
-                width={800}
-                height={1024}
-              />
-            </div>
-
-            <div className="mt-8 flex gap-8">
-              {[
-                { value: "50+", label: "Proveedores activos" },
-                { value: "24hs", label: "Tiempo de respuesta" },
-                { value: "100%", label: "Operacion trazable" },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center">
-                  <p className="font-display text-xl font-bold text-hero-foreground">
-                    {stat.value}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-hero-muted">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
+      <main className="relative z-10 container flex min-h-[calc(100vh-4rem)] items-center py-12 md:py-16">
+        <div className="grid w-full max-w-6xl gap-12 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
+          {/* LEFT — message */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.1 }}
-            className="flex flex-col items-center lg:items-start"
+            transition={{ duration: 0.5 }}
+            className="flex flex-col"
           >
-            <div className="w-full max-w-sm">
-              <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.15em] text-primary">
-                Red de proveedores COMPARO3D
-              </p>
+            <h1 className="text-3xl font-extrabold leading-[1.1] tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)] sm:text-4xl lg:text-[44px]">
+              Acceso al panel de proveedores
+            </h1>
 
-              <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-hero-foreground sm:text-3xl">
-                Acceso al panel de proveedores
-              </h1>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-200 drop-shadow-[0_1px_8px_rgba(0,0,0,0.55)] md:text-lg">
+              Iniciá sesión con tu cuenta autorizada para gestionar cotizaciones,
+              pedidos y seguimiento operativo.
+            </p>
 
-              <p className="mt-3 text-sm leading-relaxed text-hero-muted">
-                Inicia sesion con tu cuenta autorizada para gestionar cotizaciones,
-                pedidos y seguimiento operativo.
-              </p>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-300/95 drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
+              Un panel pensado para proveedores de la red COMPARO3D, con criterio
+              comercial y trazabilidad operativa de cada pedido.
+            </p>
 
-              {errorMessage ? (
-                <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3">
-                  <p className="text-sm leading-relaxed text-amber-100">{errorMessage}</p>
+            <ul className="mt-8 space-y-3">
+              {valueSignals.map((item) => (
+                <li
+                  key={item.title}
+                  className="flex items-start gap-4 rounded-xl border border-white/10 bg-hero/55 p-4 backdrop-blur-sm transition-colors hover:border-white/20"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                    <item.icon size={18} strokeWidth={2.1} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      {item.title}
+                    </p>
+                    <p className="mt-1 text-[13px] leading-relaxed text-slate-300">
+                      {item.desc}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+
+          {/* RIGHT — access card */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.12 }}
+            className="lg:self-center"
+          >
+            <div className="relative">
+              <div
+                aria-hidden
+                className="absolute -inset-3 rounded-[1.75rem] bg-primary/8 blur-2xl"
+              />
+              <div className="relative rounded-2xl border border-white/12 bg-hero/65 p-7 shadow-[0_24px_60px_-24px_rgba(15,23,42,0.7)] backdrop-blur-md">
+                <div className="flex items-center gap-2 text-primary">
+                  <ShieldCheck size={16} />
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
+                    Acceso autorizado
+                  </span>
                 </div>
-              ) : null}
 
-              <div className="mt-8 space-y-5 rounded-2xl border border-hero-muted/10 bg-hero-muted/5 p-6">
+                <h2 className="mt-3 text-xl font-bold tracking-tight text-white">
+                  Iniciar sesión
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-slate-200">
+                  Accedé con tu cuenta autorizada para entrar al panel de proveedores.
+                </p>
+
+                {errorMessage ? (
+                  <div className="mt-5 rounded-xl border border-amber-400/20 bg-amber-500/10 px-4 py-3">
+                    <p className="text-sm leading-relaxed text-amber-100">{errorMessage}</p>
+                  </div>
+                ) : null}
+
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="flex w-full items-center justify-center gap-3 rounded-lg bg-hero-foreground px-5 py-3.5 text-sm font-semibold text-hero transition-opacity hover:opacity-90"
+                  className="mt-6 flex w-full items-center justify-center gap-3 rounded-lg bg-hero-foreground px-5 py-3.5 text-sm font-semibold text-hero transition-opacity hover:opacity-90"
                 >
                   <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
                     <path
@@ -152,55 +231,36 @@ const ProveedoresLogin = () => {
                     />
                   </svg>
                   Continuar con Google
+                  <ArrowRight size={16} className="ml-1 opacity-70" />
                 </button>
 
-                <div className="flex items-center gap-3">
-                  <div className="h-px flex-1 bg-hero-muted/15" />
-                  <span className="text-[11px] uppercase tracking-wider text-hero-muted/50">
-                    o
-                  </span>
-                  <div className="h-px flex-1 bg-hero-muted/15" />
-                </div>
+                <p className="mt-4 text-[11px] leading-relaxed text-slate-300/80">
+                  Acceso exclusivo para proveedores validados dentro de la red COMPARO3D.
+                </p>
 
-                <div className="space-y-3">
-                  <input
-                    type="email"
-                    placeholder="Email corporativo"
-                    className="w-full rounded-lg border border-hero-muted/12 bg-hero-muted/8 px-4 py-3 text-sm text-hero-foreground placeholder:text-hero-muted/40 transition-shadow focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  />
-                  <input
-                    type="password"
-                    placeholder="Contrasena"
-                    className="w-full rounded-lg border border-hero-muted/12 bg-hero-muted/8 px-4 py-3 text-sm text-hero-foreground placeholder:text-hero-muted/40 transition-shadow focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  />
-                </div>
+                <div className="my-6 h-px bg-white/10" />
 
-                <button
-                  type="button"
-                  onClick={handleGoogleLogin}
-                  className="w-full rounded-lg bg-gradient-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-cta transition-opacity hover:opacity-90"
-                >
-                  Iniciar sesion
-                </button>
+                <div className="space-y-2.5 text-[12px]">
+                  <a
+                    href="/proveedores/onboarding/login"
+                    className="flex items-center justify-between rounded-lg border border-white/10 bg-hero/55 px-3.5 py-2.5 text-slate-200 backdrop-blur-sm transition-colors hover:border-primary/30 hover:text-white"
+                  >
+                    <span>¿Todavía no sos proveedor? Ir al onboarding</span>
+                    <ArrowRight size={13} className="opacity-60" />
+                  </a>
+                  <a
+                    href="mailto:soporte@comparo3d.com"
+                    className="flex items-center justify-between rounded-lg border border-white/10 bg-hero/55 px-3.5 py-2.5 text-slate-200 backdrop-blur-sm transition-colors hover:border-primary/30 hover:text-white"
+                  >
+                    <span>¿Necesitás ayuda? Contactá al equipo</span>
+                    <ArrowRight size={13} className="opacity-60" />
+                  </a>
+                </div>
               </div>
-
-              <p className="mt-5 text-center text-[11px] leading-relaxed text-hero-muted/50 lg:text-left">
-                Acceso exclusivo para proveedores validados dentro de la red COMPARO3D.
-              </p>
-
-              <p className="mt-3 text-center text-[11px] text-hero-muted/40 lg:text-left">
-                Problemas para acceder?{" "}
-                <a
-                  href="mailto:soporte@comparo3d.com"
-                  className="text-primary hover:underline"
-                >
-                  Contacta al equipo de COMPARO3D
-                </a>
-              </p>
             </div>
           </motion.div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
