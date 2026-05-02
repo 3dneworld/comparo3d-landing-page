@@ -118,7 +118,7 @@ const ProveedoresOnboardingLogin = () => {
             transition={{ duration: 0.5 }}
             className="flex flex-col"
           >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
+            <p className="text-[22px] font-semibold uppercase tracking-[0.18em] text-primary drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
               Red de proveedores COMPARO3D
             </p>
 
