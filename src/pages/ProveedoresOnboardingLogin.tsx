@@ -42,9 +42,9 @@ const ProveedoresOnboardingLogin = () => {
         aria-hidden
         className="pointer-events-none absolute inset-0"
       >
-        {/* The image itself, anchored right, only visible on lg+ where the layout breathes */}
+        {/* The image itself — spans the full page width on lg+, anchored to the right of the photo */}
         <div
-          className="absolute inset-y-0 right-0 hidden w-[72%] bg-cover bg-center bg-no-repeat opacity-90 lg:block"
+          className="absolute inset-0 hidden bg-cover bg-no-repeat opacity-90 lg:block"
           style={{
             backgroundImage: `url(${farmBg})`,
             backgroundPosition: "right center",
