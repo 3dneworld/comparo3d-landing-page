@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AudienceProvider } from "@/contexts/AudienceContext";
@@ -94,5 +94,44 @@ describe("QuoteSection saved upload restore", () => {
     expect(await screen.findByText("Tus datos")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /opciones avanzadas/i })).toBeInTheDocument();
     expect(localStorage.getItem("comparo3d_quote")).not.toContain("data:image/png;base64");
+  });
+
+  it("clears a restored upload when the user removes the file", async () => {
+    localStorage.setItem(
+      "comparo3d_quote",
+      JSON.stringify({
+        fileName: "2 balls.stl",
+        step: 1,
+        sessionId: "2_balls_1777727450",
+        tempName: "2_balls_1777727450.stl",
+        stlSha256: "abc123",
+        selectedQuote: { quote_option_uid: "quote-1" },
+        orderId: "order-1",
+      })
+    );
+
+    render(
+      <AudienceProvider>
+        <QuoteSection />
+      </AudienceProvider>
+    );
+
+    expect(screen.getByText("2 balls.stl")).toBeInTheDocument();
+
+    expect(() => {
+      fireEvent.click(screen.getByRole("button", { name: /quitar archivo/i }));
+    }).not.toThrow();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Arrastra tu STL/i)).toBeInTheDocument();
+    });
+
+    const saved = JSON.parse(localStorage.getItem("comparo3d_quote") ?? "{}");
+    expect(saved.fileName).toBe("");
+    expect(saved.sessionId).toBe("");
+    expect(saved.tempName).toBe("");
+    expect(saved.stlSha256).toBe("");
+    expect(saved.selectedQuote).toBeNull();
+    expect(saved.orderId).toBe("");
   });
 });
