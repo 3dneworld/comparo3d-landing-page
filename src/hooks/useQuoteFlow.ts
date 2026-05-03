@@ -113,6 +113,27 @@ export function useQuoteFlow({
     setState((s) => ({ ...s, stlFile: file, error: null }));
   };
 
+  const resetUploadState = useCallback(() => {
+    if (pollRef.current) {
+      clearTimeout(pollRef.current);
+      pollRef.current = null;
+    }
+    if (!isMountedRef.current) return;
+    setState({
+      isLoading: false,
+      isProcessing: false,
+      progressMessage: "",
+      error: null,
+      quotes: [],
+      orderId: null,
+      stlFile: null,
+      thumbnailUrl: null,
+      material: null,
+      cantidad: null,
+      stlDimensions: null,
+    });
+  }, []);
+
   /** Paso 1: Subir STL al backend */
   const handleUploadStl = useCallback(
     async (file: File, currentSessionId?: string): Promise<boolean> => {
@@ -369,6 +390,7 @@ export function useQuoteFlow({
   return {
     ...state,
     setStlFile,
+    resetUploadState,
     setError,
     clearError,
     resetUploadState,
