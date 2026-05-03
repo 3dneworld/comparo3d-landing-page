@@ -607,6 +607,9 @@ export interface CheckoutAddress {
 
 export interface CreateCheckoutRequest {
   order_id: string;
+  discount?: {
+    code: string;
+  };
   shipping: {
     method_id: string;
     price: number;
@@ -620,6 +623,14 @@ export interface CreateCheckoutResponse {
   init_point: string;
   preference_id: string;
   order_id: string;
+  total_amount: number;
+  discount?: {
+    code: string;
+    discount_pct: number;
+    discount_amount: number;
+    discounted_print_amount: number;
+    shipping_amount: number;
+  };
 }
 
 /** Crear preferencia de pago en MercadoPago y obtener init_point. */
@@ -640,6 +651,141 @@ export async function createCheckout(
     return data as CreateCheckoutResponse;
   } catch {
     return { success: false, error: "Error de conexión al iniciar el pago" };
+  }
+}
+
+export interface ValidateDiscountCodeResponse {
+  success: true;
+  code: string;
+  status: "issued" | "reserved";
+  expires_at: string;
+  issued_at: string;
+  discount_pct: number;
+  print_amount: number;
+  shipping_amount: number;
+  discount_amount: number;
+  discounted_print_amount: number;
+  customer_total: number;
+  marketplace_fee_base: number;
+  marketplace_fee_final: number;
+  provider_payout: number;
+}
+
+export async function validateCheckoutDiscountCode(
+  sessionId: string,
+  request: {
+    order_id: string;
+    code: string;
+    shipping: { price: number };
+  }
+): Promise<ValidateDiscountCodeResponse | ApiError> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/quotes/${sessionId}/discount-code/validate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || "No pudimos validar el código", status: data.status };
+    }
+    return data as ValidateDiscountCodeResponse;
+  } catch {
+    return { success: false, error: "Error de conexión al validar el código" };
+  }
+}
+
+export interface ClientReviewMetaResponse {
+  success: true;
+  implemented: true;
+  state: "open" | "already_submitted";
+  token_payload: {
+    order_id: number;
+    provider_id: number;
+    client_email: string;
+  };
+  item: {
+    id: number;
+    public_order_id?: string;
+    client_name: string;
+    client_email: string;
+    order_status: string;
+    created_at?: string;
+    completed_at?: string | null;
+    provider_id: number;
+    provider_name: string;
+    material?: string;
+    cantidad?: string | number;
+    color?: string;
+    has_review: boolean;
+    review?: {
+      id: number;
+      rating: number;
+      comment: string;
+      created_at: string;
+    } | null;
+    discount?: {
+      code: string;
+      discount_pct: number;
+      issued_at: string;
+      expires_at: string;
+      status: string;
+      used_at?: string | null;
+    } | null;
+  };
+}
+
+export interface ClientReviewSubmitResponse {
+  success: true;
+  state: "submitted";
+  review: {
+    id: number;
+    order_id: number;
+    provider_id: number;
+    rating: number;
+    comment: string;
+    created_at: string;
+  };
+  discount: {
+    code: string;
+    discount_pct: number;
+    issued_at: string;
+    expires_at: string;
+  };
+}
+
+export async function getClientReviewMeta(
+  token: string
+): Promise<ClientReviewMetaResponse | ApiError> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/client-review/${token}/meta`);
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || "No pudimos cargar la review", status: data.state };
+    }
+    return data as ClientReviewMetaResponse;
+  } catch {
+    return { success: false, error: "Error de conexión al cargar la review" };
+  }
+}
+
+export async function submitClientReview(
+  token: string,
+  request: { rating: number; comment: string }
+): Promise<ClientReviewSubmitResponse | ApiError> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/client-review/${token}/submit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || "No pudimos enviar la review", status: data.state };
+    }
+    return data as ClientReviewSubmitResponse;
+  } catch {
+    return { success: false, error: "Error de conexión al enviar la review" };
   }
 }
 

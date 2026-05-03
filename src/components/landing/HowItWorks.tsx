@@ -1,14 +1,17 @@
 import { useMemo } from "react";
-import { Upload, Check, BarChart3, Truck, FileStack, ShieldCheck } from "lucide-react";
+import { Check, FileStack, ShieldCheck, Truck, Upload } from "lucide-react";
+
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import AnimateOnScroll from "@/components/AnimateOnScroll";
 import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
+import ComparisonIcon from "./ComparisonIcon";
 
 interface StepItem {
   step: string;
   title: string;
   desc: string;
-  icon: typeof Upload;
+  icon?: typeof Upload;
+  customIcon?: "comparison";
 }
 
 const sectionCopy: Record<Audience, { eyebrow: string; title: string; support: string }> = {
@@ -35,8 +38,8 @@ const stepsByAudience: Record<Audience, StepItem[]> = {
     {
       step: "Paso 2",
       title: "Compará",
-      desc: "Analiza propuestas de diferentes proveedores según precio, plazo y condiciones de entrega.",
-      icon: BarChart3,
+      desc: "Analizá propuestas de diferentes proveedores según precio, plazo y condiciones de entrega.",
+      customIcon: "comparison",
     },
     {
       step: "Paso 3",
@@ -47,7 +50,7 @@ const stepsByAudience: Record<Audience, StepItem[]> = {
     {
       step: "Paso 4",
       title: "Recibí tu pieza",
-      desc: "Realizas el pago y se te dará un día estimado de entrega de la impresión 3D con seguimiento claro.",
+      desc: "Realizás el pago y se te dará un día estimado de entrega de la impresión 3D con seguimiento claro.",
       icon: Truck,
     },
   ],
@@ -62,7 +65,7 @@ const stepsByAudience: Record<Audience, StepItem[]> = {
       step: "Paso 2",
       title: "Recibí propuesta consolidada",
       desc: "Centralizamos opciones y armamos una propuesta para evitar negociar proveedor por proveedor.",
-      icon: BarChart3,
+      customIcon: "comparison",
     },
     {
       step: "Paso 3",
@@ -101,28 +104,29 @@ const HowItWorks = () => {
         <StaggerChildren staggerDelay={0.12} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 xl:gap-5">
           {steps.map((step) => (
             <StaggerItem key={step.title} className="h-full">
-            <article
-              key={step.title}
-              className="group relative flex h-full flex-col rounded-2xl border border-border bg-card px-5 py-5 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/18 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.22)] md:px-6 md:py-6"
-            >
-              <div className="mb-5 flex items-center justify-between gap-4">
-                <span className="inline-flex items-center rounded-full border border-primary/14 bg-primary/[0.05] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-                  {step.step}
-                </span>
+              <article className="group relative flex h-full flex-col rounded-2xl border border-border bg-card px-5 py-5 shadow-[0_10px_24px_-20px_rgba(15,23,42,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/18 hover:shadow-[0_14px_32px_-22px_rgba(37,99,235,0.22)] md:px-6 md:py-6">
+                <div className="mb-5 flex items-center justify-between gap-4">
+                  <span className="inline-flex items-center rounded-full border border-primary/14 bg-primary/[0.05] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+                    {step.step}
+                  </span>
 
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-primary shadow-[0_10px_24px_-16px_hsl(var(--primary)/0.6)]">
-                  <step.icon size={22} className="text-primary-foreground" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-primary shadow-[0_10px_24px_-16px_hsl(var(--primary)/0.6)]">
+                    {step.customIcon === "comparison" ? (
+                      <ComparisonIcon label="Icono Paso 2 Comparacion" className="h-9 w-9 bg-primary-foreground" />
+                    ) : step.icon ? (
+                      <step.icon size={22} className="text-primary-foreground" />
+                    ) : null}
+                  </div>
                 </div>
-              </div>
 
-              <h3 className="text-[22px] font-semibold leading-[1.15] text-foreground md:text-[24px]">
-                {step.title}
-              </h3>
+                <h3 className="text-[22px] font-semibold leading-[1.15] text-foreground md:text-[24px]">
+                  {step.title}
+                </h3>
 
-              <p className="mt-4 text-[14px] leading-[1.65] text-muted-foreground md:text-[15px]">
-                {step.desc}
-              </p>
-            </article>
+                <p className="mt-4 text-[14px] leading-[1.65] text-muted-foreground md:text-[15px]">
+                  {step.desc}
+                </p>
+              </article>
             </StaggerItem>
           ))}
         </StaggerChildren>

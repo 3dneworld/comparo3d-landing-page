@@ -16,12 +16,14 @@ import {
   createCheckout,
   getShippingEstimate,
   getShippingMethods,
+  validateCheckoutDiscountCode,
   isApiError,
   type AddressLocality,
   type AddressProvince,
   type NormalizeAddressResponse,
   type QuoteOption,
   type ShippingMethod,
+  type ValidateDiscountCodeResponse,
 } from "@/lib/api";
 import { runNormalizeAddress } from "@/lib/normalizeAddressFlow";
 import { toast } from "@/components/ui/sonner";
@@ -97,6 +99,16 @@ const formatEstimatedDate = (days: number) => {
     month: "2-digit",
     year: "numeric",
   }).format(baseDate);
+};
+
+const formatIsoDate = (value: string) => {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(parsed);
 };
 
 const getPostalDigits = (value: string) => value.replace(/\D/g, "").slice(0, 4);
@@ -207,6 +219,9 @@ export function StepCheckout({
   const [loadingMethods, setLoadingMethods] = useState(false);
   const [loadingEstimate, setLoadingEstimate] = useState(false);
   const [creatingCheckout, setCreatingCheckout] = useState(false);
+  const [discountCode, setDiscountCode] = useState("");
+  const [discountResult, setDiscountResult] = useState<ValidateDiscountCodeResponse | null>(null);
+  const [applyingDiscount, setApplyingDiscount] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutWarning, setCheckoutWarning] = useState<string | null>(null);
   const [addressValidation, setAddressValidation] = useState<AddressValidationState | null>(null);
@@ -456,6 +471,10 @@ export function StepCheckout({
     }, 600);
   }, [address.postal_code, address.province, isRetiro, postalDigits.length, selectedMethodId]);
 
+  useEffect(() => {
+    setDiscountResult(null);
+  }, [selectedMethodId, estimatePrice, orderId]);
+
   const isFormValid = useMemo(() => {
     if (!selectedMethodId) return false;
     if (isRetiro) return true;
@@ -620,7 +639,9 @@ export function StepCheckout({
 
   const printPrice = Math.round(selectedQuote.price_ars);
   const shippingPrice = estimatePrice ?? 0;
-  const total = printPrice + shippingPrice;
+  const discountAmount = Math.round(discountResult?.discount_amount ?? 0);
+  const discountedPrintPrice = Math.round(discountResult?.discounted_print_amount ?? printPrice);
+  const total = Math.round(discountResult?.customer_total ?? printPrice + shippingPrice);
   const totalIsPartial = !isRetiro && estimatePrice === null && !!selectedMethodId;
   const selectedMethod = methods.find((method) => method.id === selectedMethodId);
   const selectedLocality = localities.find((item) => item.id === address.locality_id) ?? null;
@@ -643,6 +664,33 @@ export function StepCheckout({
         .join(" · ")
     : "";
 
+  const handleApplyDiscount = async () => {
+    if (!discountCode.trim()) {
+      setCheckoutError("Ingresa un código de descuento.");
+      return;
+    }
+
+    setApplyingDiscount(true);
+    setCheckoutError(null);
+    setCheckoutWarning(null);
+
+    const result = await validateCheckoutDiscountCode(sessionId, {
+      order_id: orderId,
+      code: discountCode.trim(),
+      shipping: { price: shippingPrice },
+    });
+
+    setApplyingDiscount(false);
+
+    if (isApiError(result)) {
+      setDiscountResult(null);
+      setCheckoutError(result.error || "No pudimos validar el código.");
+      return;
+    }
+
+    setDiscountResult(result);
+  };
+
   const handlePay = async () => {
     if (!isFormValid || creatingCheckout) return;
 
@@ -652,6 +700,7 @@ export function StepCheckout({
 
     const result = await createCheckout(sessionId, {
       order_id: orderId,
+      discount: discountResult?.code ? { code: discountResult.code } : undefined,
       shipping: {
         method_id: selectedMethodId,
         price: estimatePrice ?? 0,
@@ -959,9 +1008,22 @@ export function StepCheckout({
                   <p>Impresion 3D</p>
                   <p>{quantityLabel}</p>
                 </div>
-                <span className="text-[14px] font-semibold text-foreground">
-                  ${formatRoundedArs(printPrice)}
-                </span>
+                <div className="text-right">
+                  {discountResult ? (
+                    <>
+                      <p className="text-[12px] text-muted-foreground line-through">
+                        ${formatRoundedArs(printPrice)}
+                      </p>
+                      <p className="text-[14px] font-semibold text-foreground">
+                        ${formatRoundedArs(discountedPrintPrice)}
+                      </p>
+                    </>
+                  ) : (
+                    <span className="text-[14px] font-semibold text-foreground">
+                      ${formatRoundedArs(printPrice)}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center justify-between gap-3">
@@ -978,6 +1040,20 @@ export function StepCheckout({
                   )}
                 </span>
               </div>
+
+              {discountResult && (
+                <div className="flex items-start justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 px-3 py-3">
+                  <div>
+                    <p className="text-[14px] font-semibold text-emerald-950">Descuento review</p>
+                    <p className="mt-1 text-[12px] leading-relaxed text-emerald-800">
+                      Codigo aplicado: {discountResult.code}
+                    </p>
+                  </div>
+                  <span className="text-[14px] font-semibold text-emerald-900">
+                    -${formatRoundedArs(discountAmount)}
+                  </span>
+                </div>
+              )}
 
               <div className="border-t border-border pt-3">
                 <div className="flex items-baseline justify-between gap-3">
@@ -1012,6 +1088,53 @@ export function StepCheckout({
                   </span>
                 </div>
               </div>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-border/80 bg-background/80 p-4">
+              <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Codigo de descuento
+              </p>
+              <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                Si dejaste una review, puedes aplicar tu beneficio del 5% sobre la impresion 3D.
+              </p>
+
+              <div className="mt-4 flex gap-2">
+                <input
+                  value={discountCode}
+                  onChange={(event) => {
+                    setDiscountCode(event.target.value.toUpperCase());
+                    if (discountResult && event.target.value.toUpperCase() !== discountResult.code) {
+                      setDiscountResult(null);
+                    }
+                  }}
+                  className="min-w-0 flex-1 rounded-xl border border-input bg-background px-4 py-3 text-[14px] font-medium uppercase tracking-[0.08em] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Ej: REVIEW-5"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyDiscount}
+                  disabled={applyingDiscount || !discountCode.trim()}
+                  className="inline-flex shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/[0.08] px-4 py-3 text-[14px] font-semibold text-primary transition-colors hover:bg-primary/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {applyingDiscount ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    "Aplicar"
+                  )}
+                </button>
+              </div>
+
+              {discountResult ? (
+                <p className="mt-3 text-[12px] leading-relaxed text-emerald-700">
+                  Beneficio activo hasta el {formatIsoDate(discountResult.expires_at)}. Se usa una sola vez al completar el pago.
+                </p>
+              ) : (
+                <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
+                  El beneficio no impacta el envio y se valida antes de enviarte a MercadoPago.
+                </p>
+              )}
             </div>
 
             {checkoutError && (

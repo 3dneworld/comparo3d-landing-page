@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ChevronDown, ChevronRight, Eye, CheckCircle2, MapPin } from "lucide-react";
+import { useRef, useState } from "react";
+import { ChevronDown, ChevronRight, Eye, CheckCircle2, MapPin, Trash2, Upload } from "lucide-react";
 import modeloPreview from "@/assets/modelo-preview.png";
 import { toast } from "@/components/ui/sonner";
 import { TrimmedThumbnail } from "./TrimmedThumbnail";
@@ -62,6 +62,8 @@ interface StepUserDataProps {
   progressMessage: string;
   error: string | null;
   onChange: (field: keyof FormState, value: string) => void;
+  onRemoveFile: () => void;
+  onReplacementFileSelect: (file: File) => void;
   onBack: () => void;
   onContinue: () => void;
 }
@@ -75,11 +77,15 @@ export function StepUserData({
   progressMessage,
   error,
   onChange,
+  onRemoveFile,
+  onReplacementFileSelect,
   onBack,
   onContinue,
 }: StepUserDataProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [colorCustom, setColorCustom] = useState("");
+  const replacementInputRef = useRef<HTMLInputElement>(null);
   const thumbnailSrc = thumbnailUrl || modeloPreview;
 
   const inputClass =
@@ -110,6 +116,11 @@ export function StepUserData({
     onChange("colorAcabado", val);
   };
 
+  const handleReplacementFile = (file: File | undefined) => {
+    if (!file || isLoading) return;
+    onReplacementFileSelect(file);
+  };
+
   return (
     <div>
       {/* Preview archivo */}
@@ -118,8 +129,16 @@ export function StepUserData({
           <div className="flex items-center gap-2 px-4 pt-3 pb-2">
             <Eye size={14} className="text-primary" />
             <p className="text-sm font-medium text-foreground">Vista previa del modelo</p>
-            <CheckCircle2 size={14} className="ml-auto text-accent" />
-            <span className="text-xs font-medium text-accent">Cargado</span>
+            <button
+              type="button"
+              onClick={onRemoveFile}
+              disabled={isLoading}
+              className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-45"
+              aria-label="Eliminar STL cargado"
+              title="Eliminar STL"
+            >
+              <Trash2 size={16} />
+            </button>
           </div>
           <div className="px-4 pb-4">
             <div className="flex justify-center">
@@ -133,9 +152,56 @@ export function StepUserData({
             </div>
             <div className="mt-2 flex items-center justify-between gap-3">
               <p className="text-xs text-muted-foreground">{fileName}</p>
-              <p className="text-xs text-muted-foreground">Cargado correctamente</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {!fileName && (
+        <div
+          className={`mb-5 rounded-2xl border-2 border-dashed px-4 py-5 transition-colors ${
+            isLoading
+              ? "cursor-wait opacity-80"
+              : isDraggingFile
+                ? "cursor-pointer border-primary bg-primary/5"
+                : "cursor-pointer border-border bg-muted/20 hover:border-primary/50"
+          }`}
+          onClick={() => {
+            if (!isLoading) replacementInputRef.current?.click();
+          }}
+          onDragOver={(event) => {
+            event.preventDefault();
+            setIsDraggingFile(true);
+          }}
+          onDragLeave={() => setIsDraggingFile(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setIsDraggingFile(false);
+            handleReplacementFile(event.dataTransfer.files[0]);
+          }}
+        >
+          <div className="flex flex-col items-center gap-2 text-center">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Upload size={22} />
+            </span>
+            <p className="text-[15px] font-semibold text-foreground">
+              Carga un nuevo STL
+            </p>
+            <p className="max-w-md text-[13px] leading-relaxed text-muted-foreground">
+              Tus datos se mantienen. Solo se reemplaza el archivo para recalcular la cotizacion.
+            </p>
+          </div>
+          <input
+            ref={replacementInputRef}
+            type="file"
+            accept=".stl"
+            disabled={isLoading}
+            className="hidden"
+            onChange={(event) => {
+              handleReplacementFile(event.currentTarget.files?.[0]);
+              event.currentTarget.value = "";
+            }}
+          />
         </div>
       )}
 

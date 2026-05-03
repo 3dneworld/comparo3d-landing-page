@@ -90,6 +90,25 @@ export function useQuoteFlow({
     setState((s) => ({ ...s, error: null }));
   };
 
+  const resetUploadState = () => {
+    if (pollRef.current) clearTimeout(pollRef.current);
+    if (!isMountedRef.current) return;
+    setState((s) => ({
+      ...s,
+      isLoading: false,
+      isProcessing: false,
+      progressMessage: "",
+      error: null,
+      quotes: [],
+      orderId: null,
+      stlFile: null,
+      thumbnailUrl: null,
+      material: null,
+      cantidad: null,
+      stlDimensions: null,
+    }));
+  };
+
   const setStlFile = (file: File | null) => {
     setState((s) => ({ ...s, stlFile: file, error: null }));
   };
@@ -352,6 +371,7 @@ export function useQuoteFlow({
     setStlFile,
     setError,
     clearError,
+    resetUploadState,
     handleUploadStl,
     handleInitDraft,
     startPollingOptions,

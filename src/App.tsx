@@ -16,6 +16,7 @@ import { ProviderShipmentsView } from "@/features/provider-dashboard/views/Provi
 import { ProviderSummaryView } from "@/features/provider-dashboard/views/ProviderSummaryView";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import ClientReviewPage from "./pages/ClientReviewPage.tsx";
 import ProviderDashboardV2 from "./pages/ProviderDashboardV2.tsx";
 import ProveedoresLogin from "./pages/ProveedoresLogin.tsx";
 import ProveedoresOnboardingLogin from "./pages/ProveedoresOnboardingLogin.tsx";
@@ -50,6 +51,7 @@ const App = () => (
           <Route path="/proveedores" element={<ProviderListing />} />
           <Route path="/proveedores/login" element={<ProveedoresLogin />} />
           <Route path="/proveedores/onboarding/login" element={<ProveedoresOnboardingLogin />} />
+          <Route path="/client-review/:token" element={<ClientReviewPage />} />
           <Route path={DASHBOARD_BASE_PATH} element={<ProviderDashboardV2 />}>
             <Route path="resumen" element={<ProviderSummaryView />} />
             <Route path="perfil" element={<ProviderProfileView />} />

@@ -1,11 +1,13 @@
-import { ShieldCheck, Clock, Lock, Truck, BarChart3, Layers, Users } from "lucide-react";
+import { ShieldCheck, Clock, Lock, Truck, Layers, Users } from "lucide-react";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import type { LucideIcon } from "lucide-react";
 import AnimateOnScroll from "@/components/AnimateOnScroll";
 import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
+import ComparisonIcon from "./ComparisonIcon";
 
 interface TrustCard {
-  icon: LucideIcon;
+  icon?: LucideIcon;
+  customIcon?: "comparison";
   label: string;
   desc: string;
 }
@@ -24,7 +26,7 @@ const headerContent: Record<Audience, { headline: string; support: string }> = {
 const cards: Record<Audience, TrustCard[]> = {
   particular: [
     {
-      icon: BarChart3,
+      customIcon: "comparison",
       label: "Comparación clara",
       desc: "Compará opciones reales según precio, plazo y condiciones sin salir a buscar proveedor por proveedor.",
     },
@@ -87,16 +89,20 @@ const TrustStrip = () => {
           </div>
         </AnimateOnScroll>
 
-        <StaggerChildren className="mx-auto grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
+        <StaggerChildren className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
           {items.map((item) => (
             <StaggerItem key={item.label}>
               <article className="flex h-full flex-col items-center rounded-2xl border border-border bg-card p-5 text-center transition-all duration-200 hover:border-primary/20 hover:shadow-md md:p-6">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/[0.12]">
-                  <item.icon
-                    size={24}
-                    strokeWidth={2}
-                    className="text-primary"
-                  />
+                  {item.customIcon === "comparison" ? (
+                    <ComparisonIcon label="Icono Comparacion clara" className="h-9 w-9 bg-primary" />
+                  ) : item.icon ? (
+                    <item.icon
+                      size={24}
+                      strokeWidth={2}
+                      className="text-primary"
+                    />
+                  ) : null}
                 </div>
 
                 <h3 className="mt-3 text-[16px] font-semibold leading-[1.2] text-foreground md:text-[17px]">

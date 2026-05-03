@@ -8,7 +8,6 @@ import {
   Minus,
   Plus,
   Ruler,
-  ShieldCheck,
   Star,
   Truck,
 } from "lucide-react";
@@ -333,9 +332,7 @@ export function StepQuotes({
   const [draftQuantity, setDraftQuantity] = useState(clampQuantity(cantidad ?? 1));
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
-  const [showRankingExplainer, setShowRankingExplainer] = useState(false);
   const [mediationAccordionValue, setMediationAccordionValue] = useState<string | undefined>();
-  const quotesListRef = useRef<HTMLDivElement | null>(null);
   const mediationRef = useRef<HTMLElement | null>(null);
   const [addressForm, setAddressForm] = useState<NearbyAddressForm>(() => {
     try {
@@ -416,41 +413,6 @@ export function StepQuotes({
 
     return next;
   }, [quotesWithDistance, filterCertified, filterNearby, sortMode, userLocation]);
-
-  useEffect(() => {
-    const node = quotesListRef.current;
-    if (!node || visibleQuotes.length === 0 || isProcessing) {
-      setShowRankingExplainer(false);
-      return;
-    }
-
-    const updateVisibility = () => {
-      const rect = node.getBoundingClientRect();
-      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-      setShowRankingExplainer(rect.bottom > 0 && rect.top < viewportHeight);
-    };
-
-    updateVisibility();
-
-    if (!("IntersectionObserver" in window)) {
-      window.addEventListener("scroll", updateVisibility, { passive: true });
-      window.addEventListener("resize", updateVisibility);
-      return () => {
-        window.removeEventListener("scroll", updateVisibility);
-        window.removeEventListener("resize", updateVisibility);
-      };
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setShowRankingExplainer(entry.isIntersecting);
-      },
-      { threshold: 0 }
-    );
-    observer.observe(node);
-
-    return () => observer.disconnect();
-  }, [visibleQuotes.length, isProcessing]);
 
   const openMediationPolicy = () => {
     setMediationAccordionValue("politica");
@@ -580,7 +542,19 @@ export function StepQuotes({
   };
 
   return (
-    <div>
+    <div className="relative">
+      {visibleQuotes.length > 0 && !isProcessing && (
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-20 hidden w-[210px] -translate-x-[calc(100%+1.25rem)] min-[1320px]:block">
+          <div className="sticky top-24 pointer-events-auto pt-1">
+            <RankingExplainer
+              variant="bounded"
+              mediationLinkTarget="#politica-mediacion"
+              onMediationClick={openMediationPolicy}
+            />
+          </div>
+        </div>
+      )}
+
       {thumbnailUrl && (
         <div className="mb-6 flex justify-center">
           <div className="inline-flex max-w-full overflow-hidden rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
@@ -843,7 +817,7 @@ export function StepQuotes({
           )}
 
           {!isProcessing && visibleQuotes.length > 0 && (
-            <div ref={quotesListRef} className="mt-6 space-y-3">
+            <div className="mt-6 space-y-3">
               {visibleQuotes.map((quote) => (
                 <ProviderCard
                   key={quote.quote_option_uid}
@@ -925,12 +899,6 @@ export function StepQuotes({
         </>
       )}
 
-      {visibleQuotes.length > 0 && showRankingExplainer && (
-        <RankingExplainer
-          mediationLinkTarget="#politica-mediacion"
-          onMediationClick={openMediationPolicy}
-        />
-      )}
     </div>
   );
 }

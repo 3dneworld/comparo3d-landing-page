@@ -7,7 +7,7 @@ import ProvidersSection from "@/components/landing/ProvidersSection";
 import HowItWorks from "@/components/landing/HowItWorks";
 import QuoteSection, { CatalogInjection } from "@/components/landing/QuoteSection";
 import CompaniesSection from "@/components/landing/CompaniesSection";
-import NoSTLSection from "@/components/landing/NoSTLSection";
+import NoStlTransformSection from "@/components/landing/NoStlTransformSection";
 import ProjectsGallery from "@/components/landing/ProjectsGallery";
 import MaterialsSection from "@/components/landing/MaterialsSection";
 import FAQ from "@/components/landing/FAQ";
@@ -17,6 +17,9 @@ import FloatingCTA from "@/components/FloatingCTA";
 import BackToTop from "@/components/BackToTop";
 import ChatBubble from "@/components/ChatBubble";
 import { quickQuoteFromCatalog, isApiError } from "@/lib/api";
+
+const NO_STL_WHATSAPP_URL =
+  "https://wa.me/5491167987401?text=Hola!%20Quiero%20consultar%20por%20modelado%203D%20sin%20archivo%20STL.";
 
 const LandingContent = () => {
   const { audience } = useAudience();
@@ -61,10 +64,7 @@ const LandingContent = () => {
         <HowItWorks />
         <QuoteSection catalogInjection={catalogInjection} />
         {audience === "empresa" && <CompaniesSection />}
-        <NoSTLSection
-          onCatalogItemSelect={handleCatalogItemSelect}
-          isLoadingCatalogItem={isLoadingCatalogItem}
-        />
+        <NoStlTransformSection whatsappHref={NO_STL_WHATSAPP_URL} />
         <ProjectsGallery />
         <MaterialsSection />
         <FAQ />

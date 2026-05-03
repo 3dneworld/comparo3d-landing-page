@@ -15,13 +15,19 @@ import {
 interface RankingExplainerProps {
   mediationLinkTarget?: string;
   onMediationClick?: () => void;
+  variant?: "fixed" | "bounded";
 }
 
 export function RankingExplainer({
   mediationLinkTarget = "#politica-mediacion",
   onMediationClick,
+  variant = "fixed",
 }: RankingExplainerProps) {
   const [open, setOpen] = useState(false);
+  const triggerClassName =
+    variant === "bounded"
+      ? "inline-flex max-w-[210px] items-center gap-2 rounded-full border border-primary/20 bg-card px-3 py-2 text-left text-[12px] font-semibold leading-tight text-primary shadow-card-hover transition-transform hover:scale-105"
+      : "fixed bottom-5 left-4 z-40 inline-flex max-w-[210px] items-center gap-2 rounded-full border border-primary/20 bg-card px-3 py-2 text-left text-[12px] font-semibold leading-tight text-primary shadow-card-hover transition-transform hover:scale-105 lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2";
 
   const handleMediationClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (onMediationClick) {
@@ -37,7 +43,7 @@ export function RankingExplainer({
         <button
           type="button"
           aria-label="Abrir explicación del ranking"
-          className="fixed bottom-5 left-4 z-40 inline-flex max-w-[210px] items-center gap-2 rounded-full border border-primary/20 bg-card px-3 py-2 text-left text-[12px] font-semibold leading-tight text-primary shadow-card-hover transition-transform hover:scale-105 lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2"
+          className={triggerClassName}
         >
           <BadgeCheck size={16} className="shrink-0 text-emerald-500" />
           <span>¿Cómo funciona el ranking?</span>

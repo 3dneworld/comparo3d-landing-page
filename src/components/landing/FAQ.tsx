@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { Plus, Minus } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import AnimateOnScroll from "@/components/AnimateOnScroll";
 import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
@@ -26,12 +27,32 @@ const sectionCopy: Record<Audience, { eyebrow: string; title: string; support: s
   },
 };
 
+const noStlFaqs: FAQItem[] = [
+  {
+    q: "¿Qué hago si no tengo un archivo STL?",
+    a: "Podés enviarnos fotos, bocetos, referencias o planos simples. Revisamos si la información alcanza para preparar un archivo compatible con el flujo de cotización y te orientamos sobre viabilidad, tiempos y presupuesto.",
+  },
+  {
+    q: "¿Puedo cotizar desde una foto, boceto o plano simple?",
+    a: "Sí, pero primero hay una etapa de revisión. Cuando la referencia tiene suficiente detalle, se puede preparar un archivo para que después cotices con proveedores dentro de la plataforma.",
+  },
+  {
+    q: "¿El archivo resultante sirve para cotizar en la plataforma?",
+    a: "La idea es dejarlo listo para el proceso de cotización. Si falta alguna medida, escala o detalle técnico, te avisamos antes para evitar una cotización poco precisa.",
+  },
+  {
+    q: "¿Qué información conviene enviar si no tengo STL?",
+    a: "Lo ideal es sumar fotos desde varios ángulos, medidas principales, uso de la pieza, material deseado si lo conocés y cualquier plano, referencia o boceto que ayude a entender la forma.",
+  },
+];
+
 const faqsByAudience: Record<Audience, FAQItem[]> = {
   particular: [
     {
       q: "¿Qué formato de archivo aceptan?",
       a: "Hoy la cotización automática trabaja con archivos STL. Si tu modelo está en otro formato, primero habría que convertirlo antes de cotizar.",
     },
+    ...noStlFaqs,
     {
       q: "¿Cuánto tarda una cotización para particulares?",
       a: "La experiencia para particulares está pensada para resolverse en minutos. Subís tu archivo, completás los datos y recibís opciones comparables sin tener que buscar proveedor por proveedor.",
@@ -69,6 +90,14 @@ const faqsByAudience: Record<Audience, FAQItem[]> = {
     {
       q: "¿Cómo funciona la propuesta para empresas?",
       a: "COMPARO3D recibe el requerimiento, coordina una red evaluada de proveedores y devuelve una propuesta consolidada para simplificar compras, seguimiento y ejecución.",
+    },
+    {
+      q: "¿Pueden trabajar si todavía no tenemos STL definitivo?",
+      a: "Sí. Podemos revisar fotos, bocetos, planos simples o documentación técnica disponible para definir si alcanza para preparar un archivo cotizable o si conviene avanzar con diseño técnico previo.",
+    },
+    {
+      q: "¿Qué nivel de detalle necesita una referencia sin STL?",
+      a: "Depende del uso. Para piezas visuales o de baja exigencia puede alcanzar una referencia clara con medidas generales. Para piezas funcionales conviene sumar cotas, tolerancias esperadas, condiciones de uso y material objetivo.",
     },
     {
       q: "¿Cuánto tarda una propuesta para empresas?",
@@ -132,49 +161,49 @@ const FAQ = () => {
 
             return (
               <StaggerItem key={faq.q}>
-              <div key={faq.q}>
-                <button
-                  type="button"
-                  aria-expanded={isOpen}
-                  onClick={() => setOpenIndex(isOpen ? null : index)}
-                  className="flex w-full items-center gap-4 py-5 text-left md:py-6"
-                >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[12px] font-bold text-primary-foreground">
-                    {index + 1}
-                  </span>
+                <div>
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    onClick={() => setOpenIndex(isOpen ? null : index)}
+                    className="flex w-full items-center gap-4 py-5 text-left md:py-6"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[12px] font-bold text-primary-foreground">
+                      {index + 1}
+                    </span>
 
-                  <span className="flex-1 text-[15px] font-medium leading-[1.45] text-foreground md:text-[16px]">
-                    {faq.q}
-                  </span>
+                    <span className="flex-1 text-[15px] font-medium leading-[1.45] text-foreground md:text-[16px]">
+                      {faq.q}
+                    </span>
 
-                  <span className="shrink-0 text-muted-foreground transition-transform duration-200">
-                    {isOpen ? <Minus size={18} /> : <Plus size={18} />}
-                  </span>
-                </button>
+                    <span className="shrink-0 text-muted-foreground transition-transform duration-200">
+                      {isOpen ? <Minus size={18} /> : <Plus size={18} />}
+                    </span>
+                  </button>
 
-                <AnimatePresence initial={false}>
-                  {isOpen && (
-                    <motion.div
-                      key="content"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <div className="pb-5 pl-11 pr-10 md:pb-6">
-                        {faq.a === "__SPECIAL_WAITLIST__" ? (
-                          <WaitlistFAQAnswer />
-                        ) : (
-                          <p className="text-[14px] leading-[1.75] text-muted-foreground md:text-[15px]">
-                            {faq.a}
-                          </p>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        key="content"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pb-5 pl-11 pr-10 md:pb-6">
+                          {faq.a === "__SPECIAL_WAITLIST__" ? (
+                            <WaitlistFAQAnswer />
+                          ) : (
+                            <p className="text-[14px] leading-[1.75] text-muted-foreground md:text-[15px]">
+                              {faq.a}
+                            </p>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </StaggerItem>
             );
           })}

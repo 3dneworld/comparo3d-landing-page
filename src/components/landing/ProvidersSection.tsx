@@ -1,13 +1,14 @@
 import { type CSSProperties } from "react";
+import { Link } from "react-router-dom";
 
 import AnimateOnScroll from "@/components/AnimateOnScroll";
 
 const providers = [
-  { name: "Printalot", logo: "/logos/PAL.png" },
-  { name: "Piscobot", logo: "/logos/Piscobot.png" },
-  { name: "NOSTER", logo: "/logos/Nost3rd.jpg" },
-  { name: "JOACO3D", logo: "/logos/JOACO3D.png" },
-  { name: "MEGA3D", logo: "/logos/Mega3D.jpeg" },
+  { name: "JOACO3D", logo: "/logos/JOACO3D.png", href: "/proveedores/9001-joaco3d" },
+  { name: "NOST3R", logo: "/logos/Nost3rd.jpg", href: "/proveedores/9002-nost3r" },
+  { name: "PRINTALOT", logo: "/logos/PAL.png", href: "/proveedores/9003-printalot" },
+  { name: "M3GA3D", logo: "/logos/Mega3D.jpeg", href: "/proveedores/9004-m3ga3d" },
+  { name: "PISCOBOT", logo: "/logos/Piscobot.png", href: "/proveedores/9005-piscobot" },
 ];
 
 const ProvidersSection = () => {
@@ -30,9 +31,11 @@ const ProvidersSection = () => {
           <div className="provider-marquee-mobile scrollbar-hide">
             <div className="provider-marquee-mobile-track">
               {providers.map((provider) => (
-                <div
+                <Link
+                  to={provider.href}
                   key={provider.name}
-                  className="provider-marquee-item"
+                  className="provider-marquee-item text-current no-underline"
+                  aria-label={`Ver pagina de ${provider.name}`}
                 >
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-card p-2.5 shadow-sm md:h-20 md:w-20 md:p-3">
                     <img
@@ -45,7 +48,7 @@ const ProvidersSection = () => {
                   <span className="whitespace-nowrap text-center text-xs font-semibold text-foreground md:text-sm">
                     {provider.name}
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
@@ -61,9 +64,12 @@ const ProvidersSection = () => {
                 aria-hidden={laneIndex === 1}
               >
                 {providers.map((provider) => (
-                  <div
+                  <Link
+                    to={provider.href}
                     key={`${provider.name}-${laneIndex}`}
-                    className="provider-marquee-item"
+                    className="provider-marquee-item text-current no-underline"
+                    aria-label={`Ver pagina de ${provider.name}`}
+                    tabIndex={laneIndex === 1 ? -1 : undefined}
                   >
                     <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-card p-2.5 shadow-sm md:h-20 md:w-20 md:p-3">
                       <img
@@ -76,7 +82,7 @@ const ProvidersSection = () => {
                     <span className="whitespace-nowrap text-center text-xs font-semibold text-foreground md:text-sm">
                       {provider.name}
                     </span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ))}
