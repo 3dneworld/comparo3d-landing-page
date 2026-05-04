@@ -2,6 +2,8 @@
  * api.ts — Helpers para llamadas al backend Comparo3D (FASE 9)
  */
 
+import { reportClientError } from "./clientErrorReporter";
+
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "https://api.3dneworld.com";
 
@@ -160,13 +162,76 @@ export async function uploadStl(file: File, sessionId?: string): Promise<UploadR
   formData.append("stl_file", file);
   if (sessionId) formData.append("session_id", sessionId);
 
-  const res = await fetch(`${API_BASE_URL}/api/upload-and-orient`, {
-    method: "POST",
-    body: formData,
-  });
+  const controller = new AbortController();
+  const startedAt = Date.now();
+  let slowReported = false;
+  const slowTimer = window.setTimeout(() => {
+    slowReported = true;
+    void reportClientError({
+      event_type: "upload_slow",
+      message: "El upload STL sigue pendiente despues de 45 segundos",
+      context: {
+        flow: "quote_upload",
+        filename: file.name,
+        file_size: file.size,
+        session_id: sessionId || "",
+      },
+    });
+  }, 45_000);
+  const timeoutTimer = window.setTimeout(() => controller.abort(), 180_000);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/api/upload-and-orient`, {
+      method: "POST",
+      body: formData,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    window.clearTimeout(slowTimer);
+    window.clearTimeout(timeoutTimer);
+    const isAbort = error instanceof DOMException && error.name === "AbortError";
+    const message = error instanceof Error ? error.message : "No se pudo conectar con el servidor";
+    void reportClientError({
+      event_type: isAbort ? "upload_timeout" : "upload_fetch_error",
+      message: isAbort ? "Upload STL supero el timeout del navegador" : message,
+      error_type: error instanceof Error ? error.name : "FetchError",
+      context: {
+        flow: "quote_upload",
+        filename: file.name,
+        file_size: file.size,
+        session_id: sessionId || "",
+        elapsed_ms: Date.now() - startedAt,
+        slow_reported: slowReported,
+      },
+    });
+    return {
+      success: false,
+      error: isAbort
+        ? "El servidor tardo demasiado en procesar el STL. Ya avisamos al equipo para revisarlo."
+        : "No se pudo conectar con el servidor. Ya avisamos al equipo para revisarlo.",
+    };
+  } finally {
+    window.clearTimeout(slowTimer);
+    window.clearTimeout(timeoutTimer);
+  }
 
   const data = await res.json();
   if (!res.ok || !data.success) {
+    if (res.status >= 500 || res.status === 0) {
+      void reportClientError({
+        event_type: "upload_failed_response",
+        message: data.error || `Upload STL fallo con HTTP ${res.status}`,
+        status: res.status,
+        context: {
+          flow: "quote_upload",
+          filename: file.name,
+          file_size: file.size,
+          session_id: sessionId || "",
+          elapsed_ms: Date.now() - startedAt,
+        },
+      });
+    }
     return { success: false, error: data.error || "Error al procesar el archivo" };
   }
   return data as UploadResponse;

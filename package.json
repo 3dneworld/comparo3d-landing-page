@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:upload-freeze": "vitest run src/components/landing/QuoteSection.restore.test.tsx src/components/landing/quote/StepUpload.test.tsx src/components/landing/quote/StepUserData.test.tsx",
+    "test:upload-freeze": "vitest run src/components/landing/QuoteSection.restore.test.tsx src/components/landing/quote/StepUpload.test.tsx src/components/landing/quote/StepUserData.test.tsx src/lib/clientErrorReporter.test.ts src/lib/api.upload-alerts.test.ts",
     "freeze:upload": "npm run test:upload-freeze && npm run build",
     "test:watch": "vitest"
   },
