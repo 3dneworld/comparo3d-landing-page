@@ -96,6 +96,54 @@ describe("QuoteSection saved upload restore", () => {
     expect(localStorage.getItem("comparo3d_quote")).not.toContain("data:image/png;base64");
   });
 
+  it("replaces a preview thumbnail with the full thumbnail when backend finishes it", async () => {
+    apiMocks.uploadStl.mockResolvedValue({
+      success: true,
+      temp_name: "octopus_1777727450",
+      session_id: "octopus_1777727450",
+      stl_sha256: "abc123",
+      stl_dimensions: { x: 1, y: 1, z: 1 },
+      dimensions: { x: 1, y: 1, z: 1 },
+      thumbnail_base64: "data:image/png;base64,preview",
+      thumbnail_quality: "preview",
+      manifold_status: "ok",
+      slicing: {
+        slicing_available: false,
+        print_time_minutes: 0,
+        filament_grams: 0,
+      },
+    });
+    apiMocks.getThumbnail.mockResolvedValue({
+      success: true,
+      thumbnail_base64: "data:image/png;base64,full",
+      thumbnail_quality: "full",
+      source: "cache",
+    });
+
+    render(
+      <AudienceProvider>
+        <QuoteSection />
+      </AudienceProvider>
+    );
+
+    const file = new File(["solid test\nendsolid test\n"], "octopus.stl", { type: "model/stl" });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(await screen.findByText("Tus datos")).toBeInTheDocument();
+
+    await waitFor(
+      () => {
+        expect(apiMocks.getThumbnail).toHaveBeenCalledWith("octopus_1777727450");
+        expect(screen.getByAltText("Vista previa del modelo 3D")).toHaveAttribute(
+          "src",
+          "data:image/png;base64,full"
+        );
+      },
+      { timeout: 2500 }
+    );
+  });
+
   it("clears a restored upload when the user removes the file", async () => {
     localStorage.setItem(
       "comparo3d_quote",

@@ -99,6 +99,7 @@ export function TrimmedThumbnail({ src, alt, className }: TrimmedThumbnailProps)
 
   useEffect(() => {
     let cancelled = false;
+    setDisplaySrc(src);
 
     cropWhitespace(src).then((nextSrc) => {
       if (!cancelled) {

@@ -53,6 +53,7 @@ export interface UploadResponse {
   stl_dimensions: { x: number; y: number; z: number } | null;
   dimensions: { x: number; y: number; z: number } | null;
   thumbnail_base64: string | null;
+  thumbnail_quality?: "preview" | "full";
   manifold_status: "ok" | "repaired" | "failed";
   slicing: {
     slicing_available: boolean;
@@ -354,6 +355,7 @@ export async function acceptQuote(
 export interface ThumbnailResponse {
   success: true;
   thumbnail_base64: string;
+  thumbnail_quality?: "preview" | "full";
   source: "cache" | "regenerated";
   stl_source?: string;
 }

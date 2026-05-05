@@ -36,6 +36,8 @@ export interface QuoteFlowState {
   stlFile: File | null;
   /** Thumbnail base64 del STL subido (data:image/png;base64,...) */
   thumbnailUrl: string | null;
+  /** Calidad del thumbnail visible: preview rapido o full final. */
+  thumbnailQuality: "preview" | "full" | null;
   /** Metadata devuelta por /options */
   material: string | null;
   cantidad: number | null;
@@ -45,7 +47,13 @@ export interface QuoteFlowState {
 interface UseQuoteFlowOptions {
   sessionId: string;
   tempName: string;
-  onSessionIdReady: (sessionId: string, tempName: string, sha256: string, thumbnailUrl: string | null) => void;
+  onSessionIdReady: (
+    sessionId: string,
+    tempName: string,
+    sha256: string,
+    thumbnailUrl: string | null,
+    thumbnailQuality: "preview" | "full" | null
+  ) => void;
   onQuotesReady: (quotes: QuoteOption[]) => void;
 }
 
@@ -64,6 +72,7 @@ export function useQuoteFlow({
     orderId: null,
     stlFile: null,
     thumbnailUrl: null,
+    thumbnailQuality: null,
     material: null,
     cantidad: null,
     stlDimensions: null,
@@ -128,6 +137,7 @@ export function useQuoteFlow({
       orderId: null,
       stlFile: null,
       thumbnailUrl: null,
+      thumbnailQuality: null,
       material: null,
       cantidad: null,
       stlDimensions: null,
@@ -159,7 +169,13 @@ export function useQuoteFlow({
         return false;
       }
 
-      onSessionIdReady(result.session_id, result.temp_name, result.stl_sha256 || "", result.thumbnail_base64 || null);
+      onSessionIdReady(
+        result.session_id,
+        result.temp_name,
+        result.stl_sha256 || "",
+        result.thumbnail_base64 || null,
+        result.thumbnail_quality || (result.thumbnail_base64 ? "full" : null)
+      );
 
       setState((s) => ({
         ...s,
@@ -167,6 +183,7 @@ export function useQuoteFlow({
         progressMessage: "",
         stlFile: file,
         thumbnailUrl: result.thumbnail_base64 || null,
+        thumbnailQuality: result.thumbnail_quality || (result.thumbnail_base64 ? "full" : null),
       }));
 
       return true;

@@ -38,6 +38,7 @@ interface QuoteData {
   alturaCapa: string;
   observaciones: string;
   thumbnailUrl: string;
+  thumbnailQuality: "preview" | "full" | "";
   step: number;
   sessionId: string;
   tempName: string;
@@ -51,7 +52,7 @@ const defaultData: QuoteData = {
   nombre: "", email: "", telefono: "", ubicacion: "",
   material: "PLA", cantidad: "1", detalles: "", fileName: "",
   colorAcabado: "", infill: "20%", alturaCapa: "0.2mm",
-  observaciones: "", thumbnailUrl: "", step: 1, sessionId: "", tempName: "",
+  observaciones: "", thumbnailUrl: "", thumbnailQuality: "", step: 1, sessionId: "", tempName: "",
   stlSha256: "", selectedQuote: null, orderId: "", updatedAt: "",
 };
 
@@ -222,8 +223,20 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
 
   // --- Callbacks para el hook ---
   const handleSessionIdReady = useCallback(
-    (sessionId: string, tempName: string, stlSha256: string, thumbnailUrl: string | null) => {
-      setData({ sessionId, tempName, stlSha256, thumbnailUrl: thumbnailUrl || "" });
+    (
+      sessionId: string,
+      tempName: string,
+      stlSha256: string,
+      thumbnailUrl: string | null,
+      thumbnailQuality: "preview" | "full" | null
+    ) => {
+      setData({
+        sessionId,
+        tempName,
+        stlSha256,
+        thumbnailUrl: thumbnailUrl || "",
+        thumbnailQuality: thumbnailQuality || "",
+      });
     },
     []
   );
@@ -249,6 +262,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
       ...prev,
       fileName: "",
       thumbnailUrl: "",
+      thumbnailQuality: "",
       sessionId: "",
       tempName: "",
       stlSha256: "",
@@ -309,7 +323,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
       getThumbnail(data.sessionId).then((result) => {
         if (!isApiError(result) && result.thumbnail_base64) {
           console.log("[THUMB] Thumbnail recibido del backend — source:", result.source, "len:", result.thumbnail_base64.length);
-          setData({ thumbnailUrl: result.thumbnail_base64 });
+          setData({ thumbnailUrl: result.thumbnail_base64, thumbnailQuality: result.thumbnail_quality || "full" });
           if (isRestoredSession) setIsCheckingSavedSession(false);
         } else {
           console.warn("[THUMB] Thumbnail no disponible en backend:", isApiError(result) ? (result as { error: string }).error : "sin thumbnail_base64");
@@ -336,6 +350,37 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.step, data.sessionId, hasSaved]);
+
+  useEffect(() => {
+    if (data.step < 2 || !data.sessionId || data.thumbnailQuality !== "preview") return;
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let attempts = 0;
+
+    const pollFullThumbnail = async () => {
+      attempts += 1;
+      const result = await getThumbnail(data.sessionId);
+      if (cancelled) return;
+
+      if (!isApiError(result) && result.thumbnail_base64 && result.thumbnail_quality === "full") {
+        setData({ thumbnailUrl: result.thumbnail_base64, thumbnailQuality: "full" });
+        return;
+      }
+
+      if (attempts < 30) {
+        timer = setTimeout(pollFullThumbnail, 3000);
+      }
+    };
+
+    timer = setTimeout(pollFullThumbnail, 1000);
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.step, data.sessionId, data.thumbnailQuality]);
 
   // ── Auto-iniciar polling cuando se llega al step 3 (incluso restaurando desde localStorage) ──
   useEffect(() => {
@@ -375,6 +420,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
       tempName: catalogInjection.tempName,
       stlSha256: catalogInjection.stlSha256,
       thumbnailUrl: catalogInjection.thumbnailUrl,
+      thumbnailQuality: "full",
       fileName: catalogInjection.fileName,
       material: catalogInjection.material,
       step: 2,
@@ -742,7 +788,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
                 observaciones: data.observaciones,
               }}
               fileName={data.fileName}
-              thumbnailUrl={flow.thumbnailUrl || data.thumbnailUrl || null}
+              thumbnailUrl={data.thumbnailUrl || flow.thumbnailUrl || null}
               isEmpresa={isEmpresa}
               isLoading={flow.isLoading}
               progressMessage={flow.progressMessage}
@@ -763,7 +809,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
               error={flow.error}
               quotes={flow.quotes}
               sessionId={data.sessionId}
-              thumbnailUrl={flow.thumbnailUrl || data.thumbnailUrl || null}
+              thumbnailUrl={data.thumbnailUrl || flow.thumbnailUrl || null}
               material={flow.material || data.material || null}
               cantidad={flow.cantidad ?? (data.cantidad ? Number(data.cantidad) : null)}
               stlDimensions={flow.stlDimensions}
@@ -811,7 +857,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
               isEmpresa={isEmpresa}
               isAccepting={flow.isLoading}
               cantidad={flow.cantidad ?? (data.cantidad ? Number(data.cantidad) : 1)}
-              thumbnailUrl={flow.thumbnailUrl || data.thumbnailUrl || null}
+              thumbnailUrl={data.thumbnailUrl || flow.thumbnailUrl || null}
               onBack={() => {
                 flow.clearError();
                 goToStep(3);
