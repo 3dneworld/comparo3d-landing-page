@@ -1,6 +1,5 @@
-import { useRef, useState } from "react";
-import { ChevronDown, ChevronRight, Eye, CheckCircle2, MapPin, Trash2, Upload } from "lucide-react";
-import modeloPreview from "@/assets/modelo-preview.png";
+import { useState } from "react";
+import { ChevronDown, ChevronRight, Eye, CheckCircle2, MapPin } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { TrimmedThumbnail } from "./TrimmedThumbnail";
 
@@ -85,8 +84,7 @@ export function StepUserData({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [colorCustom, setColorCustom] = useState("");
-  const replacementInputRef = useRef<HTMLInputElement>(null);
-  const thumbnailSrc = thumbnailUrl || modeloPreview;
+  const thumbnailSrc = thumbnailUrl || null;
 
   const inputClass =
     "w-full rounded-xl border border-input bg-background px-4 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring";
@@ -143,11 +141,17 @@ export function StepUserData({
           <div className="px-4 pb-4">
             <div className="flex justify-center">
               <div className="inline-flex max-w-full overflow-hidden rounded-lg border border-slate-200 bg-white p-3">
-                <TrimmedThumbnail
-                  src={thumbnailSrc}
-                  alt="Vista previa del modelo 3D"
-                  className="block max-h-[320px] w-auto max-w-full object-contain"
-                />
+                {thumbnailSrc ? (
+                  <TrimmedThumbnail
+                    src={thumbnailSrc}
+                    alt="Vista previa del modelo 3D"
+                    className="block max-h-[320px] w-auto max-w-full object-contain"
+                  />
+                ) : (
+                  <div className="flex h-[220px] w-[280px] max-w-full items-center justify-center rounded-md bg-slate-50 px-6 text-center text-sm text-muted-foreground">
+                    Generando vista previa real del STL...
+                  </div>
+                )}
               </div>
             </div>
             <div className="mt-2 flex items-center justify-between gap-3">
