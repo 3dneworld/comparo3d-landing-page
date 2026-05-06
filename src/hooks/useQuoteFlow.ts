@@ -18,6 +18,7 @@ import {
   updateQuantity,
   uploadStl,
 } from "@/lib/api";
+import { reportClientError } from "@/lib/clientErrorReporter";
 
 export interface QuoteFlowState {
   /** true durante upload o submit */
@@ -80,17 +81,50 @@ export function useQuoteFlow({
 
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
+  const processingStartedAtRef = useRef<number | null>(null);
+  const latestStateRef = useRef<QuoteFlowState | null>(null);
+  const abandonedReportKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    latestStateRef.current = state;
+  }, [state]);
 
   useEffect(() => {
     isMountedRef.current = true;
+    const reportAbandonedPoll = () => {
+      const latest = latestStateRef.current;
+      if (!latest?.isProcessing || !sessionId) return;
+      const reportKey = `${sessionId}:${processingStartedAtRef.current ?? ""}`;
+      if (abandonedReportKeyRef.current === reportKey) return;
+      abandonedReportKeyRef.current = reportKey;
+      void reportClientError({
+        event_type: "quote_poll_abandoned",
+        message: "Cliente abandono la pagina mientras esperaba cotizaciones",
+        severity: "warning",
+        context: {
+          flow: "quote_options",
+          session_id: sessionId,
+          temp_name: tempName,
+          material: latest.material,
+          cantidad: latest.cantidad,
+          quotes_count: latest.quotes.length,
+          elapsed_ms: processingStartedAtRef.current ? Date.now() - processingStartedAtRef.current : null,
+        },
+      });
+    };
+    window.addEventListener("pagehide", reportAbandonedPoll);
     return () => {
       isMountedRef.current = false;
+      reportAbandonedPoll();
+      window.removeEventListener("pagehide", reportAbandonedPoll);
       if (pollRef.current) clearTimeout(pollRef.current);
     };
-  }, []);
+  }, [sessionId, tempName]);
 
   const setError = (error: string) => {
     if (!isMountedRef.current) return;
+    processingStartedAtRef.current = null;
+    abandonedReportKeyRef.current = null;
     setState((s) => ({ ...s, isLoading: false, isProcessing: false, error }));
   };
 
@@ -261,6 +295,8 @@ export function useQuoteFlow({
       error: null,
       progressMessage: "Buscando cotizaciones disponibles...",
     }));
+    processingStartedAtRef.current = Date.now();
+    abandonedReportKeyRef.current = null;
 
     const poll = async (attempt = 1) => {
       if (!isMountedRef.current) {
@@ -307,6 +343,8 @@ export function useQuoteFlow({
       }
 
       if (result.success && result.quotes) {
+        processingStartedAtRef.current = null;
+        abandonedReportKeyRef.current = null;
         console.log(`[POLL] Completado — ${result.quotes.length} cotizaciones recibidas`);
         setState((s) => ({
           ...s,
@@ -324,6 +362,8 @@ export function useQuoteFlow({
       // Caso inesperado: success pero sin quotes, o slicing_status=error
       console.warn("[POLL] Estado inesperado en respuesta:", result);
       const errMsg = (result as { message?: string }).message || "Estado inesperado";
+      processingStartedAtRef.current = null;
+      abandonedReportKeyRef.current = null;
       setError(errMsg);
     };
 
@@ -346,6 +386,8 @@ export function useQuoteFlow({
         quotes: [],
         progressMessage: "Recalculando cotizaciones...",
       }));
+      processingStartedAtRef.current = Date.now();
+      abandonedReportKeyRef.current = null;
 
       const result = await updateQuantity(sessionId, newCantidad);
 
