@@ -29,6 +29,7 @@ describe("StepUserData", () => {
         progressMessage=""
         error={null}
         onChange={vi.fn()}
+        onRemoveFile={vi.fn()}
         onBack={vi.fn()}
         onContinue={vi.fn()}
       />

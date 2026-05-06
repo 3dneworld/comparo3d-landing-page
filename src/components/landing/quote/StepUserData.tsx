@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Eye, CheckCircle2, MapPin } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye, CheckCircle2, MapPin, Trash2 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { TrimmedThumbnail } from "./TrimmedThumbnail";
 
@@ -62,7 +62,7 @@ interface StepUserDataProps {
   error: string | null;
   onChange: (field: keyof FormState, value: string) => void;
   onRemoveFile: () => void;
-  onReplacementFileSelect: (file: File) => void;
+  onReplacementFileSelect?: (file: File) => void;
   onBack: () => void;
   onContinue: () => void;
 }
@@ -77,7 +77,6 @@ export function StepUserData({
   error,
   onChange,
   onRemoveFile,
-  onReplacementFileSelect,
   onBack,
   onContinue,
 }: StepUserDataProps) {
@@ -127,15 +126,16 @@ export function StepUserData({
           <div className="flex items-center gap-2 px-4 pt-3 pb-2">
             <Eye size={14} className="text-primary" />
             <p className="text-sm font-medium text-foreground">Vista previa del modelo</p>
+            <CheckCircle2 size={14} className="ml-auto text-accent" />
             <button
               type="button"
               onClick={onRemoveFile}
-              disabled={isLoading}
-              className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-45"
-              aria-label="Eliminar STL cargado"
-              title="Eliminar STL"
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-200"
+              aria-label="Quitar archivo"
+              title="Quitar archivo"
             >
-              <Trash2 size={16} />
+              <Trash2 size={15} />
+              <span className="sr-only">Quitar archivo</span>
             </button>
           </div>
           <div className="px-4 pb-4">

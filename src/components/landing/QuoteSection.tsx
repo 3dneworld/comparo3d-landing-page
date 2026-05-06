@@ -211,7 +211,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
 
   const scrollToActiveStep = useCallback((behavior: ScrollBehavior = "smooth") => {
     const target = contentCardRef.current ?? sectionRef.current ?? document.getElementById("cotizar");
-    target?.scrollIntoView({ behavior, block: "start" });
+    target?.scrollIntoView?.({ behavior, block: "start" });
   }, []);
 
   // ── Ref para no iniciar el polling dos veces para la misma sesión ──
@@ -308,8 +308,6 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
       flowThumbLen:    flow.thumbnailUrl?.length ?? 0,
       dataThumbLen:    data.thumbnailUrl?.length ?? 0,
     };
-    console.log("[THUMB] useEffect thumbnail fired —", conditions);
-
     if (
       conditions.stepOk &&
       conditions.sessionOk &&
@@ -319,10 +317,8 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
     ) {
       if (isRestoredSession) restoredSessionCheckedRef.current = data.sessionId;
       thumbnailFetchedRef.current = data.sessionId;
-      console.log("[THUMB] Validando/fetch thumbnail del backend para session:", data.sessionId);
       getThumbnail(data.sessionId).then((result) => {
         if (!isApiError(result) && result.thumbnail_base64) {
-          console.log("[THUMB] Thumbnail recibido del backend — source:", result.source, "len:", result.thumbnail_base64.length);
           setData({ thumbnailUrl: result.thumbnail_base64, thumbnailQuality: result.thumbnail_quality || "full" });
           if (isRestoredSession) setIsCheckingSavedSession(false);
         } else {
@@ -345,7 +341,6 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
         if (isRestoredSession) setIsCheckingSavedSession(false);
       });
     } else {
-      console.log("[THUMB] Sin fetch — condición no cumplida (ver arriba)");
       if (!isRestoredSession) setIsCheckingSavedSession(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -384,12 +379,6 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
 
   // ── Auto-iniciar polling cuando se llega al step 3 (incluso restaurando desde localStorage) ──
   useEffect(() => {
-    console.log("[POLL] useEffect polling fired —", {
-      step: data.step,
-      sessionId: data.sessionId,
-      refCurrent: polledSessionRef.current,
-      willPoll: !isCheckingSavedSession && data.step === 3 && !!data.sessionId && polledSessionRef.current !== data.sessionId,
-    });
     if (
       !isCheckingSavedSession &&
       data.step === 3 &&
@@ -397,7 +386,6 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
       polledSessionRef.current !== data.sessionId
     ) {
       polledSessionRef.current = data.sessionId;
-      console.log("[POLL] Arrancando polling para session:", data.sessionId);
       flow.startPollingOptions();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -676,12 +664,6 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
                 className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
               >
                 <RotateCcw size={12} /> Empezar de nuevo
-              </button>
-              <button
-                onClick={() => goToStep(data.step)}
-                className="rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/15"
-              >
-                Continuar
               </button>
               </div>
             </div>

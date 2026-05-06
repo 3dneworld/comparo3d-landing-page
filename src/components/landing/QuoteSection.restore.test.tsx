@@ -35,6 +35,8 @@ describe("QuoteSection saved upload restore", () => {
       writable: true,
       value: IntersectionObserverMock,
     });
+
+    Element.prototype.scrollIntoView = vi.fn();
   });
 
   beforeEach(() => {
@@ -142,6 +144,74 @@ describe("QuoteSection saved upload restore", () => {
       },
       { timeout: 2500 }
     );
+  });
+
+  it("does not show a redundant continue button for a restored quote", async () => {
+    localStorage.setItem(
+      "comparo3d_quote",
+      JSON.stringify({
+        fileName: "octopus.stl",
+        step: 2,
+        sessionId: "octopus_1777727450",
+        tempName: "octopus_1777727450.stl",
+        stlSha256: "abc123",
+      })
+    );
+    apiMocks.getThumbnail.mockResolvedValue({
+      success: true,
+      thumbnail_base64: "data:image/png;base64,thumb",
+      thumbnail_quality: "full",
+      source: "cache",
+    });
+
+    render(
+      <AudienceProvider>
+        <QuoteSection />
+      </AudienceProvider>
+    );
+
+    expect(await screen.findByText("Encontramos una cotización empezada")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /empezar de nuevo/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^continuar$/i })).not.toBeInTheDocument();
+  });
+
+  it("clears a restored step 2 upload from the preview trash button", async () => {
+    localStorage.setItem(
+      "comparo3d_quote",
+      JSON.stringify({
+        fileName: "octopus.stl",
+        step: 2,
+        sessionId: "octopus_1777727450",
+        tempName: "octopus_1777727450.stl",
+        stlSha256: "abc123",
+      })
+    );
+    apiMocks.getThumbnail.mockResolvedValue({
+      success: true,
+      thumbnail_base64: "data:image/png;base64,thumb",
+      thumbnail_quality: "full",
+      source: "cache",
+    });
+
+    render(
+      <AudienceProvider>
+        <QuoteSection />
+      </AudienceProvider>
+    );
+
+    expect(await screen.findByText("Tus datos")).toBeInTheDocument();
+
+    const removeButton = await screen.findByRole("button", { name: /quitar archivo/i });
+    expect(removeButton).toHaveClass("text-red-500");
+    fireEvent.click(removeButton);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Arrastra tu STL/i)).toBeInTheDocument();
+    });
+
+    const saved = JSON.parse(localStorage.getItem("comparo3d_quote") ?? "{}");
+    expect(saved.fileName).toBe("");
+    expect(saved.sessionId).toBe("");
   });
 
   it("clears a restored upload when the user removes the file", async () => {
