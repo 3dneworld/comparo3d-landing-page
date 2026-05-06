@@ -126,11 +126,10 @@ export function StepUserData({
           <div className="flex items-center gap-2 px-4 pt-3 pb-2">
             <Eye size={14} className="text-primary" />
             <p className="text-sm font-medium text-foreground">Vista previa del modelo</p>
-            <CheckCircle2 size={14} className="ml-auto text-accent" />
             <button
               type="button"
               onClick={onRemoveFile}
-              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-200"
+              className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-200"
               aria-label="Quitar archivo"
               title="Quitar archivo"
             >

@@ -23,6 +23,7 @@ import { QuoteOption, getThumbnail, isApiError } from "@/lib/api";
 const STORAGE_KEY      = "comparo3d_quote";
 const MP_BANNER_KEY    = "comparo3d_mp_banner";
 const VALID_MATERIALS = new Set(["PLA", "ASESORAR", "ABS", "PETG", "Nylon", "TPU"]);
+const FULL_THUMBNAIL_POLL_ATTEMPTS = 120;
 
 interface QuoteData {
   nombre: string;
@@ -363,7 +364,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
         return;
       }
 
-      if (attempts < 30) {
+      if (attempts < FULL_THUMBNAIL_POLL_ATTEMPTS) {
         timer = setTimeout(pollFullThumbnail, 3000);
       }
     };

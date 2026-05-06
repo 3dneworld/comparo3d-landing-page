@@ -38,4 +38,26 @@ describe("StepUserData", () => {
     expect(screen.queryByAltText("Vista previa del modelo 3D")).not.toBeInTheDocument();
     expect(screen.getByText(/generando vista previa real/i)).toBeInTheDocument();
   });
+
+  it("shows only the red remove button in the STL preview status area", () => {
+    render(
+      <StepUserData
+        data={baseData}
+        fileName="cliente-real.stl"
+        thumbnailUrl="data:image/png;base64,thumb"
+        isEmpresa={false}
+        isLoading={false}
+        progressMessage=""
+        error={null}
+        onChange={vi.fn()}
+        onRemoveFile={vi.fn()}
+        onBack={vi.fn()}
+        onContinue={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /quitar archivo/i })).toHaveClass("text-red-500");
+    expect(screen.queryByText("Cargado correctamente")).not.toBeInTheDocument();
+    expect(screen.queryByText("Cargado")).not.toBeInTheDocument();
+  });
 });

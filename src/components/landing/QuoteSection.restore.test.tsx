@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AudienceProvider } from "@/contexts/AudienceContext";
@@ -40,6 +40,7 @@ describe("QuoteSection saved upload restore", () => {
   });
 
   beforeEach(() => {
+    vi.useRealTimers();
     localStorage.clear();
     apiMocks.getThumbnail.mockReset();
     apiMocks.uploadStl.mockReset();
@@ -145,6 +146,61 @@ describe("QuoteSection saved upload restore", () => {
       { timeout: 2500 }
     );
   });
+
+  it("keeps polling long enough for slow full thumbnails", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    apiMocks.uploadStl.mockResolvedValue({
+      success: true,
+      temp_name: "genapart_1778058260",
+      session_id: "genapart_1778058260",
+      stl_sha256: "abc123",
+      stl_dimensions: { x: 1, y: 1, z: 1 },
+      dimensions: { x: 1, y: 1, z: 1 },
+      thumbnail_base64: "data:image/png;base64,preview",
+      thumbnail_quality: "preview",
+      manifold_status: "ok",
+      slicing: {
+        slicing_available: false,
+        print_time_minutes: 0,
+        filament_grams: 0,
+      },
+    });
+    apiMocks.getThumbnail.mockImplementation(() => {
+      const attempt = apiMocks.getThumbnail.mock.calls.length;
+      return Promise.resolve({
+        success: true,
+        thumbnail_base64: attempt < 35 ? "data:image/png;base64,preview" : "data:image/png;base64,full",
+        thumbnail_quality: attempt < 35 ? "preview" : "full",
+        source: "cache",
+      });
+    });
+
+    render(
+      <AudienceProvider>
+        <QuoteSection />
+      </AudienceProvider>
+    );
+
+    const file = new File(["solid test\nendsolid test\n"], "genapart.stl", { type: "model/stl" });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await screen.findByText("Tus datos");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(125_000);
+    });
+
+    await waitFor(() => {
+      expect(apiMocks.getThumbnail).toHaveBeenCalledTimes(35);
+      expect(screen.getByAltText("Vista previa del modelo 3D")).toHaveAttribute(
+        "src",
+        "data:image/png;base64,full"
+      );
+    });
+
+    vi.useRealTimers();
+  }, 10_000);
 
   it("does not show a redundant continue button for a restored quote", async () => {
     localStorage.setItem(
