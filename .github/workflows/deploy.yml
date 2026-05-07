@@ -1,0 +1,51 @@
+name: Deploy a Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - landing-redesign
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'playwright-screenshots/**'
+      - '.gitignore'
+  workflow_dispatch:
+
+concurrency:
+  group: cloudflare-deploy-landing-redesign
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy a Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy
+
+      - name: Resumen
+        run: |
+          echo "Deploy completado en https://comparo3d.com.ar"
+          echo "Commit: ${{ github.sha }}"
