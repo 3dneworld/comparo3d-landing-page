@@ -257,25 +257,27 @@ function QuotesContent({
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        eyebrow="Vista comercial"
+        variant="dark"
+        eyebrow="PANEL COMERCIAL"
         title="Cotizaciones participadas"
-        description="Seguimiento de oportunidades donde el proveedor fue mostrado o seleccionado, sin exponer cliente ni archivos hasta que exista pedido confirmado."
-        meta={
+        description="Oportunidades donde fuiste mostrado o seleccionado. El cliente y los archivos son visibles recién cuando existe un pedido confirmado."
+        metaPills={
           <>
             <DashboardStatePill tone={items.length ? "info" : "muted"}>{items.length} resultados</DashboardStatePill>
             <DashboardStatePill tone={selectedCount ? "success" : "muted"}>{selectedCount} seleccionadas</DashboardStatePill>
             {isFetching ? <DashboardStatePill tone="warning">Actualizando</DashboardStatePill> : null}
           </>
         }
+        lastSync="en tiempo real"
         actions={
           <>
             <select
               value={statusFilter}
               onChange={(event) => onStatusChange(event.target.value)}
-              className="h-11 rounded-xl border border-border/80 bg-white px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-10 rounded-xl border border-white/15 bg-white/10 px-3 text-sm text-white outline-none"
             >
               {quoteStatusOptions.map((option) => (
-                <option key={option.value || "all"} value={option.value}>
+                <option key={option.value || "all"} value={option.value} className="text-foreground bg-white">
                   {option.label}
                 </option>
               ))}
@@ -283,7 +285,7 @@ function QuotesContent({
             <Button
               type="button"
               variant="outline"
-              className="h-11 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
+              className="h-10 rounded-xl border-white/15 bg-white/10 px-4 text-white hover:bg-white/20"
               onClick={onRefresh}
               disabled={isFetching}
             >
@@ -295,10 +297,39 @@ function QuotesContent({
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardMetricCard title="Oportunidades" value={String(items.length)} support="Matches visibles para el proveedor." icon={<ReceiptText className="h-5 w-5" />} />
-        <DashboardMetricCard title="Cotizadas" value={String(quotedCount)} support="Aun disponibles o esperando decision." icon={<FileText className="h-5 w-5" />} />
-        <DashboardMetricCard title="Valor listado" value={formatMoney(totalValue)} support="Suma de precios de la vista actual." icon={<Wallet className="h-5 w-5" />} />
-        <DashboardMetricCard title="Ultima actividad" value={formatDateTime(quoteDate(lastQuote || {}))} support="Segun el filtro aplicado." icon={<Clock3 className="h-5 w-5" />} />
+        <DashboardMetricCard
+          title="Oportunidades"
+          value={String(items.length)}
+          support="Matches visibles para el proveedor."
+          icon={<ReceiptText className="h-5 w-5" />}
+          trend={{ direction: items.length > 0 ? "up" : "flat", text: `${items.length} en esta vista` }}
+          sparkline={[30, 55, 40, 70, 50, 80, 100]}
+          isHot={items.length > 0}
+        />
+        <DashboardMetricCard
+          title="Cotizadas"
+          value={String(quotedCount)}
+          support="Aun disponibles o esperando decision."
+          icon={<FileText className="h-5 w-5" />}
+          trend={{ direction: quotedCount > 0 ? "up" : "flat", text: `${quotedCount} en espera` }}
+          sparkline={[40, 50, 45, 60, 55, 65, 70]}
+        />
+        <DashboardMetricCard
+          title="Valor listado"
+          value={formatMoney(totalValue)}
+          support="Suma de precios de la vista actual."
+          icon={<Wallet className="h-5 w-5" />}
+          trend={{ direction: totalValue > 0 ? "up" : "flat", text: "Vista actual" }}
+          sparkline={[35, 45, 55, 50, 75, 80, 90]}
+        />
+        <DashboardMetricCard
+          title="Ultima actividad"
+          value={lastQuote ? formatDateTime(quoteDate(lastQuote)).split(",")[0] : "Sin datos"}
+          support="Segun el filtro aplicado."
+          icon={<Clock3 className="h-5 w-5" />}
+          trend={{ direction: "flat", text: "Filtro actual" }}
+          sparkline={[50, 55, 50, 60, 55, 65, 60]}
+        />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">

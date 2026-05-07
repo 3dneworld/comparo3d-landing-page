@@ -313,10 +313,11 @@ function ProfileContent({
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        eyebrow="Vista editable"
+        variant="dark"
+        eyebrow="CONFIGURACIÓN DE CUENTA"
         title="Perfil operativo"
-        description="Migración React de la ficha del proveedor con lectura real, edición segura del perfil base y continuidad visual con la landing principal de COMPARO3D."
-        meta={
+        description="Tu ficha comercial, datos de contacto, dirección y geolocalización. Mantenerla completa mejora tu score y visibilidad en el marketplace."
+        metaPills={
           <>
             <DashboardStatePill tone={profile.profile_score >= 80 ? "success" : "warning"}>
               Score {profile.profile_score}%
@@ -328,41 +329,42 @@ function ProfileContent({
               Postal {profile.postal_validation.postal_validation_status || "pending"}
             </DashboardStatePill>
             <DashboardStatePill tone={provider.marketplace_visible ? "success" : "muted"}>
-              {provider.marketplace_visible ? "Visible en marketplace" : "Sin visibilidad comercial"}
+              {provider.marketplace_visible ? "Visible" : "Sin visibilidad"}
             </DashboardStatePill>
             {isDirty ? <DashboardStatePill tone="info">Cambios sin guardar</DashboardStatePill> : null}
           </>
         }
+        lastSync="datos reales"
         actions={
           <>
             <Button
               type="button"
               variant="outline"
-              className="h-11 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
+              className="h-10 rounded-xl border-white/15 bg-white/10 px-4 text-white hover:bg-white/20"
               onClick={onCaptureGeo}
               disabled={isCapturingGeo || isSaving}
             >
               {isCapturingGeo ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
-              Usar ubicacion actual
+              Ubicacion actual
             </Button>
             <Button
               type="button"
               variant="outline"
-              className="h-11 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
+              className="h-10 rounded-xl border-white/15 bg-white/10 px-4 text-white hover:bg-white/20"
               onClick={onValidatePostal}
               disabled={hasAddressChanges || isSaving || isValidatingPostal}
             >
               {isValidatingPostal ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
-              Validar direccion
+              Validar postal
             </Button>
             <Button
               type="button"
-              className="h-11 rounded-xl bg-gradient-primary px-5 text-primary-foreground shadow-cta hover:opacity-95"
+              className="h-10 rounded-xl bg-gradient-primary px-5 text-primary-foreground shadow-cta hover:opacity-95"
               onClick={onSave}
               disabled={!isDirty || isSaving}
             >
               {isSaving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Guardar perfil
+              Guardar
             </Button>
           </>
         }

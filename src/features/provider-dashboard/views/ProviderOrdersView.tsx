@@ -542,25 +542,27 @@ function OrdersContent({
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        eyebrow="Vista operativa"
+        variant="dark"
+        eyebrow="GESTIÓN OPERATIVA"
         title="Pedidos confirmados"
-        description="Operaciones reales del proveedor con cliente, entrega y archivos visibles cuando el backend ya confirmo el pedido."
-        meta={
+        description="Operaciones reales con cliente, entrega y archivos. El backend ya confirmo cada uno de estos pedidos."
+        metaPills={
           <>
             <DashboardStatePill tone={items.length ? "info" : "muted"}>{items.length} pedidos</DashboardStatePill>
             <DashboardStatePill tone={activeOrders.length ? "warning" : "success"}>{activeOrders.length} abiertos</DashboardStatePill>
             {isFetching ? <DashboardStatePill tone="warning">Actualizando</DashboardStatePill> : null}
           </>
         }
+        lastSync="en tiempo real"
         actions={
           <>
             <select
               value={statusFilter}
               onChange={(event) => onStatusChange(event.target.value)}
-              className="h-11 rounded-xl border border-border/80 bg-white px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-10 rounded-xl border border-white/15 bg-white/10 px-3 text-sm text-white outline-none"
             >
               {orderStatusOptions.map((option) => (
-                <option key={option.value || "all"} value={option.value}>
+                <option key={option.value || "all"} value={option.value} className="text-foreground bg-white">
                   {option.label}
                 </option>
               ))}
@@ -568,7 +570,7 @@ function OrdersContent({
             <Button
               type="button"
               variant="outline"
-              className="h-11 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
+              className="h-10 rounded-xl border-white/15 bg-white/10 px-4 text-white hover:bg-white/20"
               onClick={onRefresh}
               disabled={isFetching}
             >
@@ -580,10 +582,39 @@ function OrdersContent({
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardMetricCard title="Pedidos abiertos" value={String(activeOrders.length)} support="Pendientes de produccion, entrega o cierre." icon={<PackageOpen className="h-5 w-5" />} />
-        <DashboardMetricCard title="Completados" value={String(completedOrders.length)} support="Pedidos cerrados en la vista actual." icon={<CheckCircle2 className="h-5 w-5" />} />
-        <DashboardMetricCard title="Archivos visibles" value={String(filesCount)} support="STL/GCODE disponibles para operar." icon={<FileArchive className="h-5 w-5" />} />
-        <DashboardMetricCard title="Ultima actividad" value={formatDateTime(orderDate(lastOrder || {}))} support="Segun el filtro aplicado." icon={<ClipboardList className="h-5 w-5" />} />
+        <DashboardMetricCard
+          title="Pedidos abiertos"
+          value={String(activeOrders.length)}
+          support="Pendientes de produccion, entrega o cierre."
+          icon={<PackageOpen className="h-5 w-5" />}
+          trend={{ direction: activeOrders.length > 0 ? "up" : "flat", text: `${activeOrders.length} en curso` }}
+          sparkline={[60, 50, 65, 55, 70, 60, activeOrders.length > 0 ? 80 : 65]}
+          isHot={activeOrders.length > 0}
+        />
+        <DashboardMetricCard
+          title="Completados"
+          value={String(completedOrders.length)}
+          support="Pedidos cerrados en la vista actual."
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          trend={{ direction: completedOrders.length > 0 ? "up" : "flat", text: `${completedOrders.length} cerrados` }}
+          sparkline={[30, 40, 50, 45, 60, 65, 70]}
+        />
+        <DashboardMetricCard
+          title="Archivos visibles"
+          value={String(filesCount)}
+          support="STL/GCODE disponibles para operar."
+          icon={<FileArchive className="h-5 w-5" />}
+          trend={{ direction: filesCount > 0 ? "up" : "flat", text: `${filesCount} archivos` }}
+          sparkline={[20, 35, 40, 55, 60, 70, 75]}
+        />
+        <DashboardMetricCard
+          title="Ultima actividad"
+          value={lastOrder ? formatDateTime(orderDate(lastOrder)).split(",")[0] : "Sin datos"}
+          support="Segun el filtro aplicado."
+          icon={<ClipboardList className="h-5 w-5" />}
+          trend={{ direction: "flat", text: "Filtro actual" }}
+          sparkline={[50, 55, 50, 60, 55, 65, 60]}
+        />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">

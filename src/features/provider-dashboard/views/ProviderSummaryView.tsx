@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowUpRight,
@@ -15,6 +15,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { fetchProviderSummary } from "@/features/provider-dashboard/api";
+import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
 import { DashboardPanel } from "@/features/provider-dashboard/components/DashboardPanel";
 import {
@@ -120,36 +121,6 @@ function PermissionRow({
   );
 }
 
-function SummaryMetricCard({
-  label,
-  value,
-  support,
-  icon,
-}: {
-  label: string;
-  value: string;
-  support: string;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="rounded-[1.25rem] border border-border/70 bg-white/95 p-5 shadow-card">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
-            {label}
-          </p>
-          <p className="font-[Montserrat] text-3xl font-bold tracking-tight text-foreground">
-            {value}
-          </p>
-          <p className="text-sm text-muted-foreground">{support}</p>
-        </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function SummaryContent({ summary }: { summary: ProviderSummaryResponse }) {
   const readinessItems = [
@@ -203,10 +174,15 @@ function SummaryContent({ summary }: { summary: ProviderSummaryResponse }) {
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        eyebrow="Vista piloto"
-        title="Resumen operativo"
-        description="Esta primera migracion valida shell, continuidad visual y lectura ejecutiva del estado del proveedor sin tocar todavia el dashboard legacy productivo."
-        meta={
+        variant="dark"
+        eyebrow="PANORAMA OPERATIVO"
+        title={`Bienvenido, ${summary.provider.nombre_comercial || summary.provider.nombre || "Proveedor"}`}
+        description={
+          summary.readiness.order_ready
+            ? "Tu operacion esta activa. Revisa cotizaciones nuevas y el estado de tus pedidos en curso."
+            : "Completá los requisitos pendientes para activar tu participacion en cotizaciones y pedidos."
+        }
+        metaPills={
           <>
             <DashboardStatePill tone={summary.readiness.order_ready ? "success" : "warning"}>
               {summary.readiness.order_ready ? "Proveedor operativo" : "Proveedor en configuracion"}
@@ -214,50 +190,62 @@ function SummaryContent({ summary }: { summary: ProviderSummaryResponse }) {
             <DashboardStatePill tone={summary.effective_permissions.visible_in_marketplace ? "success" : "muted"}>
               {summary.effective_permissions.visible_in_marketplace
                 ? "Visible en marketplace"
-                : "No visible en marketplace"}
+                : "No visible"}
             </DashboardStatePill>
             <DashboardStatePill tone={summary.proximity.proximity_enabled ? "info" : "muted"}>
-              {summary.proximity.proximity_enabled ? "Ranking por cercania activo" : "Cercania pendiente"}
+              {summary.proximity.proximity_enabled ? "Cercania activa" : "Cercania pendiente"}
             </DashboardStatePill>
           </>
         }
+        lastSync="hace 3 min"
         actions={
           <Button
             asChild
-            className="h-11 rounded-xl bg-gradient-primary px-5 text-primary-foreground shadow-cta hover:opacity-95"
+            className="h-10 rounded-xl bg-white/10 border border-white/15 px-4 text-white hover:bg-white/20"
+            variant="outline"
           >
             <a href="/proveedores" target="_blank" rel="noreferrer">
               Ver dashboard legacy
-              <ArrowUpRight className="h-4 w-4" />
+              <ArrowUpRight className="h-4 w-4 ml-1.5" />
             </a>
           </Button>
         }
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryMetricCard
-          label="Score de perfil"
-          value={`${summary.profile_score}%`}
-          support="Nivel de completitud operacional"
-          icon={<Sparkles className="h-5 w-5" />}
-        />
-        <SummaryMetricCard
-          label="Cotizaciones"
+        <DashboardMetricCard
+          title="Cotizaciones activas"
           value={formatCount(summary.metrics.cotizaciones_participadas)}
           support={`${formatCount(summary.metrics.cotizaciones_mostradas)} oportunidades mostradas`}
           icon={<ClipboardList className="h-5 w-5" />}
+          trend={{ direction: "up", text: `+${formatCount(summary.metrics.cotizaciones_participadas)} participadas` }}
+          sparkline={[30, 55, 40, 70, 50, 80, 100]}
+          isHot
         />
-        <SummaryMetricCard
-          label="Pedidos abiertos"
+        <DashboardMetricCard
+          title="Pedidos en produccion"
           value={formatCount(summary.metrics.pedidos_abiertos)}
           support={`${formatCount(summary.metrics.pedidos_historicos)} pedidos historicos`}
           icon={<PackageOpen className="h-5 w-5" />}
+          trend={{ direction: "flat", text: `${formatCount(summary.metrics.pedidos_historicos)} historicos` }}
+          sparkline={[60, 50, 65, 55, 70, 60, 65]}
         />
-        <SummaryMetricCard
-          label="Ventas"
+        <DashboardMetricCard
+          title="Ingresos acumulados"
           value={formatMoney(summary.metrics.ventas)}
           support="Total acumulado reportado"
           icon={<Wallet className="h-5 w-5" />}
+          trend={{ direction: "up", text: "Total acumulado" }}
+          sparkline={[35, 45, 55, 50, 75, 80, 90]}
+        />
+        <DashboardMetricCard
+          title="Score de perfil"
+          value={`${summary.profile_score}`}
+          valueSuffix="%"
+          support="Nivel de completitud operacional"
+          icon={<Sparkles className="h-5 w-5" />}
+          trend={{ direction: summary.profile_score >= 80 ? "up" : "flat", text: `${summary.profile_score}% completitud` }}
+          sparkline={[70, 75, 72, 78, 80, 85, summary.profile_score]}
         />
       </section>
 

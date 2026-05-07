@@ -215,18 +215,18 @@ export function ProviderDashboardShell({
         </aside>
 
         <div className="flex min-h-screen flex-1 flex-col">
-          <header className="sticky top-0 z-20 border-b border-border/70 bg-background/85 backdrop-blur">
+          <header className="dash-topbar">
             <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-5 py-4 md:px-6 xl:px-8">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-1">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
                     Dashboard COMPARO3D
                   </p>
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <span className="font-medium text-foreground">{providerName}</span>
-                    <span className="hidden text-border md:inline">|</span>
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-[hsl(var(--hero-muted))]">
+                    <span className="font-semibold text-white">{providerName}</span>
+                    <span className="hidden opacity-40 md:inline">/</span>
                     <span>{sectionLabel}</span>
-                    <span className="hidden text-border md:inline">|</span>
+                    <span className="hidden opacity-40 md:inline">/</span>
                     <span>{providerLocation}</span>
                   </div>
                 </div>
@@ -234,14 +234,14 @@ export function ProviderDashboardShell({
                   <Button
                     asChild
                     variant="outline"
-                    className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
+                    className="h-10 rounded-xl border-white/15 bg-white/10 px-4 text-white hover:bg-white/20"
                   >
                     <Link to="/dashboard/proveedores/resumen">Ir al dashboard</Link>
                   </Button>
                   <Button
                     onClick={() => void handleLogout()}
                     variant="outline"
-                    className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
+                    className="h-10 rounded-xl border-white/15 bg-white/10 px-4 text-white hover:bg-white/20"
                     disabled={isLoggingOut}
                   >
                     {isLoggingOut ? "Cerrando..." : "Cerrar sesion"}
@@ -249,15 +249,15 @@ export function ProviderDashboardShell({
                 </div>
               </div>
 
-              <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">
+              <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden scrollbar-hide">
                 {navigationItems.map((item) => {
                   if (!item.available || !item.to) {
                     return (
                       <span
                         key={item.key}
-                        className="inline-flex whitespace-nowrap rounded-full border border-border/80 bg-white px-3 py-2 text-xs font-medium text-muted-foreground"
+                        className="inline-flex whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-[hsl(var(--hero-muted))]"
                       >
-                        {item.label} - Luego
+                        {item.label}
                       </span>
                     );
                   }
@@ -271,8 +271,8 @@ export function ProviderDashboardShell({
                         cn(
                           "inline-flex whitespace-nowrap rounded-full border px-3 py-2 text-xs font-semibold transition-colors",
                           isActive
-                            ? "border-primary/20 bg-primary/10 text-primary"
-                            : "border-border/80 bg-white text-muted-foreground hover:text-foreground"
+                            ? "border-primary/40 bg-primary/20 text-white"
+                            : "border-white/10 bg-white/6 text-[hsl(var(--hero-muted))] hover:text-white"
                         )
                       }
                     >

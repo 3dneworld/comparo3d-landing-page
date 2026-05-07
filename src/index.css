@@ -48,8 +48,12 @@
     --gradient-accent: linear-gradient(135deg, hsl(38, 92%, 55%), hsl(28, 90%, 50%));
     --gradient-dark: linear-gradient(180deg, hsl(220, 30%, 8%), hsl(220, 25%, 14%));
     --shadow-card: 0 1px 3px hsl(220 30% 12% / 0.06), 0 4px 12px hsl(220 30% 12% / 0.04);
+    --shadow-card-soft: 0 1px 3px hsl(220 30% 12% / 0.06), 0 4px 12px hsl(220 30% 12% / 0.04);
     --shadow-card-hover: 0 4px 16px hsl(220 30% 12% / 0.1), 0 8px 32px hsl(220 30% 12% / 0.06);
-    --shadow-cta: 0 4px 20px hsl(220, 70%, 45% / 0.35);
+    --shadow-cta: 0 4px 20px hsl(220 70% 45% / 0.35);
+    --success: 152 68% 40%;
+    --warning: 38 92% 55%;
+    --info: 199 89% 48%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -189,5 +193,62 @@
     to {
       transform: translateX(0);
     }
+  }
+}
+
+@layer components {
+  /* Hero band — dark gradient con glow primary */
+  .dash-hero-band {
+    @apply relative overflow-hidden text-white;
+    background: var(--gradient-dark);
+  }
+  .dash-hero-band::after {
+    content: "";
+    position: absolute; right: -60px; top: -60px;
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, hsl(var(--primary) / 0.4) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Sparkline (7 barras) */
+  .dash-spark {
+    @apply mt-3 flex items-end gap-[3px] h-8;
+  }
+  .dash-spark > span {
+    @apply flex-1 rounded-sm;
+    background: hsl(var(--primary) / 0.18);
+  }
+  .dash-spark > span.peak {
+    background: hsl(var(--primary));
+  }
+
+  /* Accent stripe en métricas (ribbon izquierdo + tint cuando isHot) */
+  .dash-accent-stripe {
+    position: relative;
+    overflow: hidden;
+  }
+  .dash-accent-stripe::before {
+    content: "";
+    position: absolute; left: 0; top: 0;
+    width: 3px; height: 100%;
+    background: hsl(var(--primary));
+    opacity: 0; transition: opacity .15s;
+  }
+  .dash-accent-stripe.is-hot::before { opacity: 1; }
+  .dash-accent-stripe.is-hot {
+    background: linear-gradient(135deg, #fff, hsl(var(--primary) / 0.04));
+  }
+
+  /* Top bar oscura (header del shell) */
+  .dash-topbar {
+    @apply text-white border-b sticky top-0 z-20;
+    background: hsl(var(--hero-bg));
+    border-color: rgba(255,255,255,0.06);
+  }
+
+  /* Eyebrow brand (consistente con landing) */
+  .dash-eyebrow {
+    @apply text-[11px] font-bold uppercase tracking-[0.18em];
+    color: hsl(var(--primary));
   }
 }

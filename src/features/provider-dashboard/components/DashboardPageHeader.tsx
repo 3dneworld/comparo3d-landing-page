@@ -7,7 +7,10 @@ interface DashboardPageHeaderProps {
   title: string;
   description?: string;
   meta?: ReactNode;
+  metaPills?: ReactNode;
   actions?: ReactNode;
+  lastSync?: string;
+  variant?: "default" | "dark";
   className?: string;
 }
 
@@ -16,9 +19,57 @@ export function DashboardPageHeader({
   title,
   description,
   meta,
+  metaPills,
   actions,
+  lastSync,
+  variant = "default",
   className,
 }: DashboardPageHeaderProps) {
+  if (variant === "dark") {
+    return (
+      <header
+        className={cn(
+          "rounded-[1.5rem] overflow-hidden border border-border/70 shadow-[var(--shadow-card)]",
+          className
+        )}
+      >
+        {/* topband — dark gradient con glow */}
+        <div className="dash-hero-band px-7 py-6 flex justify-between items-start gap-6">
+          <div style={{ position: "relative" }}>
+            {eyebrow ? (
+              <p className="dash-eyebrow">{eyebrow}</p>
+            ) : null}
+            <h1 className="mt-2.5 font-[Montserrat] text-[30px] font-extrabold tracking-tight leading-[1.1] text-white">
+              {title}
+            </h1>
+            {description ? (
+              <p className="mt-1.5 text-sm leading-relaxed text-[hsl(var(--hero-muted))] max-w-[680px]">
+                {description}
+              </p>
+            ) : null}
+          </div>
+          {actions ? (
+            <div className="flex shrink-0 gap-2.5" style={{ position: "relative" }}>
+              {actions}
+            </div>
+          ) : null}
+        </div>
+
+        {/* lowband — blanca con pills + última sync */}
+        <div className="bg-white border-t border-border/60 px-7 py-[18px] flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {metaPills ?? meta}
+          </div>
+          {lastSync ? (
+            <p className="text-xs text-muted-foreground whitespace-nowrap">
+              Última sync {lastSync}
+            </p>
+          ) : null}
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header
       className={cn(
@@ -43,7 +94,9 @@ export function DashboardPageHeader({
               </p>
             ) : null}
           </div>
-          {meta ? <div className="flex flex-wrap items-center gap-2">{meta}</div> : null}
+          {(meta ?? metaPills) ? (
+            <div className="flex flex-wrap items-center gap-2">{meta ?? metaPills}</div>
+          ) : null}
         </div>
         {actions ? (
           <div className="flex shrink-0 flex-wrap items-center gap-3">{actions}</div>
