@@ -26,6 +26,7 @@ export interface ProviderCapacity {
   cama_max_mm: ProviderCamaMm;
   impresoras_declaradas: number | null;
   materiales_activos: string[] | null;
+  marcas: string[] | null;
 }
 
 export interface ProviderRatingDistribution {

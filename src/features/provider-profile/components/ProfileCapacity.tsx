@@ -1,5 +1,5 @@
 // ProfileCapacity.tsx — Métricas de capacidad: cama, impresoras, materiales
-import { Box, Layers, Printer } from "lucide-react";
+import { Box, Factory, Layers, Printer } from "lucide-react";
 import type { ProviderCapacity } from "../types";
 
 interface Props {
@@ -25,14 +25,15 @@ function matLabel(code: string): string {
 }
 
 export function ProfileCapacity({ capacity }: Props) {
-  const { cama_max_mm, impresoras_declaradas, materiales_activos } = capacity;
+  const { cama_max_mm, impresoras_declaradas, materiales_activos, marcas } = capacity;
   const hasCama =
     cama_max_mm.x > 0 || cama_max_mm.y > 0 || cama_max_mm.z > 0;
   const hasMateriales = materiales_activos && materiales_activos.length > 0;
+  const hasMarcas = marcas && marcas.length > 0;
   const hasImpresoras =
     impresoras_declaradas != null && impresoras_declaradas > 0;
 
-  if (!hasCama && !hasMateriales && !hasImpresoras) return null;
+  if (!hasCama && !hasMateriales && !hasImpresoras && !hasMarcas) return null;
 
   return (
     <section
@@ -45,7 +46,7 @@ export function ProfileCapacity({ capacity }: Props) {
       >
         Capacidad técnica
       </h2>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {hasCama && (
           <div className="flex gap-3">
             <Box
@@ -99,6 +100,23 @@ export function ProfileCapacity({ capacity }: Props) {
               </p>
               <p className="mt-1 text-sm font-medium text-foreground leading-relaxed">
                 {materiales_activos!.map(matLabel).join(" · ")}
+              </p>
+            </div>
+          </div>
+        )}
+        {hasMarcas && (
+          <div className="flex gap-3">
+            <Factory
+              size={20}
+              className="mt-0.5 shrink-0 text-primary"
+              aria-hidden="true"
+            />
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Marcas
+              </p>
+              <p className="mt-1 text-sm font-medium leading-relaxed text-foreground">
+                {marcas!.join(" · ")}
               </p>
             </div>
           </div>

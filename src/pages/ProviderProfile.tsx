@@ -9,9 +9,7 @@ import Footer from "@/components/landing/Footer";
 import { fetchProviderProfile } from "@/features/provider-profile/api";
 import { ProfileHero } from "@/features/provider-profile/components/ProfileHero";
 import { ProfileAbout } from "@/features/provider-profile/components/ProfileAbout";
-import { ProfileRankingCard } from "@/features/provider-profile/components/ProfileRankingCard";
 import { ProfileCapacity } from "@/features/provider-profile/components/ProfileCapacity";
-import { ProfileIndustries } from "@/features/provider-profile/components/ProfileIndustries";
 import { ProfileReviews } from "@/features/provider-profile/components/ProfileReviews";
 import { ProfilePortfolio } from "@/features/provider-profile/components/ProfilePortfolio";
 import { ProfileContactCTA } from "@/features/provider-profile/components/ProfileContactCTA";
@@ -114,6 +112,30 @@ const VIDEO_PROVIDER_PROFILES: Record<number, ProviderProfileResponse> = {
   }),
 };
 
+const DEMO_PROVIDER_BRANDS: Record<number, string[]> = {
+  9: ["Bambu Lab", "Prusa", "Creality"],
+};
+
+function withDemoCapacityFallback(
+  profile: ProviderProfileResponse | undefined,
+): ProviderProfileResponse | undefined {
+  const demoBrands = profile ? DEMO_PROVIDER_BRANDS[profile.provider.id] : undefined;
+  if (!profile || !demoBrands || profile.provider.capacity.marcas?.length) {
+    return profile;
+  }
+
+  return {
+    ...profile,
+    provider: {
+      ...profile.provider,
+      capacity: {
+        ...profile.provider.capacity,
+        marcas: demoBrands,
+      },
+    },
+  };
+}
+
 function makeVideoProviderProfile(input: {
   id: number;
   nombre: string;
@@ -148,6 +170,7 @@ function makeVideoProviderProfile(input: {
         cama_max_mm: { x: 300, y: 300, z: 300 },
         impresoras_declaradas: 3,
         materiales_activos: input.materiales,
+        marcas: null,
       },
       rating: {
         average: null,
@@ -214,7 +237,7 @@ export default function ProviderProfile() {
     !staticProfile &&
     (!isValidId || (isError && error instanceof Error && error.message === "NOT_FOUND"));
 
-  const profileData = staticProfile ?? data;
+  const profileData = staticProfile ?? withDemoCapacityFallback(data);
   const canonicalSlug = profileData
     ? `${profileData.provider.id}-${profileData.provider.slug_hint}`
     : "";
@@ -226,7 +249,7 @@ export default function ProviderProfile() {
     if (!profileData) return <ErrorState onRetry={() => refetch()} />;
     if (!staticProfile && isError) return <ErrorState onRetry={() => refetch()} />;
 
-    const { provider, badges, portfolio, reviews, derived } = profileData;
+    const { provider, badges, portfolio, reviews } = profileData;
 
     return (
       <main className="mx-auto max-w-screen-xl px-4 py-10">
@@ -243,13 +266,11 @@ export default function ProviderProfile() {
         </nav>
 
         {/* 2-col layout: sidebar sticky + main */}
-        <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
+        <div className="grid items-start gap-8 lg:grid-cols-[420px_1fr]">
           <ProfileHero provider={provider} badges={badges} />
           <div className="space-y-6">
             <ProfileAbout about={provider.about} />
-            <ProfileRankingCard ranking={provider.ranking} badges={badges} />
             <ProfileCapacity capacity={provider.capacity} />
-            <ProfileIndustries derived={derived} />
           </div>
         </div>
 
