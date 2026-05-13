@@ -2,9 +2,11 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  BadgeX,
   CalendarCheck,
   CheckCircle2,
   ClipboardList,
+  ExternalLink,
   FileArchive,
   LoaderCircle,
   Mail,
@@ -19,9 +21,19 @@ import {
   WalletCards,
 } from "lucide-react";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
 import {
+  cancelProviderOrder,
   dispatchProviderOrder,
   fetchProviderOrderDetail,
   fetchProviderOrders,
@@ -88,6 +100,13 @@ function formatDateTime(value?: string | null) {
   return new Intl.DateTimeFormat("es-AR", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
+function sameDateTime(a?: string | null, b?: string | null) {
+  if (!a || !b) return false;
+  const left = new Date(a).getTime();
+  const right = new Date(b).getTime();
+  return Number.isFinite(left) && Number.isFinite(right) && left === right;
+}
+
 function formatCount(value?: number | null) {
   return new Intl.NumberFormat("es-AR").format(Number(value) || 0);
 }
@@ -115,6 +134,85 @@ function parseDeliveryAddress(value?: DashboardOrder["delivery_address_json"]) {
 
 function orderDate(order: DashboardOrder) {
   return order.updated_at || order.confirmed_at || order.created_at || null;
+}
+
+function timelineRows(order: DashboardOrder) {
+  const rows: Array<{ label: string; value?: string | null; icon?: ReactNode }> = [
+    { label: "Confirmado", value: order.confirmed_at, icon: <CalendarCheck className="h-3.5 w-3.5" /> },
+  ];
+  if (!sameDateTime(order.created_at, order.confirmed_at)) {
+    rows.push({ label: "Creado", value: order.created_at });
+  }
+  if (!sameDateTime(order.updated_at, order.confirmed_at) && !sameDateTime(order.updated_at, order.created_at)) {
+    rows.push({ label: "Actualizado", value: order.updated_at });
+  }
+  if (order.cancelled_at) {
+    rows.push({ label: "Cancelado", value: order.cancelled_at, icon: <AlertTriangle className="h-3.5 w-3.5" /> });
+  }
+  return rows;
+}
+
+function preferredOrderFile(files: DashboardOrder["files"], kind: "stl" | "gcode") {
+  const items = files || [];
+  if (kind === "gcode") {
+    return items.find((item) => item.file_type === "gcode") || null;
+  }
+  return (
+    items.find((item) => item.file_type === "stl_original") ||
+    items.find((item) => item.file_type === "stl_rotado") ||
+    null
+  );
+}
+
+function OrderFileCard({
+  title,
+  file,
+}: {
+  title: string;
+  file?: DashboardOrder["files"] extends Array<infer T> ? T | null : never;
+}) {
+  if (!file) {
+    return (
+      <div className="rounded-[1rem] border border-dashed border-border/80 bg-white px-4 py-4 text-sm text-muted-foreground">
+        {title} no disponible.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-[1rem] border border-border/70 bg-white p-4">
+      <div className="overflow-hidden rounded-[0.9rem] border border-border/70 bg-muted/30">
+        {file.thumbnail_url ? (
+          <img
+            src={file.thumbnail_url}
+            alt={file.label || title}
+            className="h-40 w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+            Sin thumbnail
+          </div>
+        )}
+      </div>
+      <div className="mt-3">
+        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <p className="mt-1 break-all text-xs text-muted-foreground">
+          {safeText(file.filename || file.file_path, "Sin archivo")}
+        </p>
+        {file.url ? (
+          <a
+            href={file.url}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+          >
+            Abrir archivo
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 function DetailRow({ label, value, icon }: { label: string; value?: ReactNode; icon?: ReactNode }) {
@@ -145,6 +243,7 @@ function OrderDetailPanel({
   isReadyingToShip,
   onDispatch,
   isDispatching,
+  onRequestCancel,
 }: {
   order?: DashboardOrder | null;
   isLoading: boolean;
@@ -161,6 +260,7 @@ function OrderDetailPanel({
   isReadyingToShip: boolean;
   onDispatch: () => void;
   isDispatching: boolean;
+  onRequestCancel: () => void;
 }) {
   if (isLoading) {
     return (
@@ -192,9 +292,12 @@ function OrderDetailPanel({
   const orderStatus = orderMeta(order.order_status);
   const paymentStatus = paymentMeta(order.payment_status);
   const files = order.files || [];
+  const stlFile = preferredOrderFile(files, "stl");
+  const gcodeFile = preferredOrderFile(files, "gcode");
   const canMarkPrinting = ["paid_confirmed", "preparing"].includes(String(order.order_status || ""));
   const canReadyToShip = ["in_production"].includes(String(order.order_status || ""));
   const canDispatch = ["ready_to_ship", "listo_para_envio"].includes(String(order.order_status || ""));
+  const canCancel = !["cancelled", "completed"].includes(String(order.order_status || ""));
 
   return (
     <div className="space-y-4">
@@ -246,6 +349,17 @@ function OrderDetailPanel({
                 Confirmar despacho
               </Button>
             ) : null}
+            {canCancel ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-xl border-rose-200 bg-rose-50 px-4 text-rose-700 hover:bg-rose-100"
+                onClick={onRequestCancel}
+              >
+                <BadgeX className="h-4 w-4" />
+                Cancelar pedido
+              </Button>
+            ) : null}
           </div>
         ) : null}
         {showReadyToShipComposer ? (
@@ -266,9 +380,9 @@ function OrderDetailPanel({
         <DetailRow label="Telefono" value={safeText(order.client_phone)} icon={<Phone className="h-3.5 w-3.5" />} />
         <DetailRow label="Metodo de entrega" value={safeText(order.delivery_method)} icon={<Truck className="h-3.5 w-3.5" />} />
         <DetailRow label="Direccion" value={parseDeliveryAddress(order.delivery_address_json)} icon={<MapPinned className="h-3.5 w-3.5" />} />
-        <DetailRow label="Confirmado" value={formatDateTime(order.confirmed_at)} icon={<CalendarCheck className="h-3.5 w-3.5" />} />
-        <DetailRow label="Creado" value={formatDateTime(order.created_at)} />
-        <DetailRow label="Actualizado" value={formatDateTime(order.updated_at)} />
+        {timelineRows(order).map((item) => (
+          <DetailRow key={item.label} label={item.label} value={formatDateTime(item.value)} icon={item.icon} />
+        ))}
       </div>
 
       {order.notas ? (
@@ -281,28 +395,19 @@ function OrderDetailPanel({
       <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-foreground">Archivos visibles</p>
-            <p className="mt-1 text-sm text-muted-foreground">STL/GCODE aparecen solo cuando backend los marca visibles.</p>
+            <p className="text-sm font-semibold text-foreground">Archivos del pedido</p>
+            <p className="mt-1 text-sm text-muted-foreground">STL y GCODE disponibles para fabricar esta orden confirmada.</p>
           </div>
           <DashboardStatePill tone={files.length ? "success" : "muted"}>{files.length} archivos</DashboardStatePill>
         </div>
         {files.length ? (
-          <div className="mt-4 space-y-3">
-            {files.map((file, index) => (
-              <div key={`${file.file_type}-${index}`} className="rounded-[1rem] border border-border/70 bg-white px-4 py-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{safeText(file.file_type, "archivo")}</p>
-                    <p className="mt-1 break-all text-xs text-muted-foreground">{safeText(file.file_path, "sin path")}</p>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{formatDateTime(file.created_at)}</p>
-                </div>
-              </div>
-            ))}
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            <OrderFileCard title="Thumbnail del STL" file={stlFile} />
+            <OrderFileCard title="Thumbnail del GCODE" file={gcodeFile} />
           </div>
         ) : (
           <div className="mt-4 rounded-[1rem] border border-dashed border-border/80 bg-white px-4 py-3 text-sm text-muted-foreground">
-            Todavia no hay archivos visibles para este pedido.
+            Todavia no hay archivos cargados para este pedido.
           </div>
         )}
       </div>
@@ -314,19 +419,22 @@ function OrderRow({
   order,
   selected,
   onSelect,
+  onCancel,
 }: {
   order: DashboardOrder;
   selected: boolean;
   onSelect: () => void;
+  onCancel: () => void;
 }) {
   const orderStatus = orderMeta(order.order_status);
   const paymentStatus = paymentMeta(order.payment_status);
+  const canCancel = !["cancelled", "completed"].includes(String(order.order_status || ""));
 
   return (
     <DashboardDataRow
       onClick={onSelect}
       selected={selected}
-      columnsClassName="lg:grid-cols-[0.72fr_0.9fr_0.82fr_1.15fr_0.9fr_0.85fr]"
+      columnsClassName="lg:grid-cols-[0.72fr_0.8fr_0.82fr_1.05fr_0.85fr_0.8fr_0.24fr]"
     >
       <DashboardDataValue label="Pedido">
         <p className="text-sm font-semibold text-foreground">#{order.id}</p>
@@ -351,7 +459,92 @@ function OrderRow({
           {formatCount(order.files_count)} archivos
         </span>
       </DashboardDataValue>
+      <DashboardDataValue label="">
+        {canCancel ? (
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700 transition-colors hover:bg-rose-100"
+            onClick={(event) => {
+              event.stopPropagation();
+              onCancel();
+            }}
+            aria-label={`Cancelar pedido ${order.id}`}
+          >
+            <BadgeX className="h-4 w-4" />
+          </button>
+        ) : null}
+      </DashboardDataValue>
     </DashboardDataRow>
+  );
+}
+
+function CancelOrderDialog({
+  order,
+  reason,
+  onReasonChange,
+  onCancel,
+  onConfirm,
+  isSubmitting,
+}: {
+  order: DashboardOrder | null;
+  reason: string;
+  onReasonChange: (value: string) => void;
+  onCancel: () => void;
+  onConfirm: () => void;
+  isSubmitting: boolean;
+}) {
+  return (
+    <Dialog open={Boolean(order)} onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent className="max-w-xl rounded-[1.5rem] border-rose-200">
+        <DialogHeader>
+          <div className="mb-2 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-700">
+            <AlertTriangle className="h-6 w-6" />
+          </div>
+          <DialogTitle>Cancelar pedido {order ? `#${order.id}` : ""}</DialogTitle>
+          <DialogDescription className="space-y-2 pt-2 text-left">
+            <span className="block">
+              Estás por cancelar este pedido. El pedido quedará en estado cancelado, vamos a solicitar el refund por Mercado Pago y el cliente recibirá un email avisando la cancelación.
+            </span>
+            <span className="block">
+              Es obligatorio escribir el motivo. Lo que escribas acá se le enviará al cliente por email.
+            </span>
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div className="rounded-[1rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-relaxed text-rose-800">
+            Impacto: se intenta revertir el cobro, se cierra la operación para este proveedor y el cliente recibe una comunicación inmediata.
+          </div>
+          <Textarea
+            value={reason}
+            onChange={(event) => onReasonChange(event.target.value)}
+            placeholder="Explica claramente por qué cancelás este pedido. Este texto se envía al cliente."
+            className="min-h-[144px] rounded-2xl border-rose-200 bg-white"
+          />
+        </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10 rounded-xl border-border/80 bg-white px-4 text-foreground hover:bg-muted"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            Volver
+          </Button>
+          <Button
+            type="button"
+            className="h-10 rounded-xl bg-rose-600 px-4 text-white hover:bg-rose-700"
+            onClick={onConfirm}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <BadgeX className="h-4 w-4" />}
+            Confirmar cancelacion
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -510,6 +703,13 @@ function OrdersContent({
   isMarkingPrinting,
   isReadyingToShip,
   isDispatching,
+  onRequestCancelOrder,
+  cancellingOrder,
+  cancellationReason,
+  onCancellationReasonChange,
+  onCloseCancellation,
+  onConfirmCancellation,
+  isCancelling,
 }: {
   items: DashboardOrder[];
   selectedOrder?: DashboardOrder | null;
@@ -533,6 +733,13 @@ function OrdersContent({
   isMarkingPrinting: boolean;
   isReadyingToShip: boolean;
   isDispatching: boolean;
+  onRequestCancelOrder: (order: DashboardOrder) => void;
+  cancellingOrder: DashboardOrder | null;
+  cancellationReason: string;
+  onCancellationReasonChange: (value: string) => void;
+  onCloseCancellation: () => void;
+  onConfirmCancellation: () => void;
+  isCancelling: boolean;
 }) {
   const activeOrders = items.filter((item) => !["completed", "cancelled"].includes(String(item.order_status || "")));
   const completedOrders = items.filter((item) => item.order_status === "completed");
@@ -619,8 +826,8 @@ function OrdersContent({
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <DashboardPanel
-          title="Listado operativo"
-          description="Click en un pedido para abrir cliente, entrega y archivos permitidos por backend."
+          title="Listado de Pedidos"
+          description="Click en un pedido para abrir cliente, entrega y archivos."
           contentClassName="p-4 pt-0 md:p-5 md:pt-0"
         >
           {items.length ? (
@@ -631,6 +838,7 @@ function OrdersContent({
                   order={order}
                   selected={selectedId === order.id}
                   onSelect={() => onSelectOrder(order.id)}
+                  onCancel={() => onRequestCancelOrder(order)}
                 />
               ))}
             </div>
@@ -662,21 +870,20 @@ function OrdersContent({
               isReadyingToShip={isReadyingToShip}
               onDispatch={onDispatchSelected}
               isDispatching={isDispatching}
+              onRequestCancel={() => selectedOrder && onRequestCancelOrder(selectedOrder)}
             />
-          </DashboardPanel>
-
-          <DashboardPanel title="Frontera operativa" description="Regla de exposicion de datos en el dashboard.">
-            <div className="space-y-3">
-              <div className="rounded-[1.15rem] border border-border/70 bg-background/70 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-                En Pedidos si se muestran cliente y archivos porque ya existe una operacion confirmada.
-              </div>
-              <div className="rounded-[1.15rem] border border-border/70 bg-background/70 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-                Cambios de estado avanzados y tracking quedan para la migracion de Envios.
-              </div>
-            </div>
           </DashboardPanel>
         </div>
       </section>
+
+      <CancelOrderDialog
+        order={cancellingOrder}
+        reason={cancellationReason}
+        onReasonChange={onCancellationReasonChange}
+        onCancel={onCloseCancellation}
+        onConfirm={onConfirmCancellation}
+        isSubmitting={isCancelling}
+      />
     </div>
   );
 }
@@ -688,6 +895,8 @@ export function ProviderOrdersView() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showReadyToShipComposer, setShowReadyToShipComposer] = useState(false);
   const [readyToShipFiles, setReadyToShipFiles] = useState<File[]>([]);
+  const [cancellingOrder, setCancellingOrder] = useState<DashboardOrder | null>(null);
+  const [cancellationReason, setCancellationReason] = useState("");
 
   const ordersQuery = useQuery({
     queryKey: ["provider-dashboard", "orders", providerId, statusFilter],
@@ -774,6 +983,29 @@ export function ProviderOrdersView() {
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      if (!cancellingOrder || providerId == null) throw new Error("Elegi un pedido para cancelar.");
+      return cancelProviderOrder(providerId, cancellingOrder.id, cancellationReason.trim());
+    },
+    onSuccess: (payload) => {
+      setCancellingOrder(null);
+      setCancellationReason("");
+      toast.success(
+        payload.refund?.success
+          ? "Pedido cancelado. Refund solicitado, email enviado y review programada."
+          : "Pedido cancelado."
+      );
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "orders", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "order-detail", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "shipments", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "notifications", providerId] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "No pudimos cancelar el pedido.");
+    },
+  });
+
   if (ordersQuery.error) {
     return (
       <DashboardErrorState
@@ -856,6 +1088,27 @@ export function ProviderOrdersView() {
       isMarkingPrinting={printingMutation.isPending}
       isReadyingToShip={readyToShipMutation.isPending}
       isDispatching={dispatchMutation.isPending}
+      onRequestCancelOrder={(order) => {
+        setCancellingOrder(order);
+        setCancellationReason("");
+      }}
+      cancellingOrder={cancellingOrder}
+      cancellationReason={cancellationReason}
+      onCancellationReasonChange={setCancellationReason}
+      onCloseCancellation={() => {
+        if (cancelMutation.isPending) return;
+        setCancellingOrder(null);
+        setCancellationReason("");
+      }}
+      onConfirmCancellation={() => {
+        if (!cancellingOrder) return;
+        if (!cancellationReason.trim()) {
+          toast.error("Debes escribir el motivo de la cancelacion.");
+          return;
+        }
+        void cancelMutation.mutateAsync();
+      }}
+      isCancelling={cancelMutation.isPending}
     />
   );
 }

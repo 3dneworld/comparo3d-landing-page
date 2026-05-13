@@ -40,7 +40,7 @@ export function ProfileRankingCard({ ranking, badges }: Props) {
           <li className="flex gap-2">
             <span className="mt-0.5 shrink-0">·</span>
             <span>
-              Su trayectoria fue verificada por el equipo fundador de 3D NeWorld.
+              Su trayectoria fue verificada por el equipo fundador de COMPARO3D.
             </span>
           </li>
         )}

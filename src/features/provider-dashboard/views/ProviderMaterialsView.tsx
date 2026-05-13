@@ -733,18 +733,6 @@ function MaterialsContent({
           <DashboardPanel
             title="Proximos pasos"
             description="Lo que conviene cerrar para que Materiales quede defendible."
-            headerAction={
-              <Button
-                asChild
-                variant="outline"
-                className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
-              >
-                <a href="/dashboard/proveedores/produccion" rel="noreferrer">
-                  Ir a Produccion
-                  <ArrowUpRight className="h-4 w-4" />
-                </a>
-              </Button>
-            }
           >
             {nextSteps.length ? (
               <div className="space-y-3">

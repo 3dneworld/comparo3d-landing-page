@@ -83,7 +83,8 @@ export function ProviderDashboardShell({
     return pathname[pathname.length - 1] ?? "resumen";
   }, [location.pathname]);
 
-  const providerName = provider?.nombre || user.name || "Proveedor COMPARO3D";
+  const providerName = provider?.nombre?.trim() || "Proveedor COMPARO3D";
+  const providerLogoUrl = provider?.logo_url?.trim() || "";
   const providerLocation = formatProviderLocation(provider) || "Cobertura en configuracion";
   const sectionLabel =
     navigationItems.find((item) => item.key === currentSection)?.label ?? "Dashboard";
@@ -117,21 +118,20 @@ export function ProviderDashboardShell({
             <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/90">
               Panel de proveedores
             </p>
-            <div className="mt-3 space-y-2">
-              <h2 className="font-[Montserrat] text-2xl font-bold tracking-tight text-hero-foreground">
-                {providerName}
-              </h2>
-              <p className="text-sm leading-relaxed text-hero-muted">
-                Continuidad operativa y visibilidad comercial desde una sola base.
-              </p>
+            <div className="mt-4 flex items-center gap-4">
+              {providerLogoUrl ? (
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white">
+                  <img src={providerLogoUrl} alt={providerName} className="h-full w-full object-cover" />
+                </div>
+              ) : null}
+              <div className="space-y-1">
+                <h2 className="font-[Montserrat] text-2xl font-bold tracking-tight text-hero-foreground">
+                  {providerName}
+                </h2>
+                <p className="text-sm text-hero-muted">{providerLocation}</p>
+              </div>
             </div>
             <div className="mt-5 flex flex-wrap items-center gap-2">
-              <DashboardStatePill
-                tone={mapProviderStatusTone(provider?.estado)}
-                className="border-white/10 bg-white/10 text-hero-foreground"
-              >
-                {formatProviderStatus(provider?.estado)}
-              </DashboardStatePill>
               <DashboardStatePill
                 tone="muted"
                 className="border-white/10 bg-white/5 text-hero-muted"
@@ -202,16 +202,6 @@ export function ProviderDashboardShell({
             </div>
           </nav>
 
-          <div className="border-t border-white/10 px-6 py-5">
-            <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary/90">
-                Siguiente fase
-              </p>
-              <p className="mt-2 text-sm leading-relaxed text-hero-muted">
-                El dashboard proveedor ya tiene migradas las vistas operativas y de confianza principales. Queda listo para handoff, QA con datos reales y commit del paquete.
-              </p>
-            </div>
-          </div>
         </aside>
 
         <div className="flex min-h-screen flex-1 flex-col">
@@ -231,13 +221,6 @@ export function ProviderDashboardShell({
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="h-10 rounded-xl border-white/15 bg-white/10 px-4 text-white hover:bg-white/20"
-                  >
-                    <Link to="/dashboard/proveedores/resumen">Ir al dashboard</Link>
-                  </Button>
                   <Button
                     onClick={() => void handleLogout()}
                     variant="outline"

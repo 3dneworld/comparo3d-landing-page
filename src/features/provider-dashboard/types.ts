@@ -45,6 +45,7 @@ export interface DashboardPostalValidation {
 export interface DashboardProvider {
   id: number;
   nombre?: string | null;
+  logo_url?: string | null;
   estado?: string | null;
   validation_status?: string | null;
   tier?: string | null;
@@ -335,7 +336,13 @@ export type DashboardOrderStatus =
 
 export interface DashboardOrderFile {
   file_type?: string | null;
+  kind?: string | null;
+  label?: string | null;
   file_path?: string | null;
+  filename?: string | null;
+  url?: string | null;
+  download_url?: string | null;
+  thumbnail_url?: string | null;
   created_at?: string | null;
 }
 
@@ -409,6 +416,26 @@ export interface ProviderOrderDispatchResponse {
   estimated_days?: string;
   email_sent?: boolean;
   shipment?: DashboardShipment;
+}
+
+export interface ProviderOrderCancellationResponse {
+  success: true;
+  pedido_id: number;
+  proveedor_id: number;
+  previous_status?: string;
+  order_status: "cancelled" | string;
+  cancelled_at?: string;
+  refund?: {
+    success?: boolean;
+    refund_id?: string | number;
+    status?: string;
+    amount?: number;
+  };
+  email_sent?: boolean;
+  review_reminder?: {
+    success?: boolean;
+    scheduled?: boolean;
+  };
 }
 
 export type DashboardShipmentStatus =

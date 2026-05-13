@@ -11,6 +11,7 @@ import type {
   ProviderNotificationReadResponse,
   ProviderNotificationsResponse,
   ProviderOrderDetailResponse,
+  ProviderOrderCancellationResponse,
   ProviderOrderDispatchResponse,
   ProviderOrderPrintingResponse,
   ProviderOrderReadyToShipResponse,
@@ -195,6 +196,19 @@ export function dispatchProviderOrder(orderId: number) {
   return dashboardFetch<ProviderOrderDispatchResponse>(`/api/shipping/orders/${orderId}/dispatch`, {
     method: "POST",
   });
+}
+
+export function cancelProviderOrder(providerId: number, orderId: number, reason: string) {
+  return dashboardFetch<ProviderOrderCancellationResponse>(
+    `/api/provider-dashboard/proveedores/${providerId}/pedidos/${orderId}/cancel`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ reason }),
+    }
+  );
 }
 
 export function fetchProviderShipments(providerId: number, estado?: string) {
