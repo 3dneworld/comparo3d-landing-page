@@ -40,28 +40,6 @@ function formatProviderLocation(provider?: DashboardProvider | null) {
   return parts.join(", ");
 }
 
-function mapProviderStatusTone(status?: string | null) {
-  switch (status) {
-    case "active":
-      return "success";
-    case "pending_validation":
-      return "warning";
-    case "paused":
-    case "suspended":
-    case "blocked":
-      return "danger";
-    case "onboarding_incomplete":
-      return "info";
-    default:
-      return "muted";
-  }
-}
-
-function formatProviderStatus(status?: string | null) {
-  if (!status) return "Sin estado";
-  return status.replaceAll("_", " ");
-}
-
 interface ProviderDashboardShellProps {
   user: DashboardUser;
   provider?: DashboardProvider | null;

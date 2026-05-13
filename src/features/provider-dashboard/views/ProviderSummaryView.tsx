@@ -443,7 +443,9 @@ function SummaryContent({ summary }: { summary: ProviderSummaryResponse }) {
             {[
               {
                 label: "Estado actual",
-                value: summary.provider.estado || "Sin estado",
+                value: summary.provider.estado
+                  ? summary.provider.estado.replaceAll("_", " ")
+                  : "Pendiente de configuracion",
               },
               {
                 label: "Tier",

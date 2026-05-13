@@ -72,7 +72,7 @@ const methodLabels: Record<string, string> = {
 };
 
 function statusMeta(status?: string | null) {
-  if (!status) return { label: "Sin estado", tone: "muted" as const };
+  if (!status) return { label: "Pendiente", tone: "muted" as const };
   return shipmentStatusCopy[status] ?? { label: status.replaceAll("_", " "), tone: "muted" as const };
 }
 
