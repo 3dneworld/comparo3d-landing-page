@@ -144,6 +144,10 @@ export default {
       return serveSpaShell(request, env, url);
     }
 
+    if (url.pathname === "/client-review" || url.pathname === "/client-review/" || url.pathname.startsWith("/client-review/")) {
+      return serveSpaShell(request, env, url);
+    }
+
     // Listado público de proveedores — SPA, sin auth
     if (url.pathname === "/proveedores" || url.pathname === "/proveedores/") {
       return serveSpaShell(request, env, url);
