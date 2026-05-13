@@ -761,7 +761,7 @@ export default function HowItWorksAnimation() {
         })}
       </div>
 
-      <div className="overflow-x-auto pb-4">
+      <div className="scrollbar-hide overflow-x-auto pb-4">
         <div style={{ position: "relative", width: 1100, height: 540, margin: "0 auto" }}>
           <BrowserMock step={step} progress={progress} />
           <Callouts step={step} progress={progress} />
