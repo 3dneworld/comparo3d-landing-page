@@ -322,8 +322,8 @@ function OrderDetailPanel({
                 onClick={onMarkPrinting}
                 disabled={isMarkingPrinting}
               >
-                {isMarkingPrinting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
-                Empezo impresion
+                {isMarkingPrinting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <img src="/icons/3d-printer.webp" alt="" className="h-4 w-4" />}
+                Impresión iniciada
               </Button>
             ) : null}
             {canReadyToShip ? (
@@ -897,6 +897,7 @@ export function ProviderOrdersView() {
   const [readyToShipFiles, setReadyToShipFiles] = useState<File[]>([]);
   const [cancellingOrder, setCancellingOrder] = useState<DashboardOrder | null>(null);
   const [cancellationReason, setCancellationReason] = useState("");
+  const [showPrintingConfirm, setShowPrintingConfirm] = useState(false);
 
   const ordersQuery = useQuery({
     queryKey: ["provider-dashboard", "orders", providerId, statusFilter],
@@ -1035,6 +1036,7 @@ export function ProviderOrdersView() {
   }
 
   return (
+    <>
     <OrdersContent
       items={items}
       selectedOrder={selectedOrder}
@@ -1053,8 +1055,7 @@ export function ProviderOrdersView() {
       onSelectOrder={setSelectedId}
       onMarkPrintingSelected={() => {
         if (!selectedOrder) return;
-        if (!window.confirm(`Marcar el pedido #${selectedOrder.id} como en impresion y enviar email al cliente?`)) return;
-        void printingMutation.mutateAsync();
+        setShowPrintingConfirm(true);
       }}
       onOpenReadyToShipComposer={() => {
         setShowReadyToShipComposer(true);
@@ -1110,5 +1111,51 @@ export function ProviderOrdersView() {
       }}
       isCancelling={cancelMutation.isPending}
     />
+
+    <Dialog open={showPrintingConfirm} onOpenChange={setShowPrintingConfirm}>
+      <DialogContent className="max-w-md rounded-2xl border-border/60 bg-background p-0">
+        <DialogHeader className="space-y-3 px-6 pt-6">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/10 to-blue-600/10">
+            <img src="/icons/3d-printer.webp" alt="" className="h-8 w-8" />
+          </div>
+          <DialogTitle className="text-center font-[Montserrat] text-lg font-bold tracking-tight">
+            Iniciar impresión
+          </DialogTitle>
+          <DialogDescription className="text-center text-sm leading-relaxed text-muted-foreground">
+            {selectedOrder
+              ? `Al confirmar, el pedido #${selectedOrder.id} pasará a estado "En producción" y se le enviará un email al cliente avisándole que su trabajo comenzó a imprimirse.`
+              : "Confirmar inicio de impresión."}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="flex gap-3 px-6 pb-6 pt-4 sm:justify-center">
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10 flex-1 rounded-xl"
+            onClick={() => setShowPrintingConfirm(false)}
+            disabled={printingMutation.isPending}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            className="h-10 flex-1 rounded-xl bg-gradient-primary text-primary-foreground shadow-cta hover:opacity-95"
+            onClick={() => {
+              setShowPrintingConfirm(false);
+              void printingMutation.mutateAsync();
+            }}
+            disabled={printingMutation.isPending}
+          >
+            {printingMutation.isPending ? (
+              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <img src="/icons/3d-printer.webp" alt="" className="mr-2 h-4 w-4" />
+            )}
+            Confirmar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

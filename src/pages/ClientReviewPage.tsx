@@ -148,13 +148,10 @@ const ClientReviewPage = () => {
 
     return (
       <div className="rounded-[32px] border border-hero-muted/10 bg-hero-muted/5 p-8 sm:p-10">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Paso 1 de 2</p>
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-blue-300">Paso 1 de 2</p>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-hero-foreground sm:text-[2.55rem]">
-          Primero calificá tu pedido
+          Calificá tu experiencia
         </h1>
-        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-hero-muted">
-          Una experiencia un poco más guiada: primero estrellas, luego comentario y al final tu beneficio para el próximo checkout.
-        </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
           {Array.from({ length: 5 }, (_, index) => {
@@ -179,7 +176,7 @@ const ClientReviewPage = () => {
         </div>
 
         <div className="mt-8 rounded-[28px] border border-hero-muted/10 bg-white/[0.04] p-5 sm:p-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Paso 2</p>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-blue-300">Paso 2</p>
           <textarea
             value={comment}
             onChange={(event) => setComment(event.target.value)}
@@ -200,7 +197,7 @@ const ClientReviewPage = () => {
 
         <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="rounded-[24px] border border-hero-muted/10 bg-white/5 px-5 py-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-blue-300">
               Desbloqueás tu beneficio al finalizar
             </p>
             <p className="mt-2 text-sm text-hero-muted">
