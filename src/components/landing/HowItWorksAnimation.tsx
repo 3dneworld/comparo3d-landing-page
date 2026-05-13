@@ -51,18 +51,18 @@ type Provider = (typeof PROVIDERS)[number];
 
 const CALLOUTS: Record<StepId, Array<{ x: string; y: string; w: number; title: string; body: string }>> = {
   upload: [
-    { x: "12px", y: "14%", w: 190, title: "Visor 3D en vivo", body: "Apenas subís el STL renderizamos la pieza para que confirmes que es lo que vas a cotizar." },
+    { x: "12px", y: "24%", w: 190, title: "Visor 3D en vivo", body: "Apenas subís el STL renderizamos la pieza para que confirmes que es lo que vas a cotizar." },
     { x: "902px", y: "62%", w: 230, title: "Opciones avanzadas", body: "Color, relleno y altura de capa. Defaults sensatos; ajustás solo si querés." },
   ],
   quotes: [
-    { x: "12px", y: "8%", w: 190, title: "Cotizaciones reales", body: "Las cotizaciones que muestra la plataforma son un compromiso del proveedor." },
+    { x: "12px", y: "19%", w: 190, title: "Cotizaciones reales", body: "Las cotizaciones que muestra la plataforma son un compromiso del proveedor." },
     { x: "902px", y: "42%", w: 230, title: "Filtrá rápido", body: "Proveedores certificados o cerca tuyo. Cambiá la cantidad y los precios se actualizan al instante." },
   ],
   choose: [
     { x: "902px", y: "50%", w: 230, title: "Opción recomendada", body: "Ordenamos por una combinación de precio, rating y cercanía al domicilio de entrega." },
   ],
   pay: [
-    { x: "12px", y: "20%", w: 190, title: "Checkout seguro", body: "Podés abonar con tarjeta de crédito/débito o con el saldo de tu cuenta Mercado Pago." },
+    { x: "12px", y: "54%", w: 190, title: "Checkout seguro", body: "Podés abonar con tarjeta de crédito/débito o con el saldo de tu cuenta Mercado Pago." },
     { x: "902px", y: "68%", w: 220, title: "Resumen claro", body: "Ves a quién le comprás, qué material, qué plazo y cuánto pagás antes de confirmar." },
   ],
   deliver: [
@@ -113,9 +113,9 @@ function SpotlightOverlay({ step, progress }: { step: StepId; progress: number }
 
   if (step === "quotes") {
     if (progress >= 0.5 && progress < 0.6) {
-      target = { x: 508, y: 63, w: 140, h: 32, rx: 16 };
+      target = { x: 518, y: 63, w: 128, h: 32, rx: 16 };
     } else if (progress >= 0.68 && progress < 0.78) {
-      target = { x: 223, y: 61, w: 146, h: 36, rx: 18 };
+      target = { x: 238, y: 61, w: 132, h: 36, rx: 18 };
     }
   }
 
@@ -593,8 +593,9 @@ function SceneDeliver({ progress }: { progress: number }) {
   const showPago = progress >= 0.1;
   const showImprimiendo = progress >= 0.25;
   const showEnCamino = progress >= 0.4;
-  const delivered = progress >= 0.74;
-  const truckProgress = progress < 0.4 ? 0 : Math.min(1, (progress - 0.4) / 0.25);
+  const truckProgress = progress < 0.4 ? 0 : Math.min(1, (progress - 0.4) / 0.38);
+  const delivered = progress >= 0.72;
+  const arrived = truckProgress >= 1;
   const truckX = 95 + truckProgress * (805 - 95);
 
   return (
@@ -616,15 +617,15 @@ function SceneDeliver({ progress }: { progress: number }) {
         <div style={{ position: "absolute", left: 80, right: 80, top: "60%", height: 4, background: PAL.muted, borderRadius: 2 }} />
         <div style={{ position: "absolute", left: 80, right: 80, top: "calc(60% - 1px)", height: 6, borderTop: `2px dashed ${PAL.inkSoft}`, opacity: 0.2 }} />
         <TrackPoint left={50} label="Printalot" image="/logos/PAL.png" />
-        <TrackPoint right={50} label="Tu casa" done={delivered} />
-        {!delivered && progress >= 0.4 && (
+        <TrackPoint right={50} label="Tu casa" done={arrived} />
+        {progress >= 0.4 && !arrived && (
           <div style={{ position: "absolute", left: truckX, top: "60%", transform: "translate(-50%, -58%)", transition: "left .14s linear" }}>
             <div style={{ width: 44, height: 30, background: "#FFD100", color: "#2d3277", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 10px rgba(45,50,119,.18)" }}>
               <Truck size={18} />
             </div>
           </div>
         )}
-        {delivered && (
+        {arrived && (
           <div style={{ position: "absolute", right: 74, top: "60%", transform: "translate(50%, -10%)", animation: "hiw-fade-up .4s ease-out" }}>
             <div style={{ width: 28, height: 28, background: "#c89765", borderRadius: 4, boxShadow: "0 4px 12px rgba(0,0,0,.18)", position: "relative" }}>
               <div style={{ position: "absolute", top: "50%", left: 0, right: 0, height: 2, background: "#8b6432", transform: "translateY(-50%)" }} />
