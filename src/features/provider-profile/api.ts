@@ -2,7 +2,7 @@
 import type { ProviderProfileResponse } from "./types";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "https://api.3dneworld.com";
+  import.meta.env.VITE_API_URL || "";
 
 export async function fetchProviderProfile(
   providerId: number

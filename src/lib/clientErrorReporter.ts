@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "https://api.3dneworld.com";
+  import.meta.env.VITE_API_URL || "";
 
 const REPORT_COOLDOWN_MS = 5 * 60 * 1000;
 const reportedAt = new Map<string, number>();

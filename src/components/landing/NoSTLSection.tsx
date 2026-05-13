@@ -5,7 +5,7 @@ import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
 import { getCatalogItems, CatalogItem, isApiError } from "@/lib/api";
 import NoSTLCarousel from "./NoSTLCarousel";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "https://api.3dneworld.com";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 const WHATSAPP_URL = "https://wa.me/5491167987401?text=Hola!%20Tengo%20una%20idea%20para%20imprimir%20en%203D%20y%20necesito%20ayuda%20con%20el%20diseño.";
 
 interface NoSTLSectionProps {

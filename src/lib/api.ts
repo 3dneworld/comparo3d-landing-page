@@ -5,7 +5,7 @@
 import { reportClientError } from "./clientErrorReporter";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "https://api.3dneworld.com";
+  import.meta.env.VITE_API_URL || "";
 
 // Log de diagnóstico — visible en Console al cargar la app
 console.log(
