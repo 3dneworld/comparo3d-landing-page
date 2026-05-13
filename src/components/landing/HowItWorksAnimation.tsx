@@ -113,9 +113,9 @@ function SpotlightOverlay({ step, progress }: { step: StepId; progress: number }
 
   if (step === "quotes") {
     if (progress >= 0.5 && progress < 0.6) {
-      target = { x: 518, y: 63, w: 128, h: 32, rx: 16 };
+      target = { x: 512, y: 74, w: 132, h: 29, rx: 15 };
     } else if (progress >= 0.68 && progress < 0.78) {
-      target = { x: 238, y: 61, w: 132, h: 36, rx: 18 };
+      target = { x: 235, y: 72, w: 126, h: 33, rx: 17 };
     }
   }
 
