@@ -988,11 +988,16 @@ export function ProviderOrdersView() {
     },
     onSuccess: (payload) => {
       const isPickup = selectedOrder?.delivery_method === "retiro_taller";
+      const wasMoto = payload.product_type === "motorcycle";
       toast.success(
         isPickup
           ? payload.email_sent
             ? "Pedido marcado como listo para retirar. Email enviado al cliente."
             : "Pedido marcado como listo para retirar."
+          : wasMoto
+          ? payload.email_sent
+            ? "Despacho por moto confirmado. Email enviado al cliente."
+            : "Despacho por moto confirmado."
           : payload.email_sent
           ? `Despacho confirmado. Tracking ${payload.trackingNumber} y mail enviado.`
           : `Despacho confirmado. Tracking ${payload.trackingNumber}`
