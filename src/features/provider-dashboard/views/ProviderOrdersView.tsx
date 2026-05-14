@@ -299,6 +299,11 @@ function OrderDetailPanel({
   const canReadyToShip = ["in_production"].includes(String(order.order_status || ""));
   const canDispatch = ["in_production", "ready_to_ship", "listo_para_envio"].includes(String(order.order_status || ""));
   const canCancel = !["cancelled", "completed"].includes(String(order.order_status || ""));
+  const _s = String(order.order_status || "");
+  const step1Done = ["in_production", "ready_to_ship", "listo_para_envio", "en_transito", "completed"].includes(_s);
+  const step2Done = ["ready_to_ship", "listo_para_envio", "en_transito", "completed"].includes(_s);
+  const step3Done = ["en_transito", "completed"].includes(_s);
+  const showActionRow = _s !== "cancelled";
 
   return (
     <div className="space-y-4">
@@ -313,48 +318,71 @@ function OrderDetailPanel({
             <DashboardStatePill tone={paymentStatus.tone}>Pago {paymentStatus.label}</DashboardStatePill>
           </div>
         </div>
-        {canMarkPrinting || canReadyToShip || canDispatch ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {canMarkPrinting ? (
+        {showActionRow ? (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {/* Paso 1 */}
+            {step1Done ? (
+              <span className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-muted/50 bg-muted/25 px-3 text-sm font-medium text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-green-500/80" />
+                Impresión iniciada
+              </span>
+            ) : (
               <Button
                 type="button"
                 variant="outline"
-                className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
+                className="h-9 rounded-xl border-primary/30 bg-primary/[0.06] px-3 text-sm text-primary hover:bg-primary/[0.10] disabled:opacity-40"
                 onClick={onMarkPrinting}
-                disabled={isMarkingPrinting}
+                disabled={!canMarkPrinting || isMarkingPrinting}
               >
                 {isMarkingPrinting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <img src="/icons/3d-printer.webp" alt="" className="h-4 w-4" />}
-                Impresión iniciada
+                Iniciar impresión
               </Button>
-            ) : null}
-            {canReadyToShip ? (
+            )}
+
+            {/* Paso 2 */}
+            {step2Done ? (
+              <span className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-muted/50 bg-muted/25 px-3 text-sm font-medium text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-green-500/80" />
+                Fotos subidas
+              </span>
+            ) : (
               <Button
                 type="button"
                 variant="outline"
-                className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
+                className="h-9 rounded-xl border-primary/30 bg-primary/[0.06] px-3 text-sm text-primary hover:bg-primary/[0.10] disabled:opacity-40"
                 onClick={onOpenReadyToShip}
-                disabled={isReadyingToShip}
+                disabled={!canReadyToShip || isReadyingToShip}
               >
-                {isReadyingToShip ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                Termino impresion
+                {isReadyingToShip ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                Subir fotos
               </Button>
-            ) : null}
-            {canDispatch ? (
+            )}
+
+            {/* Paso 3 */}
+            {step3Done ? (
+              <span className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-muted/50 bg-muted/25 px-3 text-sm font-medium text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-green-500/80" />
+                Despacho confirmado
+              </span>
+            ) : (
               <Button
                 type="button"
-                className="h-10 rounded-xl bg-gradient-primary px-4 text-primary-foreground shadow-cta hover:opacity-95"
+                variant="outline"
+                className="h-9 rounded-xl border-primary/30 bg-primary/[0.06] px-3 text-sm text-primary hover:bg-primary/[0.10] disabled:opacity-40"
                 onClick={onDispatch}
-                disabled={isDispatching}
+                disabled={!canDispatch || isDispatching}
               >
                 {isDispatching ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
                 Confirmar despacho
               </Button>
-            ) : null}
+            )}
+
+            {/* Cancelar — siempre a la derecha */}
             {canCancel ? (
               <Button
                 type="button"
                 variant="outline"
-                className="h-10 rounded-xl border-rose-200 bg-rose-50 px-4 text-rose-700 hover:bg-rose-100"
+                className="ml-auto h-9 rounded-xl border-rose-200 bg-rose-50 px-3 text-sm text-rose-700 hover:bg-rose-100"
                 onClick={onRequestCancel}
               >
                 <BadgeX className="h-4 w-4" />
@@ -401,22 +429,6 @@ function OrderDetailPanel({
         {timelineRows(order).map((item) => (
           <DetailRow key={item.label} label={item.label} value={formatDateTime(item.value)} icon={item.icon} />
         ))}
-        {canDispatch ? (
-          <button
-            type="button"
-            onClick={onDispatch}
-            disabled={isDispatching}
-            className="flex items-center gap-3 rounded-[1rem] border border-emerald-200 bg-emerald-50 p-3 text-left transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600">
-              <Truck className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">Despacho</p>
-              <p className="mt-0.5 text-sm font-semibold text-emerald-800">Marcar despachado</p>
-            </div>
-          </button>
-        ) : null}
       </div>
 
       {order.notas ? (
