@@ -88,7 +88,7 @@ export function ProviderDashboardShell({
         }}
       />
       <div className="relative flex min-h-screen">
-        <aside className="hidden w-[292px] shrink-0 border-r border-white/10 bg-gradient-dark text-hero-foreground lg:flex lg:flex-col">
+        <aside className="hidden w-[292px] shrink-0 border-r border-white/10 bg-gradient-dark text-hero-foreground lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:overflow-y-auto">
           <div className="border-b border-white/10 px-7 py-6">
             <Link to="/" className="inline-flex">
               <img src={logoWhite} alt="COMPARO3D" className="h-8" />

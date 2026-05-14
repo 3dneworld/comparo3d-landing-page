@@ -42,6 +42,7 @@ import {
   DashboardLoadingState,
 } from "@/features/provider-dashboard/components/DashboardStates";
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
+import { DispatchConfirmDialog, type DispatchConfirmParams } from "@/features/provider-dashboard/components/DispatchConfirmDialog";
 import type { DashboardNotification, DashboardShipment } from "@/features/provider-dashboard/types";
 
 const shipmentStatusOptions = [
@@ -571,6 +572,7 @@ export function ProviderShipmentsView() {
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [trackingCode, setTrackingCode] = useState("");
+  const [showDispatchModal, setShowDispatchModal] = useState(false);
 
   const shipmentsQuery = useQuery({
     queryKey: ["provider-dashboard", "shipments", providerId, statusFilter],
@@ -609,9 +611,9 @@ export function ProviderShipmentsView() {
   });
 
   const statusMutation = useMutation({
-    mutationFn: async (status: string) => {
+    mutationFn: async ({ status, dispatchParams }: { status: string; dispatchParams?: DispatchConfirmParams }) => {
       if (!providerId || !selectedId) throw new Error("No encontramos un envio valido.");
-      return updateProviderShipmentStatus(providerId, selectedId, status);
+      return updateProviderShipmentStatus(providerId, selectedId, status, dispatchParams);
     },
     onSuccess: (payload) => {
       toast.success(`Envio actualizado a ${statusMeta(payload.shipment.status).label}`);
@@ -688,34 +690,56 @@ export function ProviderShipmentsView() {
     );
   }
 
+  const isPickupShipment = selectedShipment?.shipping_method === "retiro_taller";
+  const shipmentHasTracking = !!selectedShipment?.tracking_code;
+
   return (
-    <ShipmentsContent
-      items={items}
-      notifications={notifications}
-      unreadNotifications={unreadNotifications}
-      selectedShipment={selectedShipment}
-      selectedId={selectedId}
-      statusFilter={statusFilter}
-      trackingCode={trackingCode}
-      onStatusChange={(status) => {
-        const label = statusMeta(status).label.toLowerCase();
-        if (!window.confirm(`Confirmar cambio de estado a ${label}?`)) return;
-        void statusMutation.mutateAsync(status);
-      }}
-      onRefresh={() => {
-        void shipmentsQuery.refetch();
-        void notificationsQuery.refetch();
-      }}
-      onSelectShipment={(shipment) => {
-        setSelectedId(shipment.id);
-        setTrackingCode(shipment.tracking_code || "");
-      }}
-      onTrackingCodeChange={setTrackingCode}
-      onSaveTracking={() => void trackingMutation.mutateAsync()}
-      onMarkNotificationRead={(id) => void readNotificationMutation.mutateAsync(id)}
-      onMarkAllNotificationsRead={() => void readAllNotificationsMutation.mutateAsync()}
-      isFetching={shipmentsQuery.isFetching || notificationsQuery.isFetching}
-      isMutating={isMutating}
-    />
+    <>
+      <ShipmentsContent
+        items={items}
+        notifications={notifications}
+        unreadNotifications={unreadNotifications}
+        selectedShipment={selectedShipment}
+        selectedId={selectedId}
+        statusFilter={statusFilter}
+        trackingCode={trackingCode}
+        onStatusChange={(status) => {
+          if (status === "dispatched") {
+            setShowDispatchModal(true);
+            return;
+          }
+          const label = statusMeta(status).label.toLowerCase();
+          if (!window.confirm(`Confirmar cambio de estado a ${label}?`)) return;
+          void statusMutation.mutateAsync({ status });
+        }}
+        onRefresh={() => {
+          void shipmentsQuery.refetch();
+          void notificationsQuery.refetch();
+        }}
+        onSelectShipment={(shipment) => {
+          setSelectedId(shipment.id);
+          setTrackingCode(shipment.tracking_code || "");
+        }}
+        onTrackingCodeChange={setTrackingCode}
+        onSaveTracking={() => void trackingMutation.mutateAsync()}
+        onMarkNotificationRead={(id) => void readNotificationMutation.mutateAsync(id)}
+        onMarkAllNotificationsRead={() => void readAllNotificationsMutation.mutateAsync()}
+        isFetching={shipmentsQuery.isFetching || notificationsQuery.isFetching}
+        isMutating={isMutating}
+      />
+
+      <DispatchConfirmDialog
+        open={showDispatchModal}
+        onOpenChange={setShowDispatchModal}
+        orderId={selectedShipment?.cotizacion_id ?? selectedShipment?.id}
+        isPickup={isPickupShipment}
+        hasTracking={shipmentHasTracking}
+        isSubmitting={statusMutation.isPending}
+        onConfirm={(params) => {
+          setShowDispatchModal(false);
+          void statusMutation.mutateAsync({ status: "dispatched", dispatchParams: params });
+        }}
+      />
+    </>
   );
 }

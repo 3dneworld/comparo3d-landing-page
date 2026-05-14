@@ -54,6 +54,7 @@ import {
   DashboardLoadingState,
 } from "@/features/provider-dashboard/components/DashboardStates";
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
+import { DispatchConfirmDialog, type DispatchConfirmParams } from "@/features/provider-dashboard/components/DispatchConfirmDialog";
 import type { DashboardOrder } from "@/features/provider-dashboard/types";
 
 const orderStatusOptions = [
@@ -383,6 +384,22 @@ function OrderDetailPanel({
         {timelineRows(order).map((item) => (
           <DetailRow key={item.label} label={item.label} value={formatDateTime(item.value)} icon={item.icon} />
         ))}
+        {canDispatch ? (
+          <button
+            type="button"
+            onClick={onDispatch}
+            disabled={isDispatching}
+            className="flex items-center gap-3 rounded-[1rem] border border-emerald-200 bg-emerald-50 p-3 text-left transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600">
+              <Truck className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">Despacho</p>
+              <p className="mt-0.5 text-sm font-semibold text-emerald-800">Marcar despachado</p>
+            </div>
+          </button>
+        ) : null}
       </div>
 
       {order.notas ? (
@@ -898,6 +915,7 @@ export function ProviderOrdersView() {
   const [cancellingOrder, setCancellingOrder] = useState<DashboardOrder | null>(null);
   const [cancellationReason, setCancellationReason] = useState("");
   const [showPrintingConfirm, setShowPrintingConfirm] = useState(false);
+  const [showDispatchModal, setShowDispatchModal] = useState(false);
 
   const ordersQuery = useQuery({
     queryKey: ["provider-dashboard", "orders", providerId, statusFilter],
@@ -964,13 +982,18 @@ export function ProviderOrdersView() {
   });
 
   const dispatchMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (params: DispatchConfirmParams) => {
       if (!selectedId) throw new Error("Elegí un pedido para confirmar despacho.");
-      return dispatchProviderOrder(selectedId);
+      return dispatchProviderOrder(selectedId, params);
     },
     onSuccess: (payload) => {
+      const isPickup = selectedOrder?.delivery_method === "retiro_taller";
       toast.success(
-        payload.email_sent
+        isPickup
+          ? payload.email_sent
+            ? "Pedido marcado como listo para retirar. Email enviado al cliente."
+            : "Pedido marcado como listo para retirar."
+          : payload.email_sent
           ? `Despacho confirmado. Tracking ${payload.trackingNumber} y mail enviado.`
           : `Despacho confirmado. Tracking ${payload.trackingNumber}`
       );
@@ -1082,8 +1105,7 @@ export function ProviderOrdersView() {
       }}
       onDispatchSelected={() => {
         if (!selectedOrder) return;
-        if (!window.confirm(`Confirmar despacho del pedido #${selectedOrder.id}?`)) return;
-        void dispatchMutation.mutateAsync();
+        setShowDispatchModal(true);
       }}
       isFetching={ordersQuery.isFetching}
       isMarkingPrinting={printingMutation.isPending}
@@ -1110,6 +1132,19 @@ export function ProviderOrdersView() {
         void cancelMutation.mutateAsync();
       }}
       isCancelling={cancelMutation.isPending}
+    />
+
+    <DispatchConfirmDialog
+      open={showDispatchModal}
+      onOpenChange={setShowDispatchModal}
+      orderId={selectedOrder?.id}
+      isPickup={selectedOrder?.delivery_method === "retiro_taller"}
+      hasTracking={!!(selectedOrder as (DashboardOrder & { shipment_tracking_code?: string | null }) | null)?.shipment_tracking_code}
+      isSubmitting={dispatchMutation.isPending}
+      onConfirm={(params) => {
+        setShowDispatchModal(false);
+        void dispatchMutation.mutateAsync(params);
+      }}
     />
 
     <Dialog open={showPrintingConfirm} onOpenChange={setShowPrintingConfirm}>

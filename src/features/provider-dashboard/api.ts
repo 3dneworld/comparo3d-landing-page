@@ -192,9 +192,23 @@ export function markProviderOrderReadyToShip(
   );
 }
 
-export function dispatchProviderOrder(orderId: number) {
+export interface DispatchParams {
+  estimatedDeliveryDate?: string;
+  useMotorcycle?: boolean;
+  pickupTimeFrom?: string;
+  pickupTimeTo?: string;
+}
+
+export function dispatchProviderOrder(orderId: number, params?: DispatchParams) {
   return dashboardFetch<ProviderOrderDispatchResponse>(`/api/shipping/orders/${orderId}/dispatch`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      estimated_delivery_date: params?.estimatedDeliveryDate,
+      use_motorcycle: params?.useMotorcycle ?? false,
+      pickup_time_from: params?.pickupTimeFrom,
+      pickup_time_to: params?.pickupTimeTo,
+    }),
   });
 }
 
@@ -228,13 +242,23 @@ export function updateProviderShipmentTracking(providerId: number, shipmentId: n
   });
 }
 
-export function updateProviderShipmentStatus(providerId: number, shipmentId: number, status: string) {
+export function updateProviderShipmentStatus(providerId: number, shipmentId: number, status: string, dispatchParams?: DispatchParams) {
   return dashboardFetch<ProviderShipmentMutationResponse>(`/api/shipping/${shipmentId}/status?proveedor_id=${providerId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({
+      status,
+      ...(status === "dispatched" && dispatchParams
+        ? {
+            estimated_delivery_date: dispatchParams.estimatedDeliveryDate,
+            use_motorcycle: dispatchParams.useMotorcycle ?? false,
+            pickup_time_from: dispatchParams.pickupTimeFrom,
+            pickup_time_to: dispatchParams.pickupTimeTo,
+          }
+        : {}),
+    }),
   });
 }
 
