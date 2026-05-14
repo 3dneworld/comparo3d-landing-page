@@ -21,12 +21,12 @@ const FONT_BODY = "Inter, system-ui, sans-serif";
 
 type StepId = "upload" | "quotes" | "choose" | "pay" | "deliver";
 
-const TIMELINE: Array<{ id: StepId; label: string; title: string; dur: number }> = [
-  { id: "upload", label: "Paso 1", title: "Subí tu STL", dur: 7 },
-  { id: "quotes", label: "Paso 2", title: "Recibí cotizaciones", dur: 8 },
-  { id: "choose", label: "Paso 3", title: "Elegí la mejor", dur: 5 },
-  { id: "pay", label: "Paso 4", title: "Pagá seguro", dur: 5 },
-  { id: "deliver", label: "Paso 5", title: "Recibí tu pieza", dur: 10 },
+const TIMELINE: Array<{ id: StepId; label: string; title: string; shortTitle: string; dur: number }> = [
+  { id: "upload", label: "Paso 1", title: "Subí tu STL", shortTitle: "Subí tu STL", dur: 7 },
+  { id: "quotes", label: "Paso 2", title: "Recibí cotizaciones", shortTitle: "Cotizá", dur: 8 },
+  { id: "choose", label: "Paso 3", title: "Elegí la mejor", shortTitle: "Elegí", dur: 5 },
+  { id: "pay", label: "Paso 4", title: "Pagá seguro", shortTitle: "Pagá", dur: 5 },
+  { id: "deliver", label: "Paso 5", title: "Recibí tu pieza", shortTitle: "Recibí", dur: 10 },
 ];
 
 const TOTAL = TIMELINE.reduce((sum, item) => sum + item.dur, 0);
@@ -806,18 +806,21 @@ export default function HowItWorksAnimation() {
         }
       `}</style>
 
-      <div className="mx-auto mb-7 grid max-w-[1100px] grid-cols-5 gap-1.5 px-1 sm:gap-3">
+      <div className="mx-auto mb-7 grid max-w-[1100px] grid-cols-5 items-start gap-1.5 px-1 sm:gap-3">
         {TIMELINE.map((item, index) => {
           const active = index === stepIndex;
           const past = index < stepIndex;
           const pct = active ? progress * 100 : past ? 100 : 0;
           return (
-            <button key={item.id} type="button" onClick={() => jumpTo(index)} className="min-w-0 cursor-pointer border-0 bg-transparent p-0 text-left font-body">
-              <div className="mb-2 h-[3px] overflow-hidden rounded-full bg-muted sm:mb-3">
+            <button key={item.id} type="button" onClick={() => jumpTo(index)} className="flex min-w-0 cursor-pointer flex-col border-0 bg-transparent p-0 text-left font-body">
+              <div className="mb-2 h-[3px] w-full overflow-hidden rounded-full bg-muted sm:mb-3">
                 <div style={{ width: `${pct}%`, background: active || past ? PAL.primary : PAL.muted, transition: active ? "width 100ms linear" : "width .25s" }} className="h-full" />
               </div>
-              <div className={`text-[9px] font-semibold uppercase tracking-[0.1em] sm:text-[10px] sm:tracking-[0.12em] ${active ? "text-primary" : past ? "text-foreground" : "text-muted-foreground"}`}>{item.label}</div>
-              <div className={`mt-1 text-[11px] font-semibold leading-tight sm:text-[14px] ${active || past ? "text-foreground" : "text-muted-foreground"}`}>{item.title}</div>
+              <div className={`text-[9px] font-semibold uppercase tracking-[0.08em] sm:text-[10px] sm:tracking-[0.12em] ${active ? "text-primary" : past ? "text-foreground" : "text-muted-foreground"}`}>{item.label}</div>
+              <div className={`mt-1 text-[12px] font-semibold leading-tight sm:text-[14px] ${active || past ? "text-foreground" : "text-muted-foreground"}`}>
+                <span className="sm:hidden">{item.shortTitle}</span>
+                <span className="hidden sm:inline">{item.title}</span>
+              </div>
             </button>
           );
         })}
