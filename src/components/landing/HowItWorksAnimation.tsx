@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Check, Home, Mail, Shield, Star, Truck, Upload } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Check, Home, Mail, Maximize2, RotateCw, Shield, Star, Truck, Upload, X } from "lucide-react";
 
 const PAL = {
   bg: "#f5f6f8",
@@ -702,9 +702,16 @@ function Callouts({ step, progress }: { step: StepId; progress: number }) {
   );
 }
 
+const STAGE_W = 1100;
+const STAGE_H = 540;
+
 export default function HowItWorksAnimation() {
   const [time, setTime] = useState(0);
   const startRef = useRef(performance.now());
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showRotateHint, setShowRotateHint] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(false);
+  const fsContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let raf = 0;
@@ -735,6 +742,57 @@ export default function HowItWorksAnimation() {
     setTime(target);
   };
 
+  const closeFullscreen = useCallback(() => {
+    setIsFullscreen(false);
+    if (typeof document !== "undefined" && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => undefined);
+    }
+  }, []);
+
+  const openFullscreen = useCallback(() => {
+    setIsFullscreen(true);
+    setShowRotateHint(true);
+    window.setTimeout(() => setShowRotateHint(false), 3500);
+    const node = fsContainerRef.current;
+    if (node && node.requestFullscreen) {
+      node.requestFullscreen().catch(() => undefined);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const handler = () => {
+      if (!document.fullscreenElement) {
+        setIsFullscreen(false);
+      }
+    };
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
+
+  useEffect(() => {
+    if (!isFullscreen || typeof document === "undefined") return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeFullscreen();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [isFullscreen, closeFullscreen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(orientation: landscape)");
+    const update = () => setIsLandscape(mq.matches);
+    update();
+    mq.addEventListener?.("change", update);
+    return () => mq.removeEventListener?.("change", update);
+  }, []);
+
   return (
     <div className="mx-auto max-w-[1180px]">
       <style>{`
@@ -742,30 +800,233 @@ export default function HowItWorksAnimation() {
         @keyframes hiw-fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes hiw-drop { 0% { transform: translateY(-40px); opacity: 0; } 40%,100% { transform: translateY(0); opacity: 1; } }
         @keyframes hiw-fill { from { width: 0; } to { width: 100%; } }
+        @keyframes hiw-rotate-hint {
+          0%, 100% { transform: rotate(-12deg); }
+          50% { transform: rotate(78deg); }
+        }
       `}</style>
 
-      <div className="mx-auto mb-7 grid max-w-[1100px] grid-cols-5 gap-3 px-1">
+      <div className="mx-auto mb-7 grid max-w-[1100px] grid-cols-5 gap-1.5 px-1 sm:gap-3">
         {TIMELINE.map((item, index) => {
           const active = index === stepIndex;
           const past = index < stepIndex;
           const pct = active ? progress * 100 : past ? 100 : 0;
           return (
             <button key={item.id} type="button" onClick={() => jumpTo(index)} className="min-w-0 cursor-pointer border-0 bg-transparent p-0 text-left font-body">
-              <div className="mb-3 h-[3px] overflow-hidden rounded-full bg-muted">
+              <div className="mb-2 h-[3px] overflow-hidden rounded-full bg-muted sm:mb-3">
                 <div style={{ width: `${pct}%`, background: active || past ? PAL.primary : PAL.muted, transition: active ? "width 100ms linear" : "width .25s" }} className="h-full" />
               </div>
-              <div className={`text-[10px] font-semibold uppercase tracking-[0.12em] ${active ? "text-primary" : past ? "text-foreground" : "text-muted-foreground"}`}>{item.label}</div>
-              <div className={`mt-1 text-[14px] font-semibold ${active || past ? "text-foreground" : "text-muted-foreground"}`}>{item.title}</div>
+              <div className={`text-[9px] font-semibold uppercase tracking-[0.1em] sm:text-[10px] sm:tracking-[0.12em] ${active ? "text-primary" : past ? "text-foreground" : "text-muted-foreground"}`}>{item.label}</div>
+              <div className={`mt-1 text-[11px] font-semibold leading-tight sm:text-[14px] ${active || past ? "text-foreground" : "text-muted-foreground"}`}>{item.title}</div>
             </button>
           );
         })}
       </div>
 
-      <div className="scrollbar-hide overflow-x-auto pb-4">
-        <div style={{ position: "relative", width: 1100, height: 540, margin: "0 auto" }}>
-          <BrowserMock step={step} progress={progress} />
-          <Callouts step={step} progress={progress} />
+      <ScaledStage>
+        <button
+          type="button"
+          onClick={openFullscreen}
+          aria-label="Ver en pantalla completa"
+          className="hiw-expand-btn"
+        >
+          <Maximize2 size={16} strokeWidth={2.4} />
+        </button>
+        <BrowserMock step={step} progress={progress} />
+        <Callouts step={step} progress={progress} />
+      </ScaledStage>
+
+      {isFullscreen && (
+        <div
+          ref={fsContainerRef}
+          className="hiw-fs-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Cómo funciona en pantalla completa"
+        >
+          <button
+            type="button"
+            onClick={closeFullscreen}
+            className="hiw-fs-close"
+            aria-label="Cerrar pantalla completa"
+          >
+            <X size={20} strokeWidth={2.4} />
+          </button>
+
+          <div className="hiw-fs-stage-wrap">
+            <ScaledStage fullscreen landscape={isLandscape}>
+              <BrowserMock step={step} progress={progress} />
+              <Callouts step={step} progress={progress} />
+            </ScaledStage>
+          </div>
+
+          {showRotateHint && !isLandscape && (
+            <div className="hiw-rotate-hint">
+              <RotateCw size={28} className="hiw-rotate-icon" />
+              <span>Girá el celular para verlo más grande</span>
+            </div>
+          )}
         </div>
+      )}
+
+      <style>{`
+        .hiw-expand-btn {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          z-index: 30;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.94);
+          color: ${PAL.primary};
+          border: 1px solid ${PAL.borderSoft};
+          box-shadow: 0 6px 18px rgba(16, 24, 40, 0.12);
+          cursor: pointer;
+          transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .hiw-expand-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 10px 22px rgba(16, 24, 40, 0.16);
+          background: #fff;
+        }
+
+        .hiw-fs-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          background: radial-gradient(circle at 50% 20%, #1a2436 0%, #0c1422 70%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          animation: hiw-fade-up 220ms ease-out;
+        }
+
+        .hiw-fs-close {
+          position: absolute;
+          top: 14px;
+          right: 14px;
+          z-index: 10001;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 44px;
+          height: 44px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.94);
+          color: ${PAL.ink};
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+          cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .hiw-fs-stage-wrap {
+          width: 100vw;
+          height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 8px;
+          box-sizing: border-box;
+        }
+
+        .hiw-rotate-hint {
+          position: absolute;
+          bottom: 28px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: inline-flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 18px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.96);
+          color: ${PAL.ink};
+          font-family: ${FONT_BODY};
+          font-size: 0.92rem;
+          font-weight: 600;
+          box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+          pointer-events: none;
+          z-index: 10000;
+          max-width: calc(100vw - 28px);
+        }
+
+        .hiw-rotate-icon {
+          color: ${PAL.primary};
+          animation: hiw-rotate-hint 1.6s ease-in-out infinite;
+          transform-origin: center;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+type ScaledStageProps = {
+  children: ReactNode;
+  fullscreen?: boolean;
+  landscape?: boolean;
+};
+
+function ScaledStage({ children, fullscreen = false, landscape = false }: ScaledStageProps) {
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const [scale, setScale] = useState(1);
+
+  useLayoutEffect(() => {
+    const node = wrapperRef.current;
+    if (!node) return;
+
+    const update = () => {
+      const parent = node.parentElement;
+      if (!parent) return;
+      const availableWidth = parent.clientWidth;
+      const availableHeight = fullscreen
+        ? (typeof window !== "undefined" ? window.innerHeight - 16 : STAGE_H)
+        : Infinity;
+      const scaleByWidth = availableWidth / STAGE_W;
+      const scaleByHeight = availableHeight / STAGE_H;
+      const next = Math.min(scaleByWidth, scaleByHeight, 1.6);
+      setScale(next > 0 ? next : 1);
+    };
+
+    update();
+    const ro = new ResizeObserver(update);
+    if (node.parentElement) ro.observe(node.parentElement);
+    window.addEventListener("resize", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [fullscreen, landscape]);
+
+  return (
+    <div
+      ref={wrapperRef}
+      style={{
+        position: "relative",
+        width: STAGE_W * scale,
+        height: STAGE_H * scale,
+        margin: "0 auto",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: STAGE_W,
+          height: STAGE_H,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+        }}
+      >
+        {children}
       </div>
     </div>
   );

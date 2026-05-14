@@ -10,11 +10,15 @@ type TransformCard = {
   resultObjectFit?: "contain" | "cover";
 };
 
+import { useEffect, useRef, useState } from "react";
+
 type NoStlTransformSectionProps = {
   className?: string;
   whatsappHref?: string;
   cards?: TransformCard[];
 };
+
+const CYCLE_MS = 5600;
 
 const defaultCards: TransformCard[] = [
   {
@@ -52,11 +56,24 @@ const defaultCards: TransformCard[] = [
   },
 ];
 
+type CardManualState = "auto" | "source" | "result";
+
 export default function NoStlTransformSection({
   className = "",
   whatsappHref = "https://wa.me/5491167987401?text=Hola!%20Quiero%20consultar%20por%20modelado%203D%20sin%20archivo%20STL.",
   cards = defaultCards,
 }: NoStlTransformSectionProps) {
+  const [manualState, setManualState] = useState<Record<string, CardManualState>>({});
+
+  const handleToggle = (id: string) => {
+    setManualState((prev) => {
+      const current = prev[id] ?? "auto";
+      const next: CardManualState =
+        current === "auto" ? "result" : current === "result" ? "source" : "result";
+      return { ...prev, [id]: next };
+    });
+  };
+
   return (
     <section
       id="no-tengo-stl"
@@ -75,38 +92,17 @@ export default function NoStlTransformSection({
         </header>
 
         <div className="no-stl-cards" aria-label="Ejemplos de transformación a modelo 3D">
-          {cards.map((card) => (
-            <article
-              key={card.id}
-              className={`no-stl-card no-stl-card-${card.id}`}
-              style={{ ["--card-delay" as string]: `${card.delayMs ?? 0}ms` }}
-            >
-              <div className="no-stl-card-inner">
-                <div className="no-stl-card-badge">{card.title}</div>
-
-                <div className="no-stl-media-frame">
-                  <div className="no-stl-media no-stl-media-source">
-                    <img
-                      src={card.sourceSrc}
-                      alt={card.sourceAlt}
-                      loading="lazy"
-                      style={{ objectFit: card.sourceObjectFit ?? "contain" }}
-                    />
-                  </div>
-
-                  <div className="no-stl-media no-stl-media-result">
-                    <img
-                      src={card.resultSrc}
-                      alt={card.resultAlt}
-                      loading="lazy"
-                      style={{ objectFit: card.resultObjectFit ?? "contain" }}
-                    />
-                  </div>
-                </div>
-
-              </div>
-            </article>
-          ))}
+          {cards.map((card) => {
+            const state = manualState[card.id] ?? "auto";
+            return (
+              <CardItem
+                key={card.id}
+                card={card}
+                state={state}
+                onToggle={() => handleToggle(card.id)}
+              />
+            );
+          })}
         </div>
 
         <div className="no-stl-cta-box">
@@ -225,6 +221,8 @@ export default function NoStlTransformSection({
 
         .no-stl-card-inner {
           position: relative;
+          display: block;
+          width: 100%;
           height: 100%;
           min-height: 0;
           border-radius: 16px;
@@ -236,6 +234,98 @@ export default function NoStlTransformSection({
           box-shadow: 0 10px 26px rgba(16, 24, 40, 0.07);
           overflow: hidden;
           isolation: isolate;
+          text-align: left;
+          font: inherit;
+          color: inherit;
+          cursor: pointer;
+          appearance: none;
+          -webkit-tap-highlight-color: transparent;
+          transition: transform 200ms ease, box-shadow 200ms ease;
+        }
+
+        .no-stl-card-inner:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 16px 32px rgba(16, 24, 40, 0.1);
+        }
+
+        .no-stl-card-inner:focus-visible {
+          outline: 2px solid var(--card-accent);
+          outline-offset: 2px;
+        }
+
+        .no-stl-card-inner:active {
+          transform: translateY(0);
+        }
+
+        .no-stl-card-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .no-stl-phase-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 8px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.78);
+          border: 1px solid color-mix(in srgb, var(--card-accent) 20%, rgba(23, 34, 51, 0.08));
+          font-size: 0.7rem;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          line-height: 1;
+        }
+
+        .no-stl-phase-pill {
+          color: var(--muted);
+          transition: color 320ms ease, opacity 320ms ease;
+          opacity: 0.6;
+        }
+
+        .no-stl-phase-pill.is-active {
+          color: var(--card-accent);
+          opacity: 1;
+        }
+
+        .no-stl-phase-arrow {
+          color: var(--muted);
+          opacity: 0.7;
+          font-size: 0.75rem;
+        }
+
+        .no-stl-tap-hint {
+          position: absolute;
+          right: 10px;
+          bottom: 10px;
+          padding: 5px 10px;
+          border-radius: 999px;
+          background: rgba(23, 34, 51, 0.72);
+          color: #fff;
+          font-size: 0.66rem;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          line-height: 1;
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 280ms ease;
+          z-index: 2;
+        }
+
+        @media (hover: none) {
+          .no-stl-tap-hint {
+            opacity: 1;
+          }
+        }
+
+        .no-stl-card.is-manual .no-stl-tap-hint {
+          opacity: 1;
         }
 
         .no-stl-card-inner::before {
@@ -300,10 +390,8 @@ export default function NoStlTransformSection({
           background:
             radial-gradient(circle at 50% 40%, var(--card-soft), transparent 44%),
             linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
-          opacity: 0.4;
+          opacity: 0.3;
           pointer-events: none;
-          animation: no-stl-soft-glow 6.6s ease-in-out infinite;
-          animation-delay: var(--card-delay, 0ms);
         }
 
         .no-stl-media {
@@ -313,26 +401,25 @@ export default function NoStlTransformSection({
           align-items: center;
           justify-content: center;
           padding: 16px;
+          opacity: 0;
+          transform: scale(0.985);
+          filter: blur(5px) saturate(0.96);
+          transition:
+            opacity 620ms cubic-bezier(0.4, 0, 0.2, 1),
+            transform 620ms cubic-bezier(0.4, 0, 0.2, 1),
+            filter 620ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .no-stl-media.is-on {
+          opacity: 1;
+          transform: scale(1);
+          filter: blur(0) saturate(1);
         }
 
         .no-stl-media img {
           width: 100%;
           height: 100%;
           object-position: center center;
-          will-change: transform, opacity, filter;
-        }
-
-        .no-stl-media-source img {
-          animation: no-stl-source-fade 7.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-          animation-delay: var(--card-delay, 0ms);
-        }
-
-        .no-stl-media-result img {
-          opacity: 0;
-          transform: scale(0.985);
-          filter: blur(5px) saturate(0.96) contrast(1.01);
-          animation: no-stl-result-fade 7.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-          animation-delay: var(--card-delay, 0ms);
         }
 
         .no-stl-cta-box {
@@ -402,63 +489,6 @@ export default function NoStlTransformSection({
           flex: 0 0 auto;
           display: block;
           filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.08));
-        }
-
-        @keyframes no-stl-source-fade {
-          0%,
-          28% {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-            filter: blur(0) saturate(1);
-          }
-          48%,
-          72% {
-            opacity: 0;
-            transform: scale(1.018) translateY(-2px);
-            filter: blur(5px) saturate(0.95);
-          }
-          90%,
-          100% {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-            filter: blur(0) saturate(1);
-          }
-        }
-
-        @keyframes no-stl-result-fade {
-          0%,
-          30% {
-            opacity: 0;
-            transform: scale(0.985);
-            filter: blur(5px) saturate(0.96);
-          }
-          52%,
-          70% {
-            opacity: 1;
-            transform: scale(1);
-            filter: blur(0) saturate(1);
-          }
-          88%,
-          100% {
-            opacity: 0;
-            transform: scale(1.01);
-            filter: blur(4px) saturate(0.96);
-          }
-        }
-
-        @keyframes no-stl-soft-glow {
-          0%,
-          30% {
-            opacity: 0.22;
-          }
-          52%,
-          70% {
-            opacity: 0.38;
-          }
-          88%,
-          100% {
-            opacity: 0.22;
-          }
         }
 
         @media (max-width: 1100px) {
@@ -560,23 +590,116 @@ export default function NoStlTransformSection({
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .no-stl-media-source img,
-          .no-stl-media-result img,
-          .no-stl-media-frame::after {
-            animation: none !important;
-          }
-
-          .no-stl-media-source img {
-            opacity: 0;
-          }
-
-          .no-stl-media-result img {
-            opacity: 1;
+          .no-stl-media {
+            transition: opacity 200ms ease;
             transform: none;
             filter: none;
           }
         }
       `}</style>
     </section>
+  );
+}
+
+type CardItemProps = {
+  card: TransformCard;
+  state: CardManualState;
+  onToggle: () => void;
+};
+
+function CardItem({ card, state, onToggle }: CardItemProps) {
+  const [autoPhase, setAutoPhase] = useState<"source" | "result">("source");
+  const [inView, setInView] = useState(false);
+  const articleRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const node = articleRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          setInView(entry.isIntersecting);
+        }
+      },
+      { threshold: 0.25 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (state !== "auto" || !inView) return;
+    const offsetMs = card.delayMs ?? 0;
+    const halfCycle = CYCLE_MS / 2;
+    let timeoutId: number | undefined;
+    let intervalId: number | undefined;
+
+    timeoutId = window.setTimeout(() => {
+      setAutoPhase("result");
+      let phase: "source" | "result" = "result";
+      intervalId = window.setInterval(() => {
+        phase = phase === "source" ? "result" : "source";
+        setAutoPhase(phase);
+      }, halfCycle);
+    }, offsetMs + halfCycle);
+
+    return () => {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      if (intervalId !== undefined) window.clearInterval(intervalId);
+    };
+  }, [state, inView, card.delayMs]);
+
+  const showResult = state === "auto" ? autoPhase === "result" : state === "result";
+
+  return (
+    <article
+      ref={articleRef}
+      className={`no-stl-card no-stl-card-${card.id} ${showResult ? "is-result" : "is-source"} ${
+        state !== "auto" ? "is-manual" : ""
+      }`}
+      style={{ ["--card-delay" as string]: `${card.delayMs ?? 0}ms` }}
+    >
+      <button
+        type="button"
+        className="no-stl-card-inner"
+        onClick={onToggle}
+        aria-label={`Alternar entre original y resultado 3D de ${card.title}`}
+        aria-pressed={showResult}
+      >
+        <div className="no-stl-card-header">
+          <span className="no-stl-card-badge">{card.title}</span>
+          <span className="no-stl-phase-badge" aria-hidden="true">
+            <span className={`no-stl-phase-pill ${showResult ? "" : "is-active"}`}>Antes</span>
+            <span className="no-stl-phase-arrow">→</span>
+            <span className={`no-stl-phase-pill no-stl-phase-after ${showResult ? "is-active" : ""}`}>Después</span>
+          </span>
+        </div>
+
+        <div className="no-stl-media-frame">
+          <div className={`no-stl-media no-stl-media-source ${showResult ? "" : "is-on"}`}>
+            <img
+              src={card.sourceSrc}
+              alt={card.sourceAlt}
+              loading="lazy"
+              style={{ objectFit: card.sourceObjectFit ?? "contain" }}
+            />
+          </div>
+
+          <div className={`no-stl-media no-stl-media-result ${showResult ? "is-on" : ""}`}>
+            <img
+              src={card.resultSrc}
+              alt={card.resultAlt}
+              loading="lazy"
+              style={{ objectFit: card.resultObjectFit ?? "contain" }}
+            />
+          </div>
+
+          <span className="no-stl-tap-hint" aria-hidden="true">Tocá para alternar</span>
+        </div>
+      </button>
+    </article>
   );
 }

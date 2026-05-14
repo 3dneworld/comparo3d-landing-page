@@ -553,54 +553,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
         </AnimateOnScroll>
 
         {/* Info cards */}
-        <StaggerChildren className="scrollbar-hide -mx-4 mb-6 grid auto-cols-[78%] grid-flow-col gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory md:mx-0 md:mb-8 md:grid-cols-3 md:grid-flow-row md:auto-cols-auto md:overflow-visible md:px-0 md:pb-0" staggerDelay={0.1}>
-          <StaggerItem className="snap-start">
-            <div className="h-full rounded-2xl border border-border bg-card px-4 py-3 text-left">
-              <div className="flex items-center gap-2 text-primary">
-                <Files size={16} />
-                <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Archivo</span>
-              </div>
-              <p className="mt-2 text-[14px] font-medium leading-snug text-foreground">
-                1 archivo por cotización
-              </p>
-              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-                Varias copias de la misma pieza, sí. Piezas distintas, por separado.
-              </p>
-            </div>
-          </StaggerItem>
-
-          <StaggerItem className="snap-start">
-            <div className="h-full rounded-2xl border border-primary/15 bg-card px-4 py-3 text-left">
-              <div className="flex items-center gap-2 text-primary">
-                <Upload size={16} />
-                <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Formato</span>
-              </div>
-              <p className="mt-2 text-[14px] font-medium leading-snug text-foreground">
-                STL
-              </p>
-              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-                La experiencia actual está pensada para STL y cotización automática.
-              </p>
-            </div>
-          </StaggerItem>
-
-          <StaggerItem className="snap-start">
-            <div className="h-full rounded-2xl border border-border bg-card px-4 py-3 text-left">
-              <div className="flex items-center gap-2 text-primary">
-                <ShieldCheck size={16} />
-                <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Respuesta</span>
-              </div>
-              <p className="mt-2 text-[14px] font-medium leading-snug text-foreground">
-                {isEmpresa ? "Propuesta en hasta 72 hs hábiles" : "Cotizaciones en minutos"}
-              </p>
-              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-                {isEmpresa
-                  ? "Coordinamos proveedores verificados y consolidamos la propuesta."
-                  : "Comparás opciones reales sin salir a buscar talleres por tu cuenta."}
-              </p>
-            </div>
-          </StaggerItem>
-        </StaggerChildren>
+        <InfoCards isEmpresa={isEmpresa} />
 
         {/* Banner de retorno desde MercadoPago */}
         {mpBanner && (
@@ -864,5 +817,152 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
     </section>
   );
 };
+
+type InfoCard = {
+  key: string;
+  icon: typeof Files;
+  label: string;
+  title: string;
+  body: string;
+  highlight?: boolean;
+};
+
+function InfoCards({ isEmpresa }: { isEmpresa: boolean }) {
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const cards: InfoCard[] = [
+    {
+      key: "archivo",
+      icon: Files,
+      label: "Archivo",
+      title: "1 archivo por cotización",
+      body: "Varias copias de la misma pieza, sí. Piezas distintas, por separado.",
+    },
+    {
+      key: "formato",
+      icon: Upload,
+      label: "Formato",
+      title: "STL",
+      body: "La experiencia actual está pensada para STL y cotización automática.",
+      highlight: true,
+    },
+    {
+      key: "respuesta",
+      icon: ShieldCheck,
+      label: "Respuesta",
+      title: isEmpresa ? "Propuesta en hasta 72 hs hábiles" : "Cotizaciones en minutos",
+      body: isEmpresa
+        ? "Coordinamos proveedores verificados y consolidamos la propuesta."
+        : "Comparás opciones reales sin salir a buscar talleres por tu cuenta.",
+    },
+  ];
+
+  useEffect(() => {
+    const node = scrollerRef.current;
+    if (!node) return;
+    const handler = () => {
+      const width = node.clientWidth;
+      if (width <= 0) return;
+      const idx = Math.round(node.scrollLeft / width);
+      setActiveIndex(Math.max(0, Math.min(cards.length - 1, idx)));
+    };
+    node.addEventListener("scroll", handler, { passive: true });
+    return () => node.removeEventListener("scroll", handler);
+  }, [cards.length]);
+
+  const scrollTo = (idx: number) => {
+    const node = scrollerRef.current;
+    if (!node) return;
+    node.scrollTo({ left: idx * node.clientWidth, behavior: "smooth" });
+  };
+
+  return (
+    <div className="mb-6 md:mb-8">
+      <div className="relative md:hidden">
+        <div
+          ref={scrollerRef}
+          className="scrollbar-hide -mx-4 flex snap-x snap-mandatory overflow-x-auto pb-2"
+          aria-label="Información del flujo de cotización"
+        >
+          {cards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={card.key}
+                className="w-full shrink-0 snap-center px-4"
+              >
+                <div
+                  className={`h-full rounded-2xl border bg-card px-4 py-3 text-left ${
+                    card.highlight ? "border-primary/15" : "border-border"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 text-primary">
+                    <Icon size={16} />
+                    <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">
+                      {card.label}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-[14px] font-medium leading-snug text-foreground">
+                    {card.title}
+                  </p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                    {card.body}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 flex items-center justify-center gap-2" role="tablist" aria-label="Paginación de información">
+          {cards.map((card, idx) => (
+            <button
+              key={card.key}
+              type="button"
+              role="tab"
+              aria-selected={idx === activeIndex}
+              aria-label={`Ir a ${card.label}`}
+              onClick={() => scrollTo(idx)}
+              className={`h-2 rounded-full transition-all ${
+                idx === activeIndex
+                  ? "w-6 bg-primary"
+                  : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
+      <StaggerChildren className="hidden md:grid md:grid-cols-3 md:gap-3" staggerDelay={0.1}>
+        {cards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <StaggerItem key={card.key}>
+              <div
+                className={`h-full rounded-2xl border bg-card px-4 py-3 text-left ${
+                  card.highlight ? "border-primary/15" : "border-border"
+                }`}
+              >
+                <div className="flex items-center gap-2 text-primary">
+                  <Icon size={16} />
+                  <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">
+                    {card.label}
+                  </span>
+                </div>
+                <p className="mt-2 text-[14px] font-medium leading-snug text-foreground">
+                  {card.title}
+                </p>
+                <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                  {card.body}
+                </p>
+              </div>
+            </StaggerItem>
+          );
+        })}
+      </StaggerChildren>
+    </div>
+  );
+}
 
 export default QuoteSection;
