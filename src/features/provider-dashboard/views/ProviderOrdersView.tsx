@@ -297,7 +297,7 @@ function OrderDetailPanel({
   const gcodeFile = preferredOrderFile(files, "gcode");
   const canMarkPrinting = ["paid_confirmed", "preparing"].includes(String(order.order_status || ""));
   const canReadyToShip = ["in_production"].includes(String(order.order_status || ""));
-  const canDispatch = ["ready_to_ship", "listo_para_envio"].includes(String(order.order_status || ""));
+  const canDispatch = ["in_production", "ready_to_ship", "listo_para_envio"].includes(String(order.order_status || ""));
   const canCancel = !["cancelled", "completed"].includes(String(order.order_status || ""));
 
   return (
@@ -313,7 +313,7 @@ function OrderDetailPanel({
             <DashboardStatePill tone={paymentStatus.tone}>Pago {paymentStatus.label}</DashboardStatePill>
           </div>
         </div>
-        {canMarkPrinting || canDispatch ? (
+        {canMarkPrinting || canReadyToShip || canDispatch ? (
           <div className="mt-4 flex flex-wrap gap-2">
             {canMarkPrinting ? (
               <Button
