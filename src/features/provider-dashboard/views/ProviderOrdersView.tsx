@@ -380,6 +380,23 @@ function OrderDetailPanel({
         <DetailRow label="Email" value={safeText(order.client_email)} icon={<Mail className="h-3.5 w-3.5" />} />
         <DetailRow label="Telefono" value={safeText(order.client_phone)} icon={<Phone className="h-3.5 w-3.5" />} />
         <DetailRow label="Metodo de entrega" value={safeText(order.delivery_method)} icon={<Truck className="h-3.5 w-3.5" />} />
+        {order.shipment_tracking_code ? (
+          <a
+            href={`https://www.correoargentino.com.ar/formularios/e-commerce?codigo=${encodeURIComponent(order.shipment_tracking_code)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 rounded-[1rem] border border-blue-200 bg-blue-50 p-3 text-left transition-colors hover:bg-blue-100"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-600">
+              <PackageOpen className="h-4 w-4 text-white" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-700">Tracking Correo</p>
+              <p className="mt-0.5 truncate text-sm font-semibold text-blue-800">{order.shipment_tracking_code}</p>
+            </div>
+            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+          </a>
+        ) : null}
         <DetailRow label="Direccion" value={parseDeliveryAddress(order.delivery_address_json)} icon={<MapPinned className="h-3.5 w-3.5" />} />
         {timelineRows(order).map((item) => (
           <DetailRow key={item.label} label={item.label} value={formatDateTime(item.value)} icon={item.icon} />

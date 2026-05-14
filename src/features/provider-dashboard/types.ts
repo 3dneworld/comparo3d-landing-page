@@ -366,6 +366,7 @@ export interface DashboardOrder {
   updated_at?: string | null;
   files_count?: number | null;
   files?: DashboardOrderFile[];
+  shipment_tracking_code?: string | null;
 }
 
 export interface ProviderOrdersResponse {
