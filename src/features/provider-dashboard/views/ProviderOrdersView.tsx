@@ -297,7 +297,7 @@ function OrderDetailPanel({
   const gcodeFile = preferredOrderFile(files, "gcode");
   const canMarkPrinting = ["paid_confirmed", "preparing"].includes(String(order.order_status || ""));
   const canReadyToShip = ["in_production"].includes(String(order.order_status || ""));
-  const canDispatch = ["in_production", "ready_to_ship", "listo_para_envio"].includes(String(order.order_status || ""));
+  const canDispatch = ["ready_to_ship", "listo_para_envio"].includes(String(order.order_status || ""));
   const canCancel = !["cancelled", "completed"].includes(String(order.order_status || ""));
   const _s = String(order.order_status || "");
   const step1Done = ["in_production", "ready_to_ship", "listo_para_envio", "en_transito", "completed"].includes(_s);
@@ -319,75 +319,135 @@ function OrderDetailPanel({
           </div>
         </div>
         {showActionRow ? (
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            {/* Paso 1 */}
-            {step1Done ? (
-              <span className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-muted/50 bg-muted/25 px-3 text-sm font-medium text-muted-foreground">
-                <CheckCircle2 className="h-4 w-4 text-green-500/80" />
-                Impresión iniciada
-              </span>
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 rounded-xl border-primary/30 bg-primary/[0.06] px-3 text-sm text-primary hover:bg-primary/[0.10] disabled:opacity-40"
-                onClick={onMarkPrinting}
-                disabled={!canMarkPrinting || isMarkingPrinting}
-              >
-                {isMarkingPrinting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <img src="/icons/3d-printer.webp" alt="" className="h-4 w-4" />}
-                Iniciar impresión
-              </Button>
-            )}
+          <div className="mt-5 flex items-stretch gap-4">
+            {/* Pasos — columna izquierda */}
+            <div className="flex flex-1 flex-col">
 
-            {/* Paso 2 */}
-            {step2Done ? (
-              <span className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-muted/50 bg-muted/25 px-3 text-sm font-medium text-muted-foreground">
-                <CheckCircle2 className="h-4 w-4 text-green-500/80" />
-                Fotos subidas
-              </span>
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 rounded-xl border-primary/30 bg-primary/[0.06] px-3 text-sm text-primary hover:bg-primary/[0.10] disabled:opacity-40"
-                onClick={onOpenReadyToShip}
-                disabled={!canReadyToShip || isReadyingToShip}
-              >
-                {isReadyingToShip ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                Subir fotos
-              </Button>
-            )}
+              {/* Paso 1 */}
+              <div className="flex items-center gap-3">
+                {step1Done ? (
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </span>
+                ) : (
+                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${canMarkPrinting ? "border-2 border-primary bg-primary/10 text-primary" : "border border-muted/50 bg-muted/20 text-muted-foreground/50"}`}>
+                    1
+                  </span>
+                )}
+                {step1Done ? (
+                  <span className="text-sm font-medium text-muted-foreground">Impresión iniciada</span>
+                ) : canMarkPrinting ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9 rounded-xl border-primary/30 bg-primary/[0.06] px-3 text-sm text-primary hover:bg-primary/[0.10]"
+                    onClick={onMarkPrinting}
+                    disabled={isMarkingPrinting}
+                  >
+                    {isMarkingPrinting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <img src="/icons/3d-printer.webp" alt="" className="h-4 w-4" />}
+                    Iniciar impresión
+                  </Button>
+                ) : (
+                  <button
+                    type="button"
+                    className="h-9 rounded-xl border border-muted/40 bg-transparent px-3 text-sm text-muted-foreground/50"
+                    onClick={() => toast.info("Este paso ya fue completado.")}
+                  >
+                    Iniciar impresión
+                  </button>
+                )}
+              </div>
 
-            {/* Paso 3 */}
-            {step3Done ? (
-              <span className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-muted/50 bg-muted/25 px-3 text-sm font-medium text-muted-foreground">
-                <CheckCircle2 className="h-4 w-4 text-green-500/80" />
-                Despacho confirmado
-              </span>
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 rounded-xl border-primary/30 bg-primary/[0.06] px-3 text-sm text-primary hover:bg-primary/[0.10] disabled:opacity-40"
-                onClick={onDispatch}
-                disabled={!canDispatch || isDispatching}
-              >
-                {isDispatching ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
-                Confirmar despacho
-              </Button>
-            )}
+              {/* Conector 1→2 */}
+              <div className="ml-[17px] h-4 w-px bg-border/60" />
 
-            {/* Cancelar — siempre a la derecha */}
+              {/* Paso 2 */}
+              <div className="flex items-center gap-3">
+                {step2Done ? (
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </span>
+                ) : (
+                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${canReadyToShip ? "border-2 border-primary bg-primary/10 text-primary" : "border border-muted/50 bg-muted/20 text-muted-foreground/50"}`}>
+                    2
+                  </span>
+                )}
+                {step2Done ? (
+                  <span className="text-sm font-medium text-muted-foreground">Fotos subidas</span>
+                ) : canReadyToShip ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9 rounded-xl border-primary/30 bg-primary/[0.06] px-3 text-sm text-primary hover:bg-primary/[0.10]"
+                    onClick={onOpenReadyToShip}
+                    disabled={isReadyingToShip}
+                  >
+                    {isReadyingToShip ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    Subir fotos
+                  </Button>
+                ) : (
+                  <button
+                    type="button"
+                    className="h-9 rounded-xl border border-muted/40 bg-transparent px-3 text-sm text-muted-foreground/50"
+                    onClick={() => toast.info(!step1Done ? "Primero tenés que iniciar la impresión (Paso 1)." : "Este paso ya fue completado.")}
+                  >
+                    Subir fotos
+                  </button>
+                )}
+              </div>
+
+              {/* Conector 2→3 */}
+              <div className="ml-[17px] h-4 w-px bg-border/60" />
+
+              {/* Paso 3 */}
+              <div className="flex items-center gap-3">
+                {step3Done ? (
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </span>
+                ) : (
+                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${canDispatch ? "border-2 border-primary bg-primary/10 text-primary" : "border border-muted/50 bg-muted/20 text-muted-foreground/50"}`}>
+                    3
+                  </span>
+                )}
+                {step3Done ? (
+                  <span className="text-sm font-medium text-muted-foreground">Despacho confirmado</span>
+                ) : canDispatch ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9 rounded-xl border-primary/30 bg-primary/[0.06] px-3 text-sm text-primary hover:bg-primary/[0.10]"
+                    onClick={onDispatch}
+                    disabled={isDispatching}
+                  >
+                    {isDispatching ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
+                    Confirmar despacho
+                  </Button>
+                ) : (
+                  <button
+                    type="button"
+                    className="h-9 rounded-xl border border-muted/40 bg-transparent px-3 text-sm text-muted-foreground/50"
+                    onClick={() => toast.info(!step2Done ? "Primero tenés que subir las fotos y confirmar (Paso 2)." : "Este paso ya fue completado.")}
+                  >
+                    Confirmar despacho
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Cancelar — columna derecha, centrado vertical */}
             {canCancel ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="ml-auto h-9 rounded-xl border-rose-200 bg-rose-50 px-3 text-sm text-rose-700 hover:bg-rose-100"
-                onClick={onRequestCancel}
-              >
-                <BadgeX className="h-4 w-4" />
-                Cancelar pedido
-              </Button>
+              <div className="flex items-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="shrink-0 rounded-xl border-rose-200 bg-rose-50 px-3 text-sm text-rose-700 hover:bg-rose-100"
+                  onClick={onRequestCancel}
+                >
+                  <BadgeX className="h-4 w-4" />
+                  Cancelar pedido
+                </Button>
+              </div>
             ) : null}
           </div>
         ) : null}
@@ -549,7 +609,8 @@ function CancelOrderDialog({
           <DialogTitle>Cancelar pedido {order ? `#${order.id}` : ""}</DialogTitle>
           <DialogDescription className="space-y-2 pt-2 text-left">
             <span className="block">
-              Estás por cancelar este pedido. El pedido quedará en estado cancelado, vamos a solicitar el refund por Mercado Pago y el cliente recibirá un email avisando la cancelación.
+              Estás por cancelar este pedido. El pedido quedará en estado cancelado, vamos a solicitar el refund por Mercado Pago y el{" "}
+              <strong className="font-semibold text-foreground">cliente recibirá un email avisando la cancelación.</strong>
             </span>
             <span className="block">
               Es obligatorio escribir el motivo. Lo que escribas acá se le enviará al cliente por email.
@@ -561,12 +622,17 @@ function CancelOrderDialog({
           <div className="rounded-[1rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-relaxed text-rose-800">
             Impacto: se intenta revertir el cobro, se cierra la operación para este proveedor y el cliente recibe una comunicación inmediata.
           </div>
-          <Textarea
-            value={reason}
-            onChange={(event) => onReasonChange(event.target.value)}
-            placeholder="Explica claramente por qué cancelás este pedido. Este texto se envía al cliente."
-            className="min-h-[144px] rounded-2xl border-rose-200 bg-white"
-          />
+          <div className="space-y-1">
+            <Textarea
+              value={reason}
+              onChange={(event) => onReasonChange(event.target.value)}
+              placeholder="Explicá en detalle por qué cancelás este pedido. Sé claro y descriptivo, ya que este texto se envía directamente al cliente."
+              className="min-h-[144px] rounded-2xl border-rose-200 bg-white"
+            />
+            <p className={`text-right text-xs ${reason.trim().length < 30 ? "text-rose-500" : "text-muted-foreground"}`}>
+              {reason.trim().length} / 30 caracteres mínimos
+            </p>
+          </div>
         </div>
 
         <DialogFooter>
@@ -583,7 +649,7 @@ function CancelOrderDialog({
             type="button"
             className="h-10 rounded-xl bg-rose-600 px-4 text-white hover:bg-rose-700"
             onClick={onConfirm}
-            disabled={isSubmitting}
+            disabled={isSubmitting || reason.trim().length < 30}
           >
             {isSubmitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <BadgeX className="h-4 w-4" />}
             Confirmar cancelacion
@@ -632,56 +698,29 @@ function ReadyToShipComposer({
 
   return (
     <div className="mt-4 rounded-[1.1rem] border border-border/70 bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-foreground">Fin de impresion</p>
-          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Sube fotos opcionales de la impresion terminada. Si las cargas, se incluyen en el mail al cliente antes del tracking.
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-9 rounded-xl border-border/80 bg-white px-3 text-foreground hover:bg-muted"
-          onClick={() => inputRef.current?.click()}
-          disabled={isSubmitting}
-        >
-          <Upload className="h-4 w-4" />
-          Subir fotos
-        </Button>
-      </div>
-
       <div
-        onDragOver={(event) => {
-          event.preventDefault();
-          setIsDragging(true);
-        }}
+        onDragOver={(event) => { event.preventDefault(); setIsDragging(true); }}
         onDragLeave={() => setIsDragging(false)}
-        onDrop={(event) => {
-          event.preventDefault();
-          setIsDragging(false);
-          handleFiles(event.dataTransfer.files);
-        }}
-        className={`mt-4 rounded-[1rem] border-2 border-dashed px-5 py-6 text-center transition-colors ${
-          isDragging ? "border-primary bg-primary/5" : "border-border/80 bg-background/40"
+        onDrop={(event) => { event.preventDefault(); setIsDragging(false); handleFiles(event.dataTransfer.files); }}
+        onClick={() => inputRef.current?.click()}
+        className={`cursor-pointer rounded-[1rem] border-2 border-dashed px-5 py-8 text-center transition-colors ${
+          isDragging ? "border-primary bg-primary/5" : "border-border/80 bg-background/40 hover:border-primary/50 hover:bg-primary/[0.02]"
         }`}
       >
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/[0.08]">
+          <Upload className="h-5 w-5 text-primary" />
+        </div>
         <p className="text-sm font-medium text-foreground">
-          Arrastra fotos aca o usa el boton de upload
+          Arrastra las fotos acá o hacé clic para seleccionarlas
         </p>
-        <p className="mt-2 text-xs text-muted-foreground">
-          JPG, PNG o WEBP. Puedes seguir sin fotos y se enviara el mail base.
-        </p>
+        <p className="mt-2 text-xs text-muted-foreground">JPG, PNG o WEBP</p>
         <input
           ref={inputRef}
           type="file"
           accept="image/png,image/jpeg,image/webp"
           multiple
           className="hidden"
-          onChange={(event) => {
-            handleFiles(event.target.files);
-            event.currentTarget.value = "";
-          }}
+          onChange={(event) => { handleFiles(event.target.files); event.currentTarget.value = ""; }}
         />
       </div>
 
@@ -692,7 +731,7 @@ function ReadyToShipComposer({
               key={`${file.name}-${file.size}-${file.lastModified}`}
               type="button"
               className="inline-flex max-w-full items-center gap-2 rounded-full border border-border/80 bg-background px-3 py-2 text-xs text-foreground"
-              onClick={() => onRemoveFile(index)}
+              onClick={(e) => { e.stopPropagation(); onRemoveFile(index); }}
               disabled={isSubmitting}
             >
               <span className="truncate">{file.name}</span>
@@ -710,7 +749,7 @@ function ReadyToShipComposer({
           disabled={isSubmitting}
         >
           {isSubmitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-          Avisar fin de impresion
+          Finalizar carga de fotos
         </Button>
         <Button
           type="button"
@@ -1131,10 +1170,6 @@ export function ProviderOrdersView() {
       }}
       onConfirmReadyToShip={() => {
         if (!selectedOrder) return;
-        const confirmMessage = readyToShipFiles.length
-          ? `Avisar al cliente que el pedido #${selectedOrder.id} termino de imprimirse y adjuntar ${readyToShipFiles.length} foto(s)?`
-          : `Avisar al cliente que el pedido #${selectedOrder.id} termino de imprimirse sin adjuntar fotos?`;
-        if (!window.confirm(confirmMessage)) return;
         void readyToShipMutation.mutateAsync();
       }}
       onDispatchSelected={() => {
@@ -1159,8 +1194,8 @@ export function ProviderOrdersView() {
       }}
       onConfirmCancellation={() => {
         if (!cancellingOrder) return;
-        if (!cancellationReason.trim()) {
-          toast.error("Debes escribir el motivo de la cancelacion.");
+        if (cancellationReason.trim().length < 30) {
+          toast.error("El motivo debe tener al menos 30 caracteres.");
           return;
         }
         void cancelMutation.mutateAsync();
