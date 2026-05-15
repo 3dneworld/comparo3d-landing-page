@@ -348,6 +348,7 @@ export interface DashboardOrderFile {
 
 export interface DashboardOrder {
   id: number;
+  public_order_id?: string | null;
   cotizacion_id?: number | null;
   cotizacion_proveedor_id?: number | null;
   proveedor_id?: number | null;
@@ -453,6 +454,7 @@ export type DashboardShippingMethod = "retiro_taller" | "paqar_clasico" | "paqar
 
 export interface DashboardShipment {
   id: number;
+  public_order_id?: string | null;
   cotizacion_id?: number | null;
   cotizacion_proveedor_id?: number | null;
   proveedor_id?: number | null;

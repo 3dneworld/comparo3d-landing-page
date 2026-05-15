@@ -30,15 +30,15 @@ export function StepConfirmation({
             <ShoppingCart size={28} className="text-primary-foreground" />
           </div>
           <h3 className="mb-2 text-[24px] font-semibold text-foreground">¡Listo!</h3>
-          <p className="mx-auto mb-4 max-w-md text-[14px] leading-relaxed text-muted-foreground">
-            {isEmpresa
-              ? "Tu solicitud fue registrada. Nos vamos a poner en contacto para coordinar la propuesta corporativa."
-              : "Tu pedido fue registrado. Nos vamos a poner en contacto con vos para coordinar el pago y la entrega."}
-          </p>
+          {isEmpresa && (
+            <p className="mx-auto mb-4 max-w-md text-[14px] leading-relaxed text-muted-foreground">
+              Tu solicitud fue registrada. Nos vamos a poner en contacto para coordinar la propuesta corporativa.
+            </p>
+          )}
 
           {orderId ? (
-            <p className="text-sm font-semibold text-foreground">
-              Referencia:{" "}
+            <p className="mb-4 text-sm font-semibold text-foreground">
+              N° de pedido:{" "}
               <span className="font-mono text-primary">{orderId}</span>
             </p>
           ) : (

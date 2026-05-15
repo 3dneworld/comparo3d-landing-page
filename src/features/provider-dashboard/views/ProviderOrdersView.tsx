@@ -310,8 +310,9 @@ function OrderDetailPanel({
       <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="font-[Montserrat] text-lg font-bold tracking-tight text-foreground">Pedido #{order.id}</p>
-            <p className="mt-1 text-sm text-muted-foreground">Cotizacion #{safeText(order.cotizacion_id)}</p>
+            <p className="font-[Montserrat] text-lg font-bold tracking-tight text-foreground">
+              {order.public_order_id ? order.public_order_id : `Pedido #${order.id}`}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <DashboardStatePill tone={orderStatus.tone}>{orderStatus.label}</DashboardStatePill>
@@ -543,8 +544,9 @@ function OrderRow({
       columnsClassName="lg:grid-cols-[0.72fr_0.8fr_0.82fr_1.05fr_0.85fr_0.8fr_0.24fr]"
     >
       <DashboardDataValue label="Pedido">
-        <p className="text-sm font-semibold text-foreground">#{order.id}</p>
-        <p className="text-xs text-muted-foreground">Cot #{safeText(order.cotizacion_id)}</p>
+        <p className="text-sm font-semibold text-foreground">
+          {order.public_order_id || `#${order.id}`}
+        </p>
       </DashboardDataValue>
       <DashboardDataValue label="Estado" className="flex flex-col items-start">
         <DashboardStatePill tone={orderStatus.tone}>{orderStatus.label}</DashboardStatePill>

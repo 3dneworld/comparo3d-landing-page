@@ -165,7 +165,6 @@ function ShipmentRow({
     >
       <DashboardDataValue label="Envio">
         <p className="text-sm font-semibold text-foreground">#{shipment.id}</p>
-        <p className="text-xs text-muted-foreground">Cot #{safeText(shipment.cotizacion_id)}</p>
       </DashboardDataValue>
       <DashboardDataValue label="Estado" className="flex flex-col items-start">
         <DashboardStatePill tone={meta.tone}>{meta.label}</DashboardStatePill>
@@ -296,7 +295,6 @@ function ShipmentDetailPanel({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="font-[Montserrat] text-lg font-bold tracking-tight text-foreground">Envio #{shipment.id}</p>
-            <p className="mt-1 text-sm text-muted-foreground">Cotizacion #{safeText(shipment.cotizacion_id)}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <DashboardStatePill tone={meta.tone}>{meta.label}</DashboardStatePill>

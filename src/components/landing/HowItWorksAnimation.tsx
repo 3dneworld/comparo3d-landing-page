@@ -712,17 +712,57 @@ export default function HowItWorksAnimation() {
   const [showRotateHint, setShowRotateHint] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
   const fsContainerRef = useRef<HTMLDivElement | null>(null);
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const hasBeenVisibleRef = useRef(false);
+  const pausedAtRef = useRef<number | null>(null);
 
+  // IntersectionObserver — detecta cuándo la sección entra/sale de viewport
   useEffect(() => {
-    let raf = 0;
-    const tick = () => {
-      const elapsed = ((performance.now() - startRef.current) / 1000) % TOTAL;
-      setTime(elapsed);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    const node = sectionRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.15 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
   }, []);
+
+  // RAF loop — solo corre cuando la sección es visible (o en fullscreen)
+  useEffect(() => {
+    const shouldRun = isVisible || isFullscreen;
+
+    if (shouldRun) {
+      // Si estamos reanudando tras una pausa, compensar el tiempo pausado
+      if (pausedAtRef.current !== null) {
+        const pausedDuration = performance.now() - pausedAtRef.current;
+        startRef.current += pausedDuration;
+        pausedAtRef.current = null;
+      }
+
+      // Si es la primera vez que se hace visible, reiniciar desde 0
+      if (!hasBeenVisibleRef.current) {
+        hasBeenVisibleRef.current = true;
+        startRef.current = performance.now();
+      }
+
+      let raf = 0;
+      const tick = () => {
+        const elapsed = ((performance.now() - startRef.current) / 1000) % TOTAL;
+        setTime(elapsed);
+        raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+      return () => cancelAnimationFrame(raf);
+    }
+
+    // Al salir de vista, guardar timestamp para compensar al volver
+    pausedAtRef.current = performance.now();
+    return undefined;
+  }, [isVisible, isFullscreen]);
 
   const { step, stepIndex, progress } = useMemo(() => {
     let acc = 0;
@@ -794,7 +834,7 @@ export default function HowItWorksAnimation() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-[1180px]">
+    <div ref={sectionRef} className="mx-auto max-w-[1180px]">
       <style>{`
         @keyframes hiw-pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
         @keyframes hiw-fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
