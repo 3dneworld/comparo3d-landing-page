@@ -172,7 +172,7 @@ function formatBytes(bytes: number): string {
 function buildLargeFileMessage(file: File): string {
   return (
     `Tu archivo "${file.name}" pesa ${formatBytes(file.size)} y supera el limite ` +
-    `de upload directo (100 MB). Por ahora, escribinos a ventas@3dneworld.com ` +
+    `de upload directo (100 MB). Por ahora, escribinos a info@comparo3d.com.ar ` +
     `o por WhatsApp y lo cargamos manualmente; estamos preparando un canal ` +
     `especial para archivos grandes.`
   );

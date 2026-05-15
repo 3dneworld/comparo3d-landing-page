@@ -58,6 +58,9 @@ describe("uploadStl alerting", () => {
     if (!result.success) {
       expect(result.error).toMatch(/110\.0 MB/);
       expect(result.error).toMatch(/100 MB/);
+      // El mensaje cara-al-cliente debe usar info@comparo3d.com.ar (no ventas@*).
+      expect(result.error).toMatch(/info@comparo3d\.com\.ar/);
+      expect(result.error).not.toMatch(/ventas@/);
     }
     // Pre-check evita el fetch (no malgasta el upload contra Cloudflare).
     expect(fetchSpy).not.toHaveBeenCalled();
