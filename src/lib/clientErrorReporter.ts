@@ -1,6 +1,12 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "";
 
+// Canal alterno (Cloudflare Worker) independiente del tunnel/backend.
+// Cuando el backend o el tunnel estan caidos, ESTE es el unico canal que llega.
+const ALERTS_WORKER_URL =
+  import.meta.env.VITE_ALERTS_WORKER_URL ||
+  "https://comparo3d-alerts.3dneworld.workers.dev";
+
 const REPORT_COOLDOWN_MS = 5 * 60 * 1000;
 const reportedAt = new Map<string, number>();
 let installed = false;
@@ -49,21 +55,33 @@ function shouldSend(report: ClientErrorReport): boolean {
 
 export async function reportClientError(report: ClientErrorReport): Promise<void> {
   if (!shouldSend(report)) return;
-  try {
-    await fetch(`${API_BASE_URL}/api/client-error`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      keepalive: true,
-      body: JSON.stringify({
-        severity: "critical",
-        page_url: window.location.href,
-        user_agent: window.navigator.userAgent,
-        ...report,
-      }),
-    });
-  } catch {
-    // Reporting must never break the customer flow.
-  }
+  const payload = JSON.stringify({
+    severity: "critical",
+    page_url: window.location.href,
+    user_agent: window.navigator.userAgent,
+    ...report,
+  });
+  // Mandamos a los dos canales en paralelo y silenciamos errores:
+  //  1) backend /api/client-error: para registrar el incidente en la DB
+  //     (quote_issues, etc.) cuando el backend esta vivo.
+  //  2) worker /client-error: canal independiente del tunnel; sigue
+  //     funcionando aunque el backend o el tunnel esten caidos.
+  // Reportar nunca debe romper el flujo del cliente.
+  const backendCall = API_BASE_URL
+    ? fetch(`${API_BASE_URL}/api/client-error`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        body: payload,
+      }).catch(() => undefined)
+    : Promise.resolve();
+  const workerCall = fetch(`${ALERTS_WORKER_URL}/client-error`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    keepalive: true,
+    body: payload,
+  }).catch(() => undefined);
+  await Promise.allSettled([backendCall, workerCall]);
 }
 
 function errorMessage(reason: unknown): string {

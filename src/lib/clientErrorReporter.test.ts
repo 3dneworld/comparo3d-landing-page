@@ -17,7 +17,7 @@ describe("clientErrorReporter", () => {
     expect(shouldIgnoreClientErrorSource("https://comparo3d.com.ar/assets/index.js")).toBe(false);
   });
 
-  it("sends a critical client error to the backend", async () => {
+  it("sends a critical client error to backend AND worker (canal alterno)", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
 
     await reportClientError({
@@ -26,15 +26,20 @@ describe("clientErrorReporter", () => {
       context: { flow: "quote_upload", filename: "piece.stl" },
     });
 
-    expect(fetchMock).toHaveBeenCalledOnce();
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(String(url)).toContain("/api/client-error");
-    expect(init?.method).toBe("POST");
-    expect(JSON.parse(String(init?.body))).toMatchObject({
-      event_type: "upload_timeout",
-      message: "Upload timeout",
-      severity: "critical",
-    });
+    // Debe llamar a los dos canales: backend /api/client-error + worker /client-error
+    const urls = fetchMock.mock.calls.map(([u]) => String(u));
+    expect(urls.some((u) => u.includes("/api/client-error"))).toBe(true);
+    expect(urls.some((u) => u.includes("workers.dev") && u.endsWith("/client-error"))).toBe(true);
+
+    // Body identico en ambos canales
+    for (const [, init] of fetchMock.mock.calls) {
+      expect(init?.method).toBe("POST");
+      expect(JSON.parse(String(init?.body))).toMatchObject({
+        event_type: "upload_timeout",
+        message: "Upload timeout",
+        severity: "critical",
+      });
+    }
   });
 
   it("does not send extension window errors", () => {
