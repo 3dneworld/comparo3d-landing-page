@@ -924,10 +924,10 @@ export default function HowItWorksAnimation() {
           width: 36px;
           height: 36px;
           border-radius: 10px;
-          background: rgba(255, 255, 255, 0.94);
-          color: ${PAL.primary};
-          border: 1px solid ${PAL.borderSoft};
-          box-shadow: 0 6px 18px rgba(16, 24, 40, 0.12);
+          background: #f0a118;
+          color: #fff;
+          border: 1px solid #e09010;
+          box-shadow: 0 6px 18px rgba(240, 161, 24, 0.35);
           cursor: pointer;
           transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
           -webkit-tap-highlight-color: transparent;
@@ -935,8 +935,8 @@ export default function HowItWorksAnimation() {
 
         .hiw-expand-btn:hover {
           transform: translateY(-1px);
-          box-shadow: 0 10px 22px rgba(16, 24, 40, 0.16);
-          background: #fff;
+          box-shadow: 0 10px 22px rgba(240, 161, 24, 0.45);
+          background: #e89610;
         }
 
         .hiw-fs-overlay {
