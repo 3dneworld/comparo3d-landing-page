@@ -145,7 +145,6 @@ export interface QuoteOptionsProcessing {
 
 export interface AcceptQuoteResponse {
   success: true;
-  order_id: string;
   session_id: string;
   quote_option_uid: string;
   provider_name: string;

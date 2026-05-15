@@ -432,11 +432,10 @@ export function useQuoteFlow({
       setState((s) => ({
         ...s,
         isLoading: false,
-        orderId: result.order_id,
         progressMessage: "",
       }));
 
-      return result.order_id;
+      return result.session_id;
     },
     [sessionId]
   );

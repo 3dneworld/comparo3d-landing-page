@@ -47,7 +47,7 @@ interface PersistedCheckoutState {
 
 export interface StepCheckoutProps {
   selectedQuote: QuoteOption;
-  orderId: string;
+  orderId?: string | null;
   sessionId: string;
   isEmpresa: boolean;
   isAccepting?: boolean;
@@ -73,8 +73,8 @@ interface AddressValidationState {
   validation: NormalizeAddressResponse["validation"];
 }
 
-const checkoutStorageKey = (sessionId: string, orderId: string) =>
-  `comparo3d_checkout_${sessionId}_${orderId}`;
+const checkoutStorageKey = (sessionId: string) =>
+  `comparo3d_checkout_${sessionId}`;
 
 const METHOD_ICONS: Record<string, typeof Truck> = {
   retiro: Store,
@@ -197,7 +197,6 @@ function ShippingMethodCard({
 
 export function StepCheckout({
   selectedQuote,
-  orderId,
   sessionId,
   isEmpresa,
   isAccepting = false,
@@ -245,9 +244,9 @@ export function StepCheckout({
   }, []);
 
   useEffect(() => {
-    if (!sessionId || !orderId) return;
+    if (!sessionId) return;
     try {
-      const raw = localStorage.getItem(checkoutStorageKey(sessionId, orderId));
+      const raw = localStorage.getItem(checkoutStorageKey(sessionId));
       if (!raw) return;
       const parsed = JSON.parse(raw) as PersistedCheckoutState;
       skipNextCheckoutSaveRef.current = true;
@@ -256,7 +255,7 @@ export function StepCheckout({
     } catch {
       setSelectedMethodId("retiro");
     }
-  }, [sessionId, orderId]);
+  }, [sessionId]);
 
   useEffect(() => {
     if (!methods.some((method) => method.id === "retiro")) return;
@@ -265,16 +264,16 @@ export function StepCheckout({
   }, [methods, selectedMethodId]);
 
   useEffect(() => {
-    if (!sessionId || !orderId) return;
+    if (!sessionId) return;
     if (skipNextCheckoutSaveRef.current) {
       skipNextCheckoutSaveRef.current = false;
       return;
     }
     localStorage.setItem(
-      checkoutStorageKey(sessionId, orderId),
+      checkoutStorageKey(sessionId),
       JSON.stringify({ address, selectedMethodId })
     );
-  }, [address, selectedMethodId, sessionId, orderId]);
+  }, [address, selectedMethodId, sessionId]);
 
   useEffect(() => {
     const load = async () => {
@@ -473,7 +472,7 @@ export function StepCheckout({
 
   useEffect(() => {
     setDiscountResult(null);
-  }, [selectedMethodId, estimatePrice, orderId]);
+  }, [selectedMethodId, estimatePrice]);
 
   const isFormValid = useMemo(() => {
     if (!selectedMethodId) return false;
@@ -663,7 +662,6 @@ export function StepCheckout({
     setCheckoutWarning(null);
 
     const result = await validateCheckoutDiscountCode(sessionId, {
-      order_id: orderId,
       code: discountCode.trim(),
       shipping: { price: shippingPrice },
     });
@@ -687,7 +685,6 @@ export function StepCheckout({
     setCheckoutError(null);
 
     const result = await createCheckout(sessionId, {
-      order_id: orderId,
       discount: discountResult?.code ? { code: discountResult.code } : undefined,
       shipping: {
         method_id: selectedMethodId,
@@ -1061,12 +1058,6 @@ export function StepCheckout({
                   <span className="text-[12px] text-muted-foreground">Entrega estimada</span>
                   <span className="text-[12px] font-medium text-foreground">
                     {isRetiro ? pickupReadyLabel : `${deliveryDays} dias habiles`}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[12px] text-muted-foreground">Referencia</span>
-                  <span className="font-mono text-[12px] font-medium text-foreground">
-                    {orderId}
                   </span>
                 </div>
               </div>

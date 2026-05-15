@@ -495,9 +495,9 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
     }
     setSelectedQuote(chosen);
     setData({ selectedQuote: chosen });
-    const orderId = await flow.handleAcceptQuote(quoteOptionUid);
-    if (orderId) {
-      setData((prev) => ({ ...prev, step: 4, selectedQuote: chosen, orderId }));
+    const accepted = await flow.handleAcceptQuote(quoteOptionUid);
+    if (accepted) {
+      setData((prev) => ({ ...prev, step: 4, selectedQuote: chosen }));
     }
   };
 
