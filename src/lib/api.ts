@@ -157,8 +157,48 @@ export interface AcceptQuoteResponse {
   checkout_url: string;
 }
 
+// Cloudflare Free Plan limita uploads a 100MB por POST. Cuando se supera,
+// el edge devuelve HTML (sin headers CORS) y el cliente ve errores raros.
+// Detectamos el caso ANTES de hacer fetch para dar un mensaje claro y un
+// hint sobre como resolverlo.
+const UPLOAD_HARD_LIMIT_BYTES = 100 * 1024 * 1024;
+const UPLOAD_SAFE_LIMIT_BYTES = 95 * 1024 * 1024;
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function buildLargeFileMessage(file: File): string {
+  return (
+    `Tu archivo "${file.name}" pesa ${formatBytes(file.size)} y supera el limite ` +
+    `de upload directo (100 MB). Por ahora, escribinos a ventas@3dneworld.com ` +
+    `o por WhatsApp y lo cargamos manualmente; estamos preparando un canal ` +
+    `especial para archivos grandes.`
+  );
+}
+
 /** Upload STL al backend. */
 export async function uploadStl(file: File, sessionId?: string): Promise<UploadResponse | ApiError> {
+  // Pre-check: archivo supera el limite de Cloudflare Free Plan.
+  if (file.size >= UPLOAD_SAFE_LIMIT_BYTES) {
+    void reportClientError({
+      event_type: "upload_too_large_pre_check",
+      message: `Cliente intento subir archivo de ${formatBytes(file.size)} (limite 100 MB)`,
+      severity: "warning",
+      status: 413,
+      error_type: "file_too_large",
+      context: {
+        flow: "quote_upload",
+        filename: file.name,
+        file_size: file.size,
+        session_id: sessionId || "",
+        limit_bytes: UPLOAD_HARD_LIMIT_BYTES,
+      },
+    });
+    return { success: false, error: buildLargeFileMessage(file) };
+  }
+
   const formData = new FormData();
   formData.append("stl_file", file);
   if (sessionId) formData.append("session_id", sessionId);
@@ -217,7 +257,36 @@ export async function uploadStl(file: File, sessionId?: string): Promise<UploadR
     window.clearTimeout(timeoutTimer);
   }
 
-  const data = await res.json();
+  // Caso defense-in-depth: si el pre-check fallo (ej. tamano declarado < real)
+  // y Cloudflare devuelve 413 con HTML, mostramos el mismo mensaje de archivo
+  // grande sin intentar parsear JSON (fallaria).
+  if (res.status === 413) {
+    void reportClientError({
+      event_type: "upload_too_large_413",
+      message: `Cloudflare rechazo upload con 413 (archivo ${formatBytes(file.size)})`,
+      severity: "warning",
+      status: 413,
+      error_type: "file_too_large",
+      context: {
+        flow: "quote_upload",
+        filename: file.name,
+        file_size: file.size,
+        session_id: sessionId || "",
+        elapsed_ms: Date.now() - startedAt,
+      },
+    });
+    return { success: false, error: buildLargeFileMessage(file) };
+  }
+
+  // Cloudflare puede devolver HTML para errores 4xx/5xx (524, 502, etc).
+  // Si res.json() falla porque no es JSON, no crasheamos al caller.
+  let data: { success?: boolean; error?: string } = {};
+  try {
+    data = await res.json();
+  } catch {
+    data = { success: false, error: `Respuesta no JSON del servidor (HTTP ${res.status})` };
+  }
+
   if (!res.ok || !data.success) {
     if (res.status >= 500 || res.status === 0) {
       void reportClientError({
