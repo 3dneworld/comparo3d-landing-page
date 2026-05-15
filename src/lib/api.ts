@@ -159,44 +159,226 @@ export interface AcceptQuoteResponse {
 
 // Cloudflare Free Plan limita uploads a 100MB por POST. Cuando se supera,
 // el edge devuelve HTML (sin headers CORS) y el cliente ve errores raros.
-// Detectamos el caso ANTES de hacer fetch para dar un mensaje claro y un
-// hint sobre como resolverlo.
+// Para evitarlo, archivos >= 95MB usan el flujo "large upload" que sube
+// directo a Cloudflare R2 (bypass del tunel) y luego avisa al backend.
 const UPLOAD_HARD_LIMIT_BYTES = 100 * 1024 * 1024;
 const UPLOAD_SAFE_LIMIT_BYTES = 95 * 1024 * 1024;
+// Limite duro del flujo large upload (R2). Por encima se rechaza igual.
+const LARGE_UPLOAD_MAX_BYTES = 1024 * 1024 * 1024; // 1 GB
 
-function formatBytes(bytes: number): string {
+export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function buildLargeFileMessage(file: File): string {
+/** Decide si el archivo necesita el flujo de large upload. */
+export function needsLargeUploadFlow(file: File): boolean {
+  return file.size >= UPLOAD_SAFE_LIMIT_BYTES;
+}
+
+function buildLargeFileFallbackMessage(file: File): string {
   return (
     `Tu archivo "${file.name}" pesa ${formatBytes(file.size)} y supera el limite ` +
-    `de upload directo (100 MB). Por ahora, escribinos a info@comparo3d.com.ar ` +
-    `o por WhatsApp y lo cargamos manualmente; estamos preparando un canal ` +
-    `especial para archivos grandes.`
+    `de upload directo. No pudimos iniciar el canal alternativo. Por favor ` +
+    `escribinos a info@comparo3d.com.ar y te lo cargamos manualmente.`
   );
 }
 
-/** Upload STL al backend. */
-export async function uploadStl(file: File, sessionId?: string): Promise<UploadResponse | ApiError> {
-  // Pre-check: archivo supera el limite de Cloudflare Free Plan.
-  if (file.size >= UPLOAD_SAFE_LIMIT_BYTES) {
+function buildOversizeMessage(file: File): string {
+  const limitMB = (LARGE_UPLOAD_MAX_BYTES / 1024 / 1024).toFixed(0);
+  return (
+    `Tu archivo "${file.name}" pesa ${formatBytes(file.size)} y supera el ` +
+    `maximo absoluto de ${limitMB} MB. Para piezas mas grandes, escribinos ` +
+    `a info@comparo3d.com.ar.`
+  );
+}
+
+interface LargeUploadInitResponse {
+  success: true;
+  url: string;
+  r2_key: string;
+  expires_in_seconds: number;
+  method: "PUT";
+  headers: Record<string, string>;
+}
+
+/** PUT del archivo directo a R2 con XHR para tener progress events reales. */
+function putToR2WithProgress(
+  url: string,
+  file: File,
+  headers: Record<string, string>,
+  onProgress?: (loaded: number, total: number) => void,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url, true);
+    for (const [k, v] of Object.entries(headers)) xhr.setRequestHeader(k, v);
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && onProgress) onProgress(event.loaded, event.total);
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`R2 PUT fallo HTTP ${xhr.status}: ${xhr.responseText.slice(0, 200)}`));
+    };
+    xhr.onerror = () => reject(new Error("R2 PUT network error"));
+    xhr.onabort = () => reject(new Error("R2 PUT aborted"));
+    xhr.send(file);
+  });
+}
+
+/** Upload via R2 (bypass Cloudflare 100MB limit). */
+export async function uploadStlLarge(
+  file: File,
+  sessionId?: string,
+  onProgress?: (loaded: number, total: number) => void,
+): Promise<UploadResponse | ApiError> {
+  const startedAt = Date.now();
+
+  if (file.size > LARGE_UPLOAD_MAX_BYTES) {
     void reportClientError({
-      event_type: "upload_too_large_pre_check",
-      message: `Cliente intento subir archivo de ${formatBytes(file.size)} (limite 100 MB)`,
+      event_type: "large_upload_oversize",
+      message: `Cliente intento subir archivo de ${formatBytes(file.size)} (max ${LARGE_UPLOAD_MAX_BYTES})`,
       severity: "warning",
       status: 413,
-      error_type: "file_too_large",
+      error_type: "file_oversize_absolute",
+      context: { flow: "quote_upload_large", filename: file.name, file_size: file.size },
+    });
+    return { success: false, error: buildOversizeMessage(file) };
+  }
+
+  // 1. init
+  let init: LargeUploadInitResponse;
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/large-upload/init`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: file.name, size: file.size }),
+    });
+    if (!res.ok) {
+      let errBody: { error?: string } = {};
+      try { errBody = await res.json(); } catch { /* ignore */ }
+      const errMsg = errBody.error || `Init fallo HTTP ${res.status}`;
+      void reportClientError({
+        event_type: "large_upload_init_fail",
+        message: errMsg,
+        severity: "critical",
+        status: res.status,
+        error_type: "large_upload_init",
+        context: { flow: "quote_upload_large", filename: file.name, file_size: file.size },
+      });
+      // 503 = R2 no configurado en backend → mensaje fallback al cliente
+      if (res.status === 503) {
+        return { success: false, error: buildLargeFileFallbackMessage(file) };
+      }
+      return { success: false, error: errMsg };
+    }
+    init = (await res.json()) as LargeUploadInitResponse;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    void reportClientError({
+      event_type: "large_upload_init_fail",
+      message,
+      severity: "critical",
+      error_type: "large_upload_init_network",
+      context: { flow: "quote_upload_large", filename: file.name, file_size: file.size },
+    });
+    return { success: false, error: buildLargeFileFallbackMessage(file) };
+  }
+
+  // 2. PUT a R2 (bypass de Cloudflare tunnel, con progress real)
+  try {
+    await putToR2WithProgress(init.url, file, init.headers || {}, onProgress);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    void reportClientError({
+      event_type: "large_upload_r2_put_fail",
+      message,
+      severity: "critical",
+      error_type: "r2_put",
+      context: {
+        flow: "quote_upload_large",
+        filename: file.name,
+        file_size: file.size,
+        r2_key: init.r2_key,
+        elapsed_ms: Date.now() - startedAt,
+      },
+    });
+    return { success: false, error: "El upload directo se interrumpio. Reintentar puede solucionarlo." };
+  }
+
+  // 3. finalize: backend descarga R2 → TEMP y procesa con el pipeline normal
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/large-upload/finalize`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        r2_key: init.r2_key,
+        original_filename: file.name,
+        session_id: sessionId || "",
+      }),
+    });
+    let data: { success?: boolean; error?: string } = {};
+    try { data = await res.json(); } catch { /* ignore */ }
+    if (!res.ok || !data.success) {
+      void reportClientError({
+        event_type: "large_upload_finalize_fail",
+        message: data.error || `Finalize fallo HTTP ${res.status}`,
+        severity: "critical",
+        status: res.status,
+        error_type: "large_upload_finalize",
+        context: {
+          flow: "quote_upload_large",
+          filename: file.name,
+          file_size: file.size,
+          r2_key: init.r2_key,
+          elapsed_ms: Date.now() - startedAt,
+        },
+      });
+      return { success: false, error: (data.error as string) || "Error al procesar el archivo" };
+    }
+    return data as UploadResponse;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    void reportClientError({
+      event_type: "large_upload_finalize_fail",
+      message,
+      severity: "critical",
+      error_type: "large_upload_finalize_network",
+      context: { flow: "quote_upload_large", filename: file.name, file_size: file.size },
+    });
+    return { success: false, error: "No se pudo finalizar el upload. Intenta de nuevo." };
+  }
+}
+
+/** Upload STL al backend.
+ *
+ *  - Si file.size < 95 MB: flujo tradicional (multipart POST a /api/upload-and-orient).
+ *  - Si file.size >= 95 MB: delega a uploadStlLarge (R2 directo, bypass del
+ *    limite 100 MB de Cloudflare Free Plan). Ver needsLargeUploadFlow().
+ *
+ *  El opcional onProgress solo se invoca en la rama large (upload tradicional
+ *  no tiene progress events utiles porque el browser bufferea el multipart).
+ */
+export async function uploadStl(
+  file: File,
+  sessionId?: string,
+  onProgress?: (loaded: number, total: number) => void,
+): Promise<UploadResponse | ApiError> {
+  if (needsLargeUploadFlow(file)) {
+    void reportClientError({
+      event_type: "upload_routed_to_large",
+      message: `Archivo de ${formatBytes(file.size)} routeado a flujo R2 (>=95MB)`,
+      severity: "warning",
+      error_type: "routing",
       context: {
         flow: "quote_upload",
         filename: file.name,
         file_size: file.size,
         session_id: sessionId || "",
-        limit_bytes: UPLOAD_HARD_LIMIT_BYTES,
+        threshold_bytes: UPLOAD_SAFE_LIMIT_BYTES,
       },
     });
-    return { success: false, error: buildLargeFileMessage(file) };
+    return uploadStlLarge(file, sessionId, onProgress);
   }
 
   const formData = new FormData();
@@ -275,7 +457,10 @@ export async function uploadStl(file: File, sessionId?: string): Promise<UploadR
         elapsed_ms: Date.now() - startedAt,
       },
     });
-    return { success: false, error: buildLargeFileMessage(file) };
+    // Edge case: el cliente declaro un size < 95MB pero el archivo real es
+    // mayor. Lo derivamos al flujo R2 directamente (en vez de mostrar el
+    // mensaje "contactanos por email").
+    return uploadStlLarge(file, sessionId);
   }
 
   // Cloudflare puede devolver HTML para errores 4xx/5xx (524, 502, etc).

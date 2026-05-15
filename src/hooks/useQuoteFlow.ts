@@ -163,14 +163,28 @@ export function useQuoteFlow({
   const handleUploadStl = useCallback(
     async (file: File, currentSessionId?: string): Promise<boolean> => {
       if (!isMountedRef.current) return false;
+      // Archivos >= 95MB usan canal alternativo (R2 directo). Mostramos
+      // mensaje distinto y progreso real durante el PUT a R2.
+      const isLarge = file.size >= 95 * 1024 * 1024;
       setState((s) => ({
         ...s,
         isLoading: true,
         error: null,
-        progressMessage: "Subiendo y analizando tu archivo...",
+        progressMessage: isLarge
+          ? `Archivo grande (${(file.size / 1024 / 1024).toFixed(1)} MB). Subiendo por canal especial...`
+          : "Subiendo y analizando tu archivo...",
       }));
 
-      const result = await uploadStl(file, currentSessionId || undefined);
+      const onProgress = (loaded: number, total: number) => {
+        if (!isMountedRef.current || total <= 0) return;
+        const pct = Math.min(100, Math.round((loaded / total) * 100));
+        setState((s) => ({
+          ...s,
+          progressMessage: `Subiendo archivo grande... ${pct}%`,
+        }));
+      };
+
+      const result = await uploadStl(file, currentSessionId || undefined, isLarge ? onProgress : undefined);
 
       if (!isMountedRef.current) return false;
 
