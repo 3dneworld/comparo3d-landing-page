@@ -118,16 +118,16 @@ function safeText(value?: string | number | null, fallback = "Sin dato") {
 }
 
 function parseDeliveryAddress(value?: DashboardOrder["delivery_address_json"]) {
-  if (!value) return "Sin direccion cargada";
+  if (!value) return "NO ACREDITA DIRECCIÓN";
   if (typeof value === "object") {
     const raw = value.raw;
-    return typeof raw === "string" && raw.trim() ? raw : JSON.stringify(value);
+    return typeof raw === "string" && raw.trim() ? raw : "NO ACREDITA DIRECCIÓN";
   }
   const trimmed = value.trim();
-  if (!trimmed) return "Sin direccion cargada";
+  if (!trimmed) return "NO ACREDITA DIRECCIÓN";
   try {
     const parsed = JSON.parse(trimmed) as { raw?: unknown };
-    return typeof parsed.raw === "string" && parsed.raw.trim() ? parsed.raw : trimmed;
+    return typeof parsed.raw === "string" && parsed.raw.trim() ? parsed.raw : "NO ACREDITA DIRECCIÓN";
   } catch {
     return trimmed;
   }
@@ -316,7 +316,9 @@ function OrderDetailPanel({
           </div>
           <div className="flex flex-wrap gap-2">
             <DashboardStatePill tone={orderStatus.tone}>{orderStatus.label}</DashboardStatePill>
-            <DashboardStatePill tone={paymentStatus.tone}>Pago {paymentStatus.label}</DashboardStatePill>
+            {_s === "cancelled" ? (
+              <DashboardStatePill tone={paymentStatus.tone}>Pago {paymentStatus.label}</DashboardStatePill>
+            ) : null}
           </div>
         </div>
         {showActionRow ? (
@@ -552,7 +554,11 @@ function OrderRow({
         <DashboardStatePill tone={orderStatus.tone}>{orderStatus.label}</DashboardStatePill>
       </DashboardDataValue>
       <DashboardDataValue label="Pago" className="flex flex-col items-start">
-        <DashboardStatePill tone={paymentStatus.tone}>{paymentStatus.label}</DashboardStatePill>
+        {order.order_status === "cancelled" ? (
+          <DashboardStatePill tone={paymentStatus.tone}>{paymentStatus.label}</DashboardStatePill>
+        ) : (
+          <span className="text-xs text-muted-foreground">Aprobado</span>
+        )}
       </DashboardDataValue>
       <DashboardDataValue label="Cliente">
         <p className="text-sm font-medium text-foreground">{safeText(order.client_name, "Cliente no cargado")}</p>

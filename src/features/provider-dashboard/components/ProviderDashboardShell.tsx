@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Boxes,
   ChevronRight,
@@ -17,6 +18,8 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { DashboardStatePill } from "@/features/provider-dashboard/components/DashboardStatePill";
+import { fetchProviderSummary } from "@/features/provider-dashboard/api";
+import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
 import type { DashboardProvider, DashboardUser } from "@/features/provider-dashboard/types";
 import { cn } from "@/lib/utils";
 import logoWhite from "@/assets/logo-white.png";
@@ -55,6 +58,25 @@ export function ProviderDashboardShell({
 }: ProviderDashboardShellProps) {
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const session = useProviderDashboardSession();
+  const providerId = session.providerId ?? user.provider_id;
+
+  const summaryQuery = useQuery({
+    queryKey: ["provider-dashboard", "resumen", providerId],
+    queryFn: () => fetchProviderSummary(providerId!),
+    enabled: providerId != null,
+    staleTime: 60_000,
+    refetchInterval: 120_000,
+  });
+
+  const badges = useMemo<Record<string, number>>(() => {
+    const m = summaryQuery.data?.metrics;
+    if (!m) return {};
+    const result: Record<string, number> = {};
+    if (m.cotizaciones_participadas > 0) result.cotizaciones = m.cotizaciones_participadas;
+    if (m.pedidos_abiertos > 0) result.pedidos = m.pedidos_abiertos;
+    return result;
+  }, [summaryQuery.data]);
 
   const currentSection = useMemo(() => {
     const pathname = location.pathname.split("/").filter(Boolean);
@@ -144,6 +166,7 @@ export function ProviderDashboardShell({
                   );
                 }
 
+                const badgeCount = badges[item.key];
                 return (
                   <NavLink
                     key={item.key}
@@ -164,14 +187,21 @@ export function ProviderDashboardShell({
                           <Icon className={cn("h-4 w-4", isActive ? "text-primary" : "")} />
                           <span className="font-medium">{item.label}</span>
                         </div>
-                        <ChevronRight
-                          className={cn(
-                            "h-4 w-4 transition-transform",
-                            isActive
-                              ? "translate-x-0 text-primary"
-                              : "-translate-x-1 opacity-40 group-hover:translate-x-0"
-                          )}
-                        />
+                        <div className="flex items-center gap-2">
+                          {badgeCount != null && badgeCount > 0 ? (
+                            <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold leading-none text-white">
+                              {badgeCount}
+                            </span>
+                          ) : null}
+                          <ChevronRight
+                            className={cn(
+                              "h-4 w-4 transition-transform",
+                              isActive
+                                ? "translate-x-0 text-primary"
+                                : "-translate-x-1 opacity-40 group-hover:translate-x-0"
+                            )}
+                          />
+                        </div>
                       </>
                     )}
                   </NavLink>
@@ -223,6 +253,7 @@ export function ProviderDashboardShell({
                     );
                   }
 
+                  const mobileBadge = badges[item.key];
                   return (
                     <NavLink
                       key={item.key}
@@ -230,7 +261,7 @@ export function ProviderDashboardShell({
                       end
                       className={({ isActive }) =>
                         cn(
-                          "inline-flex whitespace-nowrap rounded-full border px-3 py-2 text-xs font-semibold transition-colors",
+                          "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-xs font-semibold transition-colors",
                           isActive
                             ? "border-primary/40 bg-primary/20 text-white"
                             : "border-white/10 bg-white/6 text-[hsl(var(--hero-muted))] hover:text-white"
@@ -238,6 +269,11 @@ export function ProviderDashboardShell({
                       }
                     >
                       {item.label}
+                      {mobileBadge != null && mobileBadge > 0 ? (
+                        <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-white">
+                          {mobileBadge}
+                        </span>
+                      ) : null}
                     </NavLink>
                   );
                 })}
