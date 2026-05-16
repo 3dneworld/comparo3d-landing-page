@@ -966,20 +966,20 @@ export default function HowItWorksAnimation() {
           background: #e89610;
         }
 
-        /* Banner inline "Tocá para verlo más grande" */
+        /* Banner inline "Tocá para verlo más grande" — SOLO mobile/tablet */
         .hiw-ampliar-banner {
-          display: flex;
+          display: none;
           align-items: center;
           justify-content: center;
           gap: 8px;
           margin: 0 auto 12px;
           padding: 8px 18px;
           border-radius: 999px;
-          background: rgba(240, 161, 24, 0.13);
-          border: 1px solid rgba(240, 161, 24, 0.3);
-          color: #d48a0a;
+          background: rgba(240, 161, 24, 0.09);
+          border: 1px solid rgba(240, 161, 24, 0.21);
+          color: rgba(212, 138, 10, 0.70);
           font-family: ${FONT_BODY};
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 600;
           letter-spacing: 0.01em;
           cursor: pointer;
@@ -989,7 +989,7 @@ export default function HowItWorksAnimation() {
         }
 
         .hiw-ampliar-banner:hover {
-          background: rgba(240, 161, 24, 0.22);
+          background: rgba(240, 161, 24, 0.16);
         }
 
         .hiw-ampliar-text {
@@ -1010,6 +1010,20 @@ export default function HowItWorksAnimation() {
         @keyframes hiw-banner-in {
           0% { opacity: 0; transform: translateY(-4px); }
           100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mostrar banner y botón ↗ SOLO en mobile/tablet */
+        @media (max-width: 1023px) {
+          .hiw-ampliar-banner {
+            display: flex;
+          }
+        }
+
+        /* Ocultar botón ↗ en desktop */
+        @media (min-width: 1024px) {
+          .hiw-expand-btn {
+            display: none;
+          }
         }
 
         .hiw-fs-overlay {
