@@ -182,7 +182,8 @@ const ClientReviewPage = () => {
             onChange={(event) => setComment(event.target.value)}
             rows={5}
             placeholder="Contanos con detalle cómo te llegó la pieza, si cumplió expectativas y cómo fue la coordinación."
-            className="mt-4 w-full rounded-[24px] border border-hero-muted/12 bg-white px-5 py-4 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/40"
+            style={{ color: "#0f172a" }}
+            className="mt-4 w-full rounded-[24px] border border-hero-muted/12 bg-white px-5 py-4 text-sm leading-relaxed !text-slate-900 placeholder:!text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
           <p className={`mt-3 text-xs ${remainingChars === 0 ? "text-emerald-300" : "text-hero-muted"}`}>
             {helperCopy}
