@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -984,8 +985,12 @@ function OrdersContent({
 export function ProviderOrdersView() {
   const queryClient = useQueryClient();
   const { providerId } = useProviderDashboardSession();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [statusFilter, setStatusFilter] = useState("");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(() => {
+    const param = searchParams.get("pedido_id");
+    return param ? Number(param) : null;
+  });
   const [showReadyToShipComposer, setShowReadyToShipComposer] = useState(false);
   const [readyToShipFiles, setReadyToShipFiles] = useState<File[]>([]);
   const [cancellingOrder, setCancellingOrder] = useState<DashboardOrder | null>(null);
@@ -1009,6 +1014,17 @@ export function ProviderOrdersView() {
 
   const items = useMemo(() => ordersQuery.data?.items || [], [ordersQuery.data]);
   const selectedOrder = detailQuery.data?.item || items.find((item) => item.id === selectedId) || null;
+
+  // Limpia el query param pedido_id de la URL una vez que el pedido quedó seleccionado
+  useEffect(() => {
+    if (selectedId != null && searchParams.has("pedido_id")) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("pedido_id");
+        return next;
+      }, { replace: true });
+    }
+  }, [selectedId, searchParams, setSearchParams]);
 
   useEffect(() => {
     setShowReadyToShipComposer(false);
