@@ -212,6 +212,13 @@ export function dispatchProviderOrder(orderId: number, params?: DispatchParams) 
   });
 }
 
+export function requestProviderOrderReview(orderId: number) {
+  return dashboardFetch<{ success: boolean; sent: boolean; reason?: string; trigger_event?: string }>(
+    `/api/shipping/orders/${orderId}/request-review`,
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) }
+  );
+}
+
 export function cancelProviderOrder(providerId: number, orderId: number, reason: string) {
   return dashboardFetch<ProviderOrderCancellationResponse>(
     `/api/provider-dashboard/proveedores/${providerId}/pedidos/${orderId}/cancel`,

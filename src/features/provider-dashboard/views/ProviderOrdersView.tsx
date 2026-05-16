@@ -17,6 +17,7 @@ import {
   Printer,
   RefreshCcw,
   Search,
+  Star,
   Truck,
   Upload,
   WalletCards,
@@ -40,6 +41,7 @@ import {
   fetchProviderOrders,
   markProviderOrderPrinting,
   markProviderOrderReadyToShip,
+  requestProviderOrderReview,
 } from "@/features/provider-dashboard/api";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
 import {
@@ -246,6 +248,8 @@ function OrderDetailPanel({
   onDispatch,
   isDispatching,
   onRequestCancel,
+  onRequestReview,
+  isRequestingReview,
 }: {
   order?: DashboardOrder | null;
   isLoading: boolean;
@@ -263,6 +267,8 @@ function OrderDetailPanel({
   onDispatch: () => void;
   isDispatching: boolean;
   onRequestCancel: () => void;
+  onRequestReview: () => void;
+  isRequestingReview: boolean;
 }) {
   if (isLoading) {
     return (
@@ -323,6 +329,7 @@ function OrderDetailPanel({
           </div>
         </div>
         {showActionRow ? (
+          <>
           <div className="mt-5 flex items-stretch gap-4">
             {/* Pasos — columna izquierda */}
             <div className="flex flex-1 flex-col">
@@ -454,6 +461,38 @@ function OrderDetailPanel({
               </div>
             ) : null}
           </div>
+          {/* Solicitar Review — debajo de los pasos y cancelar */}
+          {(() => {
+            const reviewStatus = String(order.review_reminder_status || "none");
+            const reviewAlreadySent = ["sent", "sending"].includes(reviewStatus);
+            const canReview = step3Done && !reviewAlreadySent;
+            return (
+              <div className="mt-3">
+                <Button
+                  type="button"
+                  className={`h-9 rounded-xl px-4 text-sm font-semibold ${
+                    reviewAlreadySent
+                      ? "border border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default"
+                      : canReview
+                      ? "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600"
+                      : "border border-muted/40 bg-transparent text-muted-foreground/50 cursor-not-allowed"
+                  }`}
+                  onClick={onRequestReview}
+                  disabled={!canReview || isRequestingReview}
+                >
+                  {isRequestingReview ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                  ) : reviewAlreadySent ? (
+                    <CheckCircle2 className="h-4 w-4" />
+                  ) : (
+                    <Star className="h-4 w-4" />
+                  )}
+                  {reviewAlreadySent ? "Review solicitada" : "Solicitar Review"}
+                </Button>
+              </div>
+            );
+          })()}
+          </>
         ) : null}
         {showReadyToShipComposer ? (
           <ReadyToShipComposer
@@ -804,6 +843,8 @@ function OrdersContent({
   onCloseCancellation,
   onConfirmCancellation,
   isCancelling,
+  onRequestReview,
+  isRequestingReview,
 }: {
   items: DashboardOrder[];
   selectedOrder?: DashboardOrder | null;
@@ -834,6 +875,8 @@ function OrdersContent({
   onCloseCancellation: () => void;
   onConfirmCancellation: () => void;
   isCancelling: boolean;
+  onRequestReview: () => void;
+  isRequestingReview: boolean;
 }) {
   const activeOrders = items.filter((item) => !["completed", "cancelled"].includes(String(item.order_status || "")));
   const completedOrders = items.filter((item) => item.order_status === "completed");
@@ -965,6 +1008,8 @@ function OrdersContent({
               onDispatch={onDispatchSelected}
               isDispatching={isDispatching}
               onRequestCancel={() => selectedOrder && onRequestCancelOrder(selectedOrder)}
+              onRequestReview={onRequestReview}
+              isRequestingReview={isRequestingReview}
             />
           </DashboardPanel>
         </div>
@@ -1104,6 +1149,29 @@ export function ProviderOrdersView() {
     },
   });
 
+  const reviewMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedId) throw new Error("Elegí un pedido para solicitar review.");
+      return requestProviderOrderReview(selectedId);
+    },
+    onSuccess: (payload) => {
+      if (payload.sent) {
+        toast.success("Solicitud de review enviada al cliente.");
+      } else if (payload.reason === "already_sent") {
+        toast.info("Ya se envió una solicitud de review para este pedido.");
+      } else if (payload.reason === "review_already_exists") {
+        toast.info("El cliente ya dejó una review para este pedido.");
+      } else {
+        toast.warning("No se pudo enviar la solicitud. Intentá de nuevo más tarde.");
+      }
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "orders", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "order-detail", providerId] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "No pudimos enviar la solicitud de review.");
+    },
+  });
+
   const cancelMutation = useMutation({
     mutationFn: async () => {
       if (!cancellingOrder || providerId == null) throw new Error("Elegi un pedido para cancelar.");
@@ -1225,6 +1293,11 @@ export function ProviderOrdersView() {
         void cancelMutation.mutateAsync();
       }}
       isCancelling={cancelMutation.isPending}
+      onRequestReview={() => {
+        if (!selectedOrder) return;
+        void reviewMutation.mutateAsync();
+      }}
+      isRequestingReview={reviewMutation.isPending}
     />
 
     <DispatchConfirmDialog
