@@ -130,6 +130,14 @@ export default {
       return serveSpaShell(request, env, url);
     }
 
+    // Onboarding login — React SPA (no proxy al Flask)
+    if (
+      url.pathname === "/proveedores/onboarding/login" ||
+      url.pathname === "/proveedores/onboarding/login/"
+    ) {
+      return serveSpaShell(request, env, url);
+    }
+
     const dashboardShortTarget = providerDashboardShortRoutes[url.pathname];
     if (dashboardShortTarget) {
       return Response.redirect(new URL(dashboardShortTarget + url.search, url.origin).toString(), 302);
