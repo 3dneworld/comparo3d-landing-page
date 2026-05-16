@@ -71,14 +71,36 @@ describe("uploadStl alerting", () => {
         return new Response(
           JSON.stringify({
             success: true,
-            temp_name: "huge_123",
-            session_id: "huge_123",
-            stl_sha256: "abc",
-            stl_dimensions: { x: 100, y: 100, z: 100 },
-            dimensions: { x: 100, y: 100, z: 100 },
-            thumbnail_base64: null,
-            manifold_status: "ok",
-            slicing: { slicing_available: true, print_time_minutes: 60, filament_grams: 50 },
+            job_id: "job_test123",
+            poll_url: "/api/large-upload/job/job_test123",
+            message: "encolado",
+          }),
+          { status: 202, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      if (url.endsWith("/api/large-upload/job/job_test123")) {
+        // Polling: devolver done con resultado completo
+        return new Response(
+          JSON.stringify({
+            job_id: "job_test123",
+            status: "done",
+            step: "done",
+            message: "Procesamiento completado",
+            pct: 100,
+            result: {
+              success: true,
+              temp_name: "huge_123",
+              session_id: "huge_123",
+              stl_sha256: "abc",
+              stl_dimensions: { x: 100, y: 100, z: 100 },
+              dimensions: { x: 100, y: 100, z: 100 },
+              thumbnail_base64: null,
+              manifold_status: "ok",
+              slicing: { slicing_available: true, print_time_minutes: 60, filament_grams: 50 },
+            },
+            error: null,
+            created_at: 0,
+            updated_at: 0,
           }),
           { status: 200, headers: { "Content-Type": "application/json" } }
         );
@@ -113,10 +135,11 @@ describe("uploadStl alerting", () => {
     if (result.success) {
       expect(result.session_id).toBe("huge_123");
     }
-    // Llamó init y finalize al backend, NO al endpoint upload-and-orient legacy
+    // Llamó init, finalize y polling, NO al endpoint upload-and-orient legacy
     const callUrls = fetchCalls.map(c => c.url);
     expect(callUrls.some(u => u.endsWith("/api/large-upload/init"))).toBe(true);
     expect(callUrls.some(u => u.endsWith("/api/large-upload/finalize"))).toBe(true);
+    expect(callUrls.some(u => u.endsWith("/api/large-upload/job/job_test123"))).toBe(true);
     expect(callUrls.some(u => u.endsWith("/api/upload-and-orient"))).toBe(false);
     // Reporta el routing como warning (no critico).
     expect(reportClientError).toHaveBeenCalledWith(

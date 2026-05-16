@@ -225,11 +225,81 @@ function putToR2WithProgress(
   });
 }
 
+/** Callback opcional para recibir mensajes de step server-side durante el
+ *  procesamiento async (download R2 -> manifold -> tweaker -> slicer -> thumbnail).
+ *  Se invoca con `(message, pct)` cada vez que el backend reporta progreso.
+ *  pct es null cuando el step no tiene metrica numerica.
+ */
+export type StepProgressCallback = (message: string, pct: number | null) => void;
+
+interface JobStatusResponse {
+  job_id: string;
+  status: "pending" | "running" | "done" | "error";
+  step: string;
+  message: string;
+  pct: number | null;
+  result: UploadResponse | null;
+  error: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+/** Sleep helper para polling. */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Hace polling del job hasta que termina o falla. Llama onStep con cada update. */
+async function pollLargeUploadJob(
+  jobId: string,
+  onStep?: StepProgressCallback,
+  pollIntervalMs = 1000,
+  maxWaitMs = 10 * 60 * 1000,
+): Promise<UploadResponse | ApiError> {
+  const startedAt = Date.now();
+  let lastMessage = "";
+  while (Date.now() - startedAt < maxWaitMs) {
+    let snapshot: JobStatusResponse;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/large-upload/job/${jobId}`);
+      if (!res.ok) {
+        if (res.status === 404) {
+          return { success: false, error: "El procesamiento expiro. Reintenta el upload." };
+        }
+        await sleep(pollIntervalMs);
+        continue;
+      }
+      snapshot = (await res.json()) as JobStatusResponse;
+    } catch {
+      await sleep(pollIntervalMs);
+      continue;
+    }
+
+    if (onStep && snapshot.message && snapshot.message !== lastMessage) {
+      onStep(snapshot.message, snapshot.pct);
+      lastMessage = snapshot.message;
+    } else if (onStep && snapshot.pct !== null && snapshot.message === lastMessage) {
+      // Mismo mensaje pero distinto pct → actualizar igual
+      onStep(snapshot.message, snapshot.pct);
+    }
+
+    if (snapshot.status === "done" && snapshot.result) {
+      return snapshot.result;
+    }
+    if (snapshot.status === "error") {
+      return { success: false, error: snapshot.error || "Error procesando el archivo" };
+    }
+    await sleep(pollIntervalMs);
+  }
+  return { success: false, error: "El procesamiento tardo mas de lo esperado. Intenta de nuevo." };
+}
+
 /** Upload via R2 (bypass Cloudflare 100MB limit). */
 export async function uploadStlLarge(
   file: File,
   sessionId?: string,
   onProgress?: (loaded: number, total: number) => void,
+  onStep?: StepProgressCallback,
 ): Promise<UploadResponse | ApiError> {
   const startedAt = Date.now();
 
@@ -305,7 +375,10 @@ export async function uploadStlLarge(
     return { success: false, error: "El upload directo se interrumpio. Reintentar puede solucionarlo." };
   }
 
-  // 3. finalize: backend descarga R2 → TEMP y procesa con el pipeline normal
+  // 3. finalize: backend encola job y devuelve job_id. Procesamiento real
+  //    corre async en el backend (download R2 -> manifold -> tweaker -> slicer
+  //    -> thumbnail). Hacemos polling para mostrar steps al usuario.
+  let jobId: string;
   try {
     const res = await fetch(`${API_BASE_URL}/api/large-upload/finalize`, {
       method: "POST",
@@ -316,9 +389,9 @@ export async function uploadStlLarge(
         session_id: sessionId || "",
       }),
     });
-    let data: { success?: boolean; error?: string } = {};
+    let data: { success?: boolean; error?: string; job_id?: string } = {};
     try { data = await res.json(); } catch { /* ignore */ }
-    if (!res.ok || !data.success) {
+    if (!res.ok || !data.success || !data.job_id) {
       void reportClientError({
         event_type: "large_upload_finalize_fail",
         message: data.error || `Finalize fallo HTTP ${res.status}`,
@@ -335,7 +408,7 @@ export async function uploadStlLarge(
       });
       return { success: false, error: (data.error as string) || "Error al procesar el archivo" };
     }
-    return data as UploadResponse;
+    jobId = data.job_id;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     void reportClientError({
@@ -347,6 +420,10 @@ export async function uploadStlLarge(
     });
     return { success: false, error: "No se pudo finalizar el upload. Intenta de nuevo." };
   }
+
+  // 4. polling del job hasta done/error. Llama onStep con cada cambio para
+  //    que el UI pueda mostrar "Descargando 42%", "Validando geometria", etc.
+  return pollLargeUploadJob(jobId, onStep);
 }
 
 /** Upload STL al backend.
@@ -362,6 +439,7 @@ export async function uploadStl(
   file: File,
   sessionId?: string,
   onProgress?: (loaded: number, total: number) => void,
+  onStep?: StepProgressCallback,
 ): Promise<UploadResponse | ApiError> {
   if (needsLargeUploadFlow(file)) {
     void reportClientError({
@@ -377,7 +455,7 @@ export async function uploadStl(
         threshold_bytes: UPLOAD_SAFE_LIMIT_BYTES,
       },
     });
-    return uploadStlLarge(file, sessionId, onProgress);
+    return uploadStlLarge(file, sessionId, onProgress, onStep);
   }
 
   const formData = new FormData();

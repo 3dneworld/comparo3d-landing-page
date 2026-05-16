@@ -166,12 +166,13 @@ export function useQuoteFlow({
       // Archivos >= 95MB usan canal alternativo (R2 directo). Mostramos
       // mensaje distinto y progreso real durante el PUT a R2.
       const isLarge = file.size >= 95 * 1024 * 1024;
+      const sizeMb = (file.size / 1024 / 1024).toFixed(1);
       setState((s) => ({
         ...s,
         isLoading: true,
         error: null,
         progressMessage: isLarge
-          ? `Archivo grande (${(file.size / 1024 / 1024).toFixed(1)} MB). Subiendo por canal especial...`
+          ? `Archivo grande (${sizeMb} MB). Debido a que el archivo tiene un peso superior a 100 MB este proceso puede demorar más de lo habitual. Subiendo por canal especial...`
           : "Subiendo y analizando tu archivo...",
       }));
 
@@ -180,11 +181,24 @@ export function useQuoteFlow({
         const pct = Math.min(100, Math.round((loaded / total) * 100));
         setState((s) => ({
           ...s,
-          progressMessage: `Subiendo archivo grande... ${pct}%`,
+          progressMessage: `Subiendo archivo grande (${sizeMb} MB)... ${pct}%`,
         }));
       };
 
-      const result = await uploadStl(file, currentSessionId || undefined, isLarge ? onProgress : undefined);
+      // onStep recibe los mensajes server-side durante el procesamiento async
+      // del large upload (download R2 -> manifold -> tweaker -> slicer -> thumbnail).
+      // El backend manda mensajes ya armados; los pegamos tal cual.
+      const onStep = (message: string, _pct: number | null) => {
+        if (!isMountedRef.current) return;
+        setState((s) => ({ ...s, progressMessage: message }));
+      };
+
+      const result = await uploadStl(
+        file,
+        currentSessionId || undefined,
+        isLarge ? onProgress : undefined,
+        isLarge ? onStep : undefined,
+      );
 
       if (!isMountedRef.current) return false;
 
