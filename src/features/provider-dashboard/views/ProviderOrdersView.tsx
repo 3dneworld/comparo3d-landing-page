@@ -329,7 +329,6 @@ function OrderDetailPanel({
           </div>
         </div>
         {showActionRow ? (
-          <>
           <div className="mt-5 flex items-stretch gap-4">
             {/* Pasos — columna izquierda */}
             <div className="flex flex-1 flex-col">
@@ -446,9 +445,9 @@ function OrderDetailPanel({
               </div>
             </div>
 
-            {/* Cancelar — columna derecha, centrado vertical */}
-            {canCancel ? (
-              <div className="flex items-center">
+            {/* Acciones — columna derecha, centrado vertical respecto a los 3 pasos */}
+            <div className="flex flex-col items-center justify-center gap-2">
+              {canCancel ? (
                 <Button
                   type="button"
                   variant="outline"
@@ -458,41 +457,37 @@ function OrderDetailPanel({
                   <BadgeX className="h-4 w-4" />
                   Cancelar pedido
                 </Button>
-              </div>
-            ) : null}
+              ) : null}
+              {(() => {
+                const reviewStatus = String(order.review_reminder_status || "none");
+                const reviewAlreadySent = ["sent", "sending"].includes(reviewStatus);
+                const canReview = step3Done && !reviewAlreadySent;
+                return (
+                  <Button
+                    type="button"
+                    className={`h-9 rounded-xl px-4 text-sm font-semibold ${
+                      reviewAlreadySent
+                        ? "border border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default"
+                        : canReview
+                        ? "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600"
+                        : "border border-muted/40 bg-transparent text-muted-foreground/50 cursor-not-allowed"
+                    }`}
+                    onClick={onRequestReview}
+                    disabled={!canReview || isRequestingReview}
+                  >
+                    {isRequestingReview ? (
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                    ) : reviewAlreadySent ? (
+                      <CheckCircle2 className="h-4 w-4" />
+                    ) : (
+                      <Star className="h-4 w-4" />
+                    )}
+                    {reviewAlreadySent ? "Review solicitada" : "Solicitar Review"}
+                  </Button>
+                );
+              })()}
+            </div>
           </div>
-          {/* Solicitar Review — debajo de los pasos y cancelar */}
-          {(() => {
-            const reviewStatus = String(order.review_reminder_status || "none");
-            const reviewAlreadySent = ["sent", "sending"].includes(reviewStatus);
-            const canReview = step3Done && !reviewAlreadySent;
-            return (
-              <div className="mt-3">
-                <Button
-                  type="button"
-                  className={`h-9 rounded-xl px-4 text-sm font-semibold ${
-                    reviewAlreadySent
-                      ? "border border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default"
-                      : canReview
-                      ? "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600"
-                      : "border border-muted/40 bg-transparent text-muted-foreground/50 cursor-not-allowed"
-                  }`}
-                  onClick={onRequestReview}
-                  disabled={!canReview || isRequestingReview}
-                >
-                  {isRequestingReview ? (
-                    <LoaderCircle className="h-4 w-4 animate-spin" />
-                  ) : reviewAlreadySent ? (
-                    <CheckCircle2 className="h-4 w-4" />
-                  ) : (
-                    <Star className="h-4 w-4" />
-                  )}
-                  {reviewAlreadySent ? "Review solicitada" : "Solicitar Review"}
-                </Button>
-              </div>
-            );
-          })()}
-          </>
         ) : null}
         {showReadyToShipComposer ? (
           <ReadyToShipComposer
