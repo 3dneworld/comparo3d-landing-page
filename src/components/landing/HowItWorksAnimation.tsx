@@ -885,25 +885,23 @@ export default function HowItWorksAnimation() {
         })}
       </div>
 
+      {/* Hint banner entre pasos y video */}
+      {showHint && (
+        <button type="button" onClick={openFullscreen} className="hiw-ampliar-banner">
+          <span className="hiw-ampliar-text">Tocá para verlo más grande</span>
+          <Maximize2 size={16} strokeWidth={2.6} className="hiw-ampliar-icon" />
+        </button>
+      )}
+
       <ScaledStage>
-        <div className="hiw-expand-wrap">
-          {/* Pulse ring sonar */}
-          <span className="hiw-expand-ring" />
-          <button
-            type="button"
-            onClick={openFullscreen}
-            aria-label="Ver en pantalla completa"
-            className="hiw-expand-btn"
-          >
-            <Maximize2 size={18} strokeWidth={2.4} />
-          </button>
-          {/* Tooltip hint */}
-          {showHint && (
-            <span className="hiw-expand-hint">
-              Ampliar&nbsp;↗
-            </span>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={openFullscreen}
+          aria-label="Ver en pantalla completa"
+          className="hiw-expand-btn"
+        >
+          <Maximize2 size={18} strokeWidth={2.4} />
+        </button>
         <BrowserMock step={step} progress={progress} />
         <Callouts step={step} progress={progress} />
       </ScaledStage>
@@ -942,19 +940,11 @@ export default function HowItWorksAnimation() {
       )}
 
       <style>{`
-        .hiw-expand-wrap {
+        .hiw-expand-btn {
           position: absolute;
           top: 10px;
           right: 10px;
           z-index: 30;
-          display: flex;
-          align-items: center;
-          gap: 0;
-        }
-
-        .hiw-expand-btn {
-          position: relative;
-          z-index: 2;
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -976,60 +966,50 @@ export default function HowItWorksAnimation() {
           background: #e89610;
         }
 
-        /* Sonar pulse ring */
-        .hiw-expand-ring {
-          position: absolute;
-          top: 0; left: 0;
-          width: 44px; height: 44px;
-          border-radius: 12px;
-          border: 2px solid rgba(240, 161, 24, 0.6);
-          animation: hiw-sonar 2s ease-out infinite;
-          pointer-events: none;
-          z-index: 1;
-        }
-
-        @keyframes hiw-sonar {
-          0% { transform: scale(1); opacity: 0.7; }
-          100% { transform: scale(1.7); opacity: 0; }
-        }
-
-        /* Tooltip hint */
-        .hiw-expand-hint {
-          position: absolute;
-          top: 50%;
-          right: calc(100% + 8px);
-          transform: translateY(-50%);
-          white-space: nowrap;
-          padding: 6px 12px;
-          border-radius: 8px;
-          background: rgba(240, 161, 24, 0.88);
-          color: #fff;
+        /* Banner inline "Tocá para verlo más grande" */
+        .hiw-ampliar-banner {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          margin: 0 auto 12px;
+          padding: 8px 18px;
+          border-radius: 999px;
+          background: rgba(240, 161, 24, 0.13);
+          border: 1px solid rgba(240, 161, 24, 0.3);
+          color: #d48a0a;
           font-family: ${FONT_BODY};
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 600;
-          letter-spacing: 0.02em;
-          box-shadow: 0 4px 12px rgba(240, 161, 24, 0.3);
-          pointer-events: none;
-          animation: hiw-hint-in 400ms ease-out both;
-          z-index: 2;
+          letter-spacing: 0.01em;
+          cursor: pointer;
+          animation: hiw-banner-in 500ms ease-out both;
+          -webkit-tap-highlight-color: transparent;
+          transition: background 200ms ease;
         }
 
-        /* Flechita del tooltip apuntando al botón */
-        .hiw-expand-hint::after {
-          content: '';
-          position: absolute;
-          top: 50%;
-          right: -5px;
-          transform: translateY(-50%) rotate(45deg);
-          width: 10px;
-          height: 10px;
-          background: rgba(240, 161, 24, 0.88);
-          border-radius: 1px;
+        .hiw-ampliar-banner:hover {
+          background: rgba(240, 161, 24, 0.22);
         }
 
-        @keyframes hiw-hint-in {
-          0% { opacity: 0; transform: translateY(-50%) translateX(6px); }
-          100% { opacity: 1; transform: translateY(-50%) translateX(0); }
+        .hiw-ampliar-text {
+          white-space: nowrap;
+        }
+
+        .hiw-ampliar-icon {
+          color: #f0a118;
+          animation: hiw-icon-pulse 1.4s ease-in-out infinite;
+          flex-shrink: 0;
+        }
+
+        @keyframes hiw-icon-pulse {
+          0%, 100% { transform: scale(1); opacity: 0.8; }
+          50% { transform: scale(1.35); opacity: 1; }
+        }
+
+        @keyframes hiw-banner-in {
+          0% { opacity: 0; transform: translateY(-4px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
 
         .hiw-fs-overlay {
