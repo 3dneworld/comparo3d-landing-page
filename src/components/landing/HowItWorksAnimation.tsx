@@ -716,6 +716,8 @@ export default function HowItWorksAnimation() {
   const [isVisible, setIsVisible] = useState(false);
   const hasBeenVisibleRef = useRef(false);
   const pausedAtRef = useRef<number | null>(null);
+  const [showHint, setShowHint] = useState(false);
+  const hintShownRef = useRef(false);
 
   // IntersectionObserver — detecta cuándo la sección entra/sale de viewport
   useEffect(() => {
@@ -730,6 +732,23 @@ export default function HowItWorksAnimation() {
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
+
+  // Mostrar hint del botón ampliar la primera vez que la sección es visible
+  useEffect(() => {
+    if (isVisible && !hintShownRef.current && !isFullscreen) {
+      hintShownRef.current = true;
+      // Pequeño delay para que el usuario ya esté mirando
+      const showTimer = window.setTimeout(() => setShowHint(true), 800);
+      const hideTimer = window.setTimeout(() => setShowHint(false), 5800);
+      return () => { clearTimeout(showTimer); clearTimeout(hideTimer); };
+    }
+    return undefined;
+  }, [isVisible, isFullscreen]);
+
+  // Ocultar hint al abrir fullscreen
+  useEffect(() => {
+    if (isFullscreen) setShowHint(false);
+  }, [isFullscreen]);
 
   // RAF loop — solo corre cuando la sección es visible (o en fullscreen)
   useEffect(() => {
@@ -867,14 +886,24 @@ export default function HowItWorksAnimation() {
       </div>
 
       <ScaledStage>
-        <button
-          type="button"
-          onClick={openFullscreen}
-          aria-label="Ver en pantalla completa"
-          className="hiw-expand-btn"
-        >
-          <Maximize2 size={16} strokeWidth={2.4} />
-        </button>
+        <div className="hiw-expand-wrap">
+          {/* Pulse ring sonar */}
+          <span className="hiw-expand-ring" />
+          <button
+            type="button"
+            onClick={openFullscreen}
+            aria-label="Ver en pantalla completa"
+            className="hiw-expand-btn"
+          >
+            <Maximize2 size={18} strokeWidth={2.4} />
+          </button>
+          {/* Tooltip hint */}
+          {showHint && (
+            <span className="hiw-expand-hint">
+              Ampliar&nbsp;↗
+            </span>
+          )}
+        </div>
         <BrowserMock step={step} progress={progress} />
         <Callouts step={step} progress={progress} />
       </ScaledStage>
@@ -913,17 +942,25 @@ export default function HowItWorksAnimation() {
       )}
 
       <style>{`
-        .hiw-expand-btn {
+        .hiw-expand-wrap {
           position: absolute;
           top: 10px;
           right: 10px;
           z-index: 30;
+          display: flex;
+          align-items: center;
+          gap: 0;
+        }
+
+        .hiw-expand-btn {
+          position: relative;
+          z-index: 2;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
           background: #f0a118;
           color: #fff;
           border: 1px solid #e09010;
@@ -937,6 +974,62 @@ export default function HowItWorksAnimation() {
           transform: translateY(-1px);
           box-shadow: 0 10px 22px rgba(240, 161, 24, 0.45);
           background: #e89610;
+        }
+
+        /* Sonar pulse ring */
+        .hiw-expand-ring {
+          position: absolute;
+          top: 0; left: 0;
+          width: 44px; height: 44px;
+          border-radius: 12px;
+          border: 2px solid rgba(240, 161, 24, 0.6);
+          animation: hiw-sonar 2s ease-out infinite;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        @keyframes hiw-sonar {
+          0% { transform: scale(1); opacity: 0.7; }
+          100% { transform: scale(1.7); opacity: 0; }
+        }
+
+        /* Tooltip hint */
+        .hiw-expand-hint {
+          position: absolute;
+          top: 50%;
+          right: calc(100% + 8px);
+          transform: translateY(-50%);
+          white-space: nowrap;
+          padding: 6px 12px;
+          border-radius: 8px;
+          background: rgba(240, 161, 24, 0.88);
+          color: #fff;
+          font-family: ${FONT_BODY};
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.02em;
+          box-shadow: 0 4px 12px rgba(240, 161, 24, 0.3);
+          pointer-events: none;
+          animation: hiw-hint-in 400ms ease-out both;
+          z-index: 2;
+        }
+
+        /* Flechita del tooltip apuntando al botón */
+        .hiw-expand-hint::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          right: -5px;
+          transform: translateY(-50%) rotate(45deg);
+          width: 10px;
+          height: 10px;
+          background: rgba(240, 161, 24, 0.88);
+          border-radius: 1px;
+        }
+
+        @keyframes hiw-hint-in {
+          0% { opacity: 0; transform: translateY(-50%) translateX(6px); }
+          100% { opacity: 1; transform: translateY(-50%) translateX(0); }
         }
 
         .hiw-fs-overlay {
