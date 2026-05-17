@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Selección Fundador — Trayectoria 10+ años — Industrial">
+  <defs>
+    <linearGradient id="t10-fill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2260c9"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <linearGradient id="t10-inner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="t10-ribbon" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f0a118"/>
+      <stop offset="100%" stop-color="#e8851a"/>
+    </linearGradient>
+    <filter id="t10-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#0b1d3a" flood-opacity="0.28"/>
+    </filter>
+    <clipPath id="t10-clip">
+      <path d="M128 18 L222 50 L222 132 C222 180 188 218 128 238 C68 218 34 180 34 132 L34 50 Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Shield body -->
+  <g filter="url(#t10-shadow)">
+    <path d="M128 18 L222 50 L222 132 C222 180 188 218 128 238 C68 218 34 180 34 132 L34 50 Z"
+          fill="url(#t10-fill)"/>
+    <path d="M128 18 L222 50 L222 132 C222 180 188 218 128 238 C68 218 34 180 34 132 L34 50 Z"
+          fill="url(#t10-inner)"/>
+  </g>
+
+  <!-- Inner bevel stroke -->
+  <path d="M128 30 L210 58 L210 132 C210 174 180 208 128 226 C76 208 46 174 46 132 L46 58 Z"
+        fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="1.2"/>
+
+  <!-- Industrial ribbon (orange accent) -->
+  <g clip-path="url(#t10-clip)">
+    <rect x="34" y="172" width="188" height="26" fill="url(#t10-ribbon)"/>
+    <rect x="34" y="172" width="188" height="1.2" fill="#ffffff" fill-opacity="0.45"/>
+    <rect x="34" y="197.2" width="188" height="0.8" fill="#0b1d3a" fill-opacity="0.18"/>
+  </g>
+
+  <!-- Numeral 10+ -->
+  <g font-family="Montserrat, 'Segoe UI', Inter, system-ui, sans-serif" font-weight="800" fill="#ffffff">
+    <text x="128" y="142" text-anchor="middle" font-size="78" letter-spacing="-3">10<tspan font-size="56" dy="-14">+</tspan></text>
+  </g>
+
+  <!-- AÑOS · INDUSTRIAL label on ribbon -->
+  <text x="128" y="190" text-anchor="middle"
+        font-family="Inter, 'Segoe UI', system-ui, sans-serif" font-weight="700"
+        font-size="11" letter-spacing="2.4" fill="#ffffff">AÑOS · INDUSTRIAL</text>
+</svg>

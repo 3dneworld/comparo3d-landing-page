@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Certificado Orgánico 3D NeWorld">
+  <defs>
+    <radialGradient id="org-disc" cx="40%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="60%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </radialGradient>
+    <linearGradient id="org-inner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="org-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#03291f" flood-opacity="0.32"/>
+    </filter>
+    <path id="org-ringtext"
+          d="M 128 128 m -98 0 a 98 98 0 1 1 196 0 a 98 98 0 1 1 -196 0"/>
+  </defs>
+
+  <!-- Outer ring -->
+  <g filter="url(#org-shadow)">
+    <circle cx="128" cy="128" r="108" fill="#065f46"/>
+  </g>
+
+  <!-- Ring micro-text -->
+  <text font-family="Inter, 'Segoe UI', system-ui, sans-serif" font-weight="700"
+        font-size="11" letter-spacing="3.4" fill="#a7f3d0">
+    <textPath href="#org-ringtext" startOffset="0">
+      CERTIFICADO ORGÁNICO · 3D NEWORLD · CERTIFICADO ORGÁNICO · 3D NEWORLD ·
+    </textPath>
+  </text>
+
+  <!-- Inner disc -->
+  <circle cx="128" cy="128" r="86" fill="url(#org-disc)"/>
+  <circle cx="128" cy="128" r="86" fill="url(#org-inner)"/>
+  <circle cx="128" cy="128" r="86" fill="none" stroke="#ffffff" stroke-opacity="0.28" stroke-width="1.2"/>
+
+  <!-- Tier marker (orange dot, family-consistent with industrial badge) -->
+  <circle cx="128" cy="22" r="5.5" fill="#f0a118" stroke="#ffffff" stroke-width="1.4"/>
+
+  <!-- Checkmark (filament-style stroke) -->
+  <path d="M88 130 L116 158 L172 100"
+        fill="none" stroke="#ffffff" stroke-width="10"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M88 130 L116 158 L172 100"
+        fill="none" stroke="#ecfdf5" stroke-width="2.4"
+        stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.55"/>
+
+  <!-- Wordmark -->
+  <g font-family="Montserrat, 'Segoe UI', Inter, system-ui, sans-serif" font-weight="800" fill="#ffffff" text-anchor="middle">
+    <text x="128" y="186" font-size="14" letter-spacing="2">CERTIFICADO</text>
+    <text x="128" y="204" font-size="14" letter-spacing="2">ORGÁNICO</text>
+  </g>
+</svg>
