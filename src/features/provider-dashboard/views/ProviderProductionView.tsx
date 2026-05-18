@@ -15,12 +15,27 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
 import {
   fetchProviderProduction,
   updateProviderProduction,
 } from "@/features/provider-dashboard/api";
+import {
+  BED_STANDARDS,
+  BED_STANDARDS_CONTACT_HINT,
+  findBedSkuForDimensions,
+  getBedStandard,
+  isValidBedSku,
+  normalizeBedSku,
+} from "@/features/provider-dashboard/bedStandards";
 import { DashboardField } from "@/features/provider-dashboard/components/DashboardField";
 import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
@@ -40,15 +55,15 @@ import { cn } from "@/lib/utils";
 
 type PrinterFormState = {
   nombre_impresora: string;
-  cama_x: string;
-  cama_y: string;
-  cama_z: string;
+  bed_sku: string;
   cantidad_unidades: string;
   activa: boolean;
   es_principal: boolean;
   materiales_permitidos_text: string;
   notas: string;
 };
+
+const DEFAULT_BED_SKU = "220x220";
 
 type SaveFeedback = {
   tone: "success" | "danger";
@@ -73,9 +88,7 @@ function formatNumberInput(value: unknown) {
 function defaultPrinter(index: number): PrinterFormState {
   return {
     nombre_impresora: `Impresora ${index + 1}`,
-    cama_x: "220",
-    cama_y: "220",
-    cama_z: "250",
+    bed_sku: DEFAULT_BED_SKU,
     cantidad_unidades: "1",
     activa: true,
     es_principal: index === 0,
@@ -84,12 +97,21 @@ function defaultPrinter(index: number): PrinterFormState {
   };
 }
 
+function resolveBedSku(printer: {
+  bed_sku?: string | null;
+  cama_x?: number | null;
+  cama_y?: number | null;
+}): string {
+  const raw = normalizeBedSku(printer.bed_sku ?? "");
+  if (raw && isValidBedSku(raw)) return raw;
+  const derived = findBedSkuForDimensions(Number(printer.cama_x) || 0, Number(printer.cama_y) || 0);
+  return derived ?? "";
+}
+
 function printersToFormState(payload: ProviderProductionResponse): PrinterFormState[] {
   return (payload.printers || []).map((printer, index) => ({
     nombre_impresora: safeString(printer.nombre_impresora || `Impresora ${index + 1}`),
-    cama_x: formatNumberInput(printer.cama_x),
-    cama_y: formatNumberInput(printer.cama_y),
-    cama_z: formatNumberInput(printer.cama_z),
+    bed_sku: resolveBedSku(printer),
     cantidad_unidades: formatNumberInput(printer.cantidad_unidades || 1),
     activa: Boolean(printer.activa),
     es_principal: Boolean(printer.es_principal) || index === 0,
@@ -122,22 +144,28 @@ function buildPrintersPayload(formState: PrinterFormState[]): { impresoras: Dash
   const primaryIndex = selectedPrimaryIndex >= 0 ? selectedPrimaryIndex : firstActiveIndex;
 
   return {
-    impresoras: formState.map((printer, index) => ({
-      nombre_impresora: printer.nombre_impresora.trim() || `Impresora ${index + 1}`,
-      cama_x: parsePositiveNumber(printer.cama_x, `Cama X de ${printer.nombre_impresora || `impresora ${index + 1}`}`),
-      cama_y: parsePositiveNumber(printer.cama_y, `Cama Y de ${printer.nombre_impresora || `impresora ${index + 1}`}`),
-      cama_z: parsePositiveNumber(printer.cama_z, `Cama Z de ${printer.nombre_impresora || `impresora ${index + 1}`}`),
-      cantidad_unidades: Math.round(
-        parsePositiveNumber(printer.cantidad_unidades, `Unidades de ${printer.nombre_impresora || `impresora ${index + 1}`}`)
-      ),
-      activa: printer.activa,
-      es_principal: index === primaryIndex,
-      materiales_permitidos: printer.materiales_permitidos_text
-        .split(",")
-        .map((item) => item.trim().toUpperCase())
-        .filter(Boolean),
-      notas: printer.notas,
-    })),
+    impresoras: formState.map((printer, index) => {
+      const label = printer.nombre_impresora || `impresora ${index + 1}`;
+      if (!isValidBedSku(printer.bed_sku)) {
+        throw new Error(
+          `Elegí un tamaño de cama estandar para ${label}. ${BED_STANDARDS_CONTACT_HINT}`
+        );
+      }
+      return {
+        nombre_impresora: printer.nombre_impresora.trim() || `Impresora ${index + 1}`,
+        bed_sku: normalizeBedSku(printer.bed_sku),
+        cantidad_unidades: Math.round(
+          parsePositiveNumber(printer.cantidad_unidades, `Unidades de ${label}`)
+        ),
+        activa: printer.activa,
+        es_principal: index === primaryIndex,
+        materiales_permitidos: printer.materiales_permitidos_text
+          .split(",")
+          .map((item) => item.trim().toUpperCase())
+          .filter(Boolean),
+        notas: printer.notas,
+      };
+    }),
   };
 }
 
@@ -150,7 +178,9 @@ function formatDateTime(value?: string | null) {
 
 function formatBed(printer?: PrinterFormState | null) {
   if (!printer) return "Sin cama principal";
-  return `${printer.cama_x || "?"} x ${printer.cama_y || "?"} x ${printer.cama_z || "?"} mm`;
+  const bed = getBedStandard(printer.bed_sku);
+  if (!bed) return "Cama no estandar";
+  return bed.label;
 }
 
 function humanizeReason(reason: string) {
@@ -376,37 +406,42 @@ function ProductionContent({
                           className="h-11 rounded-xl border-border/80 bg-white"
                         />
                       </DashboardField>
-                      <DashboardField label="Cama X" htmlFor={`printer-${index}-x`}>
-                        <Input
-                          id={`printer-${index}-x`}
-                          type="number"
-                          min="1"
-                          step="1"
-                          value={printer.cama_x}
-                          onChange={(event) => onFieldChange(index, "cama_x", event.target.value)}
-                          className="h-11 rounded-xl border-border/80 bg-white"
-                        />
+                      <DashboardField
+                        label="Tamano de cama"
+                        htmlFor={`printer-${index}-bed-sku`}
+                        hint={BED_STANDARDS_CONTACT_HINT}
+                        className="md:col-span-2 xl:col-span-3"
+                      >
+                        <Select
+                          value={isValidBedSku(printer.bed_sku) ? printer.bed_sku : ""}
+                          onValueChange={(value) => onFieldChange(index, "bed_sku", value)}
+                          disabled={isSaving}
+                        >
+                          <SelectTrigger
+                            id={`printer-${index}-bed-sku`}
+                            className="h-11 rounded-xl border-border/80 bg-white"
+                          >
+                            <SelectValue placeholder="Elegi el tamano de cama" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {BED_STANDARDS.map((entry) => (
+                              <SelectItem key={entry.sku} value={entry.sku}>
+                                {entry.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </DashboardField>
-                      <DashboardField label="Cama Y" htmlFor={`printer-${index}-y`}>
+                      <DashboardField label="Altura util (Z)" htmlFor={`printer-${index}-z-readonly`}>
                         <Input
-                          id={`printer-${index}-y`}
-                          type="number"
-                          min="1"
-                          step="1"
-                          value={printer.cama_y}
-                          onChange={(event) => onFieldChange(index, "cama_y", event.target.value)}
-                          className="h-11 rounded-xl border-border/80 bg-white"
-                        />
-                      </DashboardField>
-                      <DashboardField label="Cama Z" htmlFor={`printer-${index}-z`}>
-                        <Input
-                          id={`printer-${index}-z`}
-                          type="number"
-                          min="1"
-                          step="1"
-                          value={printer.cama_z}
-                          onChange={(event) => onFieldChange(index, "cama_z", event.target.value)}
-                          className="h-11 rounded-xl border-border/80 bg-white"
+                          id={`printer-${index}-z-readonly`}
+                          value={
+                            getBedStandard(printer.bed_sku)?.z != null
+                              ? `${getBedStandard(printer.bed_sku)!.z} mm`
+                              : "-"
+                          }
+                          readOnly
+                          className="h-11 rounded-xl border-border/80 bg-muted/40"
                         />
                       </DashboardField>
                       <DashboardField label="Notas" htmlFor={`printer-${index}-notes`} className="md:col-span-2 xl:col-span-4">

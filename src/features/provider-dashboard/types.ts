@@ -134,6 +134,7 @@ export interface ProviderSummaryResponse {
 export interface DashboardPrinter {
   id: number;
   nombre_impresora: string;
+  bed_sku?: string | null;
   cama_x: number;
   cama_y: number;
   cama_z: number;
@@ -146,9 +147,7 @@ export interface DashboardPrinter {
 
 export interface DashboardPrinterFormPayload {
   nombre_impresora: string;
-  cama_x: number;
-  cama_y: number;
-  cama_z: number;
+  bed_sku: string;
   cantidad_unidades: number;
   activa: boolean;
   es_principal: boolean;
