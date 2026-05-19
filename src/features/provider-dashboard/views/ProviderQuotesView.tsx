@@ -159,13 +159,8 @@ function QuoteDetailPanel({
         <DetailRow label="Precio final" value={formatMoney(quote.precio_final)} />
         <DetailRow label="Tiempo de impresion" value={formatMinutes(quote.print_time_min)} />
         <DetailRow label="Entrega estimada" value={quote.delivery_days_est != null ? `${quote.delivery_days_est} dias` : "Sin estimacion"} />
-        <DetailRow label="Ranking score" value={formatNumber(quote.ranking_score_snapshot)} />
         <DetailRow label="Infill" value={quote.infill || "Sin dato"} />
         <DetailRow label="Layer height" value={quote.layer_height || "Sin dato"} />
-        <DetailRow label="Color" value={quote.color || "Sin color"} />
-        <DetailRow label="Filamento" value={quote.filament_grams != null ? `${formatNumber(quote.filament_grams)} g` : "Sin dato"} />
-        <DetailRow label="Seleccionada" value={formatDateTime(quote.selected_at)} />
-        <DetailRow label="Actualizada" value={formatDateTime(quote.updated_at || quote.created_at)} />
       </div>
 
       {quote.detalles ? (
@@ -271,13 +266,21 @@ function QuotesContent({
   onSelectQuote: (id: number) => void;
   isFetching: boolean;
 }) {
-  const quotedCount = items.filter((item) =>
-    ["quoted", "selected_pending_payment"].includes(String(item.estado || ""))
-  ).length;
   const selectedCount = items.filter((item) =>
     ["paid_confirmed", "won"].includes(String(item.estado || ""))
   ).length;
   const lastQuote = items[0];
+
+  const now = Date.now();
+  const MS_DAY = 24 * 60 * 60 * 1000;
+  const within = (item: DashboardQuoteMatch, days: number) => {
+    const raw = item.created_at || item.updated_at;
+    if (!raw) return false;
+    const ts = new Date(raw).getTime();
+    return Number.isFinite(ts) && now - ts <= days * MS_DAY;
+  };
+  const last7Count = items.filter((item) => within(item, 7)).length;
+  const last30Count = items.filter((item) => within(item, 30)).length;
 
   return (
     <div className="space-y-6">
@@ -323,28 +326,25 @@ function QuotesContent({
 
       <section className="grid gap-4 md:grid-cols-3">
         <DashboardMetricCard
-          title="Oportunidades"
-          value={String(items.length)}
-          support="Veces que fuiste mostrado al cliente."
+          title="Últimos 7 días"
+          value={String(last7Count)}
+          support="Cotizaciones recibidas en la última semana."
           icon={<ReceiptText className="h-5 w-5" />}
-          trend={{ direction: items.length > 0 ? "up" : "flat", text: "Vista actual" }}
           sparkline={[30, 55, 40, 70, 50, 80, 100]}
-          isHot={items.length > 0}
+          isHot={last7Count > 0}
         />
         <DashboardMetricCard
-          title="Cotizadas"
-          value={String(quotedCount)}
-          support="Esperando decisión del cliente."
+          title="Últimos 30 días"
+          value={String(last30Count)}
+          support="Cotizaciones recibidas en el último mes."
           icon={<FileText className="h-5 w-5" />}
-          trend={{ direction: quotedCount > 0 ? "up" : "flat", text: "Vista actual" }}
           sparkline={[40, 50, 45, 60, 55, 65, 70]}
         />
         <DashboardMetricCard
           title="Última actividad"
           value={lastQuote ? formatDateTime(quoteDate(lastQuote)).split(",")[0] : "Sin datos"}
-          support="Según el filtro aplicado."
+          support="Fecha de la cotización más reciente."
           icon={<Clock3 className="h-5 w-5" />}
-          trend={{ direction: "flat", text: "Filtro actual" }}
           sparkline={[50, 55, 50, 60, 55, 65, 60]}
         />
       </section>

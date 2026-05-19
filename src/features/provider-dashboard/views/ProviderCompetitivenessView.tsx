@@ -61,11 +61,12 @@ const errorCopy: Record<string, string> = {
 
 function formatMoney(value?: number | null) {
   if (value == null || Number.isNaN(Number(value))) return "Sin dato";
-  return new Intl.NumberFormat("es-AR", {
+  const formatted = new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "ARS",
     maximumFractionDigits: 0,
   }).format(Number(value));
+  return `${formatted}/h`;
 }
 
 function formatNumber(value?: number | null) {
@@ -85,6 +86,10 @@ function cohortLabel(value?: string | null) {
     same_province_legacy: "Misma provincia",
     same_tier_legacy: "Mismo tier",
     material_all_active_legacy: "Todos los activos del material",
+    same_province_same_tier: "Misma provincia y tier",
+    same_province: "Misma provincia",
+    same_tier: "Mismo tier",
+    material_all_active: "Todos los activos del material",
   };
   return map[value] ?? value.replaceAll("_", " ");
 }
@@ -196,7 +201,7 @@ function BenchmarkAvailable({ data }: { data: ProviderCompetitivenessResponse })
   return (
     <div className="space-y-6">
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardMetricCard title="Precio propio" value={formatMoney(data.own_price)} support="Fuente legacy viva del proveedor." icon={<WalletCards className="h-5 w-5" />} />
+        <DashboardMetricCard title="Tu precio/hora" value={formatMoney(data.own_price)} support="Lo que cobrás por hora de impresión para este material." icon={<WalletCards className="h-5 w-5" />} />
         <DashboardMetricCard title="Mediana cohorte" value={formatMoney(benchmark.median)} support={cohortLabel(data.cohort)} icon={<BarChart3 className="h-5 w-5" />} />
         <DashboardMetricCard title="Percentil" value={formatPercentile(benchmark.percentile)} support="Posicion del precio propio contra pares." icon={<Target className="h-5 w-5" />} />
         <DashboardMetricCard title="Muestra" value={formatNumber(benchmark.sample_size)} support={`Spread P25-P75 ${spread == null ? "sin dato" : `${spread}%`}`} icon={<Layers3 className="h-5 w-5" />} />
@@ -295,7 +300,7 @@ function CompetitivenessContent({
       <DashboardPageHeader
         eyebrow="Vista beta"
         title="Competitividad"
-        description="Benchmark no bloqueante de precio por material. Usa columnas legacy como fuente viva durante la transicion de datos."
+        description="Compara tu precio por hora con el de proveedores pares para el mismo material. El modelo de cobro del marketplace es por tiempo de impresión, no por peso."
         meta={
           <>
             <DashboardStatePill tone={available ? meta.tone : "warning"}>
