@@ -84,9 +84,11 @@ export function ProviderDashboardShell({
     return pathname[pathname.length - 1] ?? "resumen";
   }, [location.pathname]);
 
-  const providerName = provider?.nombre?.trim() || "";
-  const providerLogoUrl = provider?.logo_url?.trim() || "";
-  const providerLocation = formatProviderLocation(provider) || "Cobertura en configuracion";
+  const fetchedProvider = summaryQuery.data?.provider ?? null;
+  const effectiveProvider = provider ?? fetchedProvider;
+  const providerName = effectiveProvider?.nombre?.trim() || "";
+  const providerLogoUrl = effectiveProvider?.logo_url?.trim() || "";
+  const providerLocation = formatProviderLocation(effectiveProvider) || "Cobertura en configuracion";
   const providerInitials = providerName
     ? providerName
         .split(/\s+/)
@@ -157,7 +159,7 @@ export function ProviderDashboardShell({
                 tone="muted"
                 className="border-white/10 bg-white/5 text-hero-muted"
               >
-                ID {provider?.id ?? user.provider_id ?? "N/D"}
+                ID {effectiveProvider?.id ?? user.provider_id ?? "N/D"}
               </DashboardStatePill>
             </div>
           </div>
