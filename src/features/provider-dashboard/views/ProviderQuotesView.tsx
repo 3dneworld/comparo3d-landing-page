@@ -9,6 +9,7 @@ import {
   RefreshCcw,
   Search,
   Wallet,
+  Box,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -21,11 +22,8 @@ import {
   DashboardErrorState,
   DashboardLoadingState,
 } from "@/features/provider-dashboard/components/DashboardStates";
-import {
-  DashboardDataRow,
-  DashboardDataValue,
-} from "@/features/provider-dashboard/components/DashboardDataRow";
 import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
+import { cn } from "@/lib/utils";
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
 import type { DashboardQuoteMatch } from "@/features/provider-dashboard/types";
 
@@ -182,45 +180,73 @@ function QuoteDetailPanel({
   );
 }
 
+const QUOTES_TABLE_COLS =
+  "grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)_minmax(0,0.5fr)_minmax(0,0.8fr)_minmax(0,0.9fr)]";
+
 function QuoteRow({
   quote,
   selected,
   onSelect,
+  isLast,
 }: {
   quote: DashboardQuoteMatch;
   selected: boolean;
   onSelect: () => void;
+  isLast: boolean;
 }) {
   const meta = statusMeta(quote.estado);
+  const material = quote.material || "Sin material";
+  const color = quote.color || "Sin color";
 
   return (
-    <DashboardDataRow
+    <button
+      type="button"
       onClick={onSelect}
-      selected={selected}
-      columnsClassName="lg:grid-cols-[1.05fr_0.9fr_1fr_0.72fr_0.85fr_0.78fr]"
+      className={cn(
+        "group w-full text-left transition-colors",
+        !isLast && "border-b border-border/60",
+        selected ? "bg-primary/[0.05]" : "hover:bg-muted/40"
+      )}
     >
-      <DashboardDataValue label="Quote">
-        <p className="text-sm font-semibold text-foreground">{quoteDisplayId(quote)}</p>
-        <p className="text-xs text-muted-foreground">Match #{quote.id}</p>
-      </DashboardDataValue>
-      <DashboardDataValue label="Estado" className="flex flex-col items-start">
-        <DashboardStatePill tone={meta.tone}>{meta.label}</DashboardStatePill>
-      </DashboardDataValue>
-      <DashboardDataValue label="Material">
-        <p className="text-sm font-medium text-foreground">{quote.material || "Sin material"}</p>
-        <p className="text-xs text-muted-foreground">{quote.color || "Sin color"}</p>
-      </DashboardDataValue>
-      <DashboardDataValue label="Cantidad" className="text-sm text-muted-foreground">
-        {formatNumber(quote.cantidad)}
-      </DashboardDataValue>
-      <DashboardDataValue label="Precio" className="text-sm font-semibold text-foreground">
-        {formatMoney(quote.precio_final)}
-      </DashboardDataValue>
-      <DashboardDataValue label="Actividad" className="text-sm text-muted-foreground">
-        <span className="block">{formatMinutes(quote.print_time_min)}</span>
-        <span className="mt-1 block text-xs">{formatDateTime(quoteDate(quote))}</span>
-      </DashboardDataValue>
-    </DashboardDataRow>
+      <div className={cn("grid items-center gap-4 px-4 py-3.5 md:px-5", QUOTES_TABLE_COLS)}>
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Box className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-foreground">{quoteDisplayId(quote)}</p>
+            <p className="truncate text-xs text-muted-foreground">Match #{quote.id}</p>
+          </div>
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-foreground">{material}</p>
+          <p className="truncate text-xs text-muted-foreground">{color}</p>
+        </div>
+        <div className="text-sm text-muted-foreground">×{formatNumber(quote.cantidad, "1")}</div>
+        <div className="text-sm font-semibold text-foreground">{formatMoney(quote.precio_final)}</div>
+        <div className="flex justify-start">
+          <DashboardStatePill tone={meta.tone}>{meta.label}</DashboardStatePill>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function QuotesTableHeader() {
+  return (
+    <div
+      className={cn(
+        "hidden border-b border-border/60 bg-muted/30 px-4 py-2.5 md:px-5 lg:grid",
+        QUOTES_TABLE_COLS,
+        "gap-4"
+      )}
+    >
+      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Archivo</span>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Material</span>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Cant.</span>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Sugerido</span>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Estado</span>
+    </div>
   );
 }
 
@@ -334,20 +360,24 @@ function QuotesContent({
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <DashboardPanel
-          title="Listado comercial"
+          title="Listado de cotizaciones"
           description="Click en una oportunidad para abrir el detalle permitido. Cliente y archivos se mantienen protegidos hasta pedido confirmado."
-          contentClassName="p-4 pt-0 md:p-5 md:pt-0"
+          contentClassName="p-0 md:p-0"
         >
           {items.length ? (
-            <div className="space-y-3">
-              {items.map((quote) => (
-                <QuoteRow
-                  key={quote.id}
-                  quote={quote}
-                  selected={selectedId === quote.id}
-                  onSelect={() => onSelectQuote(quote.id)}
-                />
-              ))}
+            <div className="overflow-hidden rounded-b-[1.25rem]">
+              <QuotesTableHeader />
+              <div>
+                {items.map((quote, index) => (
+                  <QuoteRow
+                    key={quote.id}
+                    quote={quote}
+                    selected={selectedId === quote.id}
+                    onSelect={() => onSelectQuote(quote.id)}
+                    isLast={index === items.length - 1}
+                  />
+                ))}
+              </div>
             </div>
           ) : (
             <DashboardEmptyState
