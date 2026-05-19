@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Boxes,
+  Building2,
   ChevronRight,
   ClipboardList,
   MapPinned,
@@ -83,9 +84,17 @@ export function ProviderDashboardShell({
     return pathname[pathname.length - 1] ?? "resumen";
   }, [location.pathname]);
 
-  const providerName = provider?.nombre?.trim() || "Proveedor COMPARO3D";
+  const providerName = provider?.nombre?.trim() || "";
   const providerLogoUrl = provider?.logo_url?.trim() || "";
   const providerLocation = formatProviderLocation(provider) || "Cobertura en configuracion";
+  const providerInitials = providerName
+    ? providerName
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() ?? "")
+        .join("") || providerName[0]?.toUpperCase()
+    : "";
   const sectionLabel =
     navigationItems.find((item) => item.key === currentSection)?.label ?? "Dashboard";
   const routeSuffix = location.search || "";
@@ -113,20 +122,32 @@ export function ProviderDashboardShell({
         <aside className="hidden w-[292px] shrink-0 border-r border-white/10 bg-gradient-dark text-hero-foreground lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:overflow-y-auto">
           <div className="border-b border-white/10 px-7 py-6">
             <Link to="/" className="inline-flex">
-              <img src={logoWhite} alt="COMPARO3D" className="h-8" />
+              <img src={logoWhite} alt="COMPARO3D" className="h-7 opacity-90" />
             </Link>
             <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/90">
               Panel de proveedores
             </p>
-            <div className="mt-4 flex items-center gap-4">
+            <div className="mt-4 flex flex-col items-start gap-3">
               {providerLogoUrl ? (
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white">
-                  <img src={providerLogoUrl} alt={providerName} className="h-full w-full object-cover" />
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white shadow-[0_8px_24px_rgba(0,0,0,0.25)]">
+                  <img
+                    src={providerLogoUrl}
+                    alt={providerName || "Logo del proveedor"}
+                    className="h-full w-full object-contain"
+                  />
                 </div>
-              ) : null}
+              ) : providerInitials ? (
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-primary/30 to-primary/10 font-[Montserrat] text-2xl font-bold tracking-tight text-white">
+                  {providerInitials}
+                </div>
+              ) : (
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-dashed border-white/20 bg-white/5 text-hero-muted">
+                  <Building2 className="h-7 w-7" />
+                </div>
+              )}
               <div className="space-y-1">
-                <h2 className="font-[Montserrat] text-2xl font-bold tracking-tight text-hero-foreground">
-                  {providerName}
+                <h2 className="font-[Montserrat] text-xl font-bold leading-tight tracking-tight text-hero-foreground">
+                  {providerName || "Tu marca"}
                 </h2>
                 <p className="text-sm text-hero-muted">{providerLocation}</p>
               </div>
@@ -221,7 +242,7 @@ export function ProviderDashboardShell({
                     Dashboard COMPARO3D
                   </p>
                   <div className="flex flex-wrap items-center gap-2 text-sm text-[hsl(var(--hero-muted))]">
-                    <span className="font-semibold text-white">{providerName}</span>
+                    <span className="font-semibold text-white">{providerName || "Tu marca"}</span>
                     <span className="hidden opacity-40 md:inline">/</span>
                     <span>{sectionLabel}</span>
                     <span className="hidden opacity-40 md:inline">/</span>
