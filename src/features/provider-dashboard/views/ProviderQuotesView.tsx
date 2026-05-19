@@ -8,7 +8,6 @@ import {
   ReceiptText,
   RefreshCcw,
   Search,
-  Wallet,
   Box,
 } from "lucide-react";
 
@@ -30,7 +29,6 @@ import type { DashboardQuoteMatch } from "@/features/provider-dashboard/types";
 const quoteStatusOptions = [
   { value: "", label: "Todos los estados" },
   { value: "quoted", label: "Cotizadas" },
-  { value: "selected_pending_payment", label: "Seleccionadas, pago pendiente" },
   { value: "paid_confirmed", label: "Pago confirmado" },
   { value: "won", label: "Ganadas" },
   { value: "not_selected", label: "No seleccionadas" },
@@ -40,7 +38,7 @@ const quoteStatusOptions = [
 
 const statusCopy: Record<string, { label: string; tone: "success" | "warning" | "danger" | "info" | "muted" }> = {
   quoted: { label: "Cotizada", tone: "info" },
-  selected_pending_payment: { label: "Pago pendiente", tone: "warning" },
+  selected_pending_payment: { label: "Cotizada", tone: "info" },
   paid_confirmed: { label: "Pago confirmado", tone: "success" },
   won: { label: "Ganada", tone: "success" },
   not_selected: { label: "No seleccionada", tone: "muted" },
@@ -273,11 +271,12 @@ function QuotesContent({
   onSelectQuote: (id: number) => void;
   isFetching: boolean;
 }) {
-  const quotedCount = items.filter((item) => item.estado === "quoted").length;
-  const selectedCount = items.filter((item) =>
-    ["selected_pending_payment", "paid_confirmed", "won"].includes(String(item.estado || ""))
+  const quotedCount = items.filter((item) =>
+    ["quoted", "selected_pending_payment"].includes(String(item.estado || ""))
   ).length;
-  const totalValue = items.reduce((sum, item) => sum + (Number(item.precio_final) || 0), 0);
+  const selectedCount = items.filter((item) =>
+    ["paid_confirmed", "won"].includes(String(item.estado || ""))
+  ).length;
   const lastQuote = items[0];
 
   return (
@@ -290,7 +289,7 @@ function QuotesContent({
         metaPills={
           <>
             <DashboardStatePill tone={items.length ? "info" : "muted"}>{items.length} resultados</DashboardStatePill>
-            <DashboardStatePill tone={selectedCount ? "success" : "muted"}>{selectedCount} seleccionadas</DashboardStatePill>
+            <DashboardStatePill tone={selectedCount ? "success" : "muted"}>{selectedCount} ganadas</DashboardStatePill>
             {isFetching ? <DashboardStatePill tone="warning">Actualizando</DashboardStatePill> : null}
           </>
         }
@@ -322,36 +321,28 @@ function QuotesContent({
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-3">
         <DashboardMetricCard
           title="Oportunidades"
           value={String(items.length)}
-          support="Matches visibles para el proveedor."
+          support="Veces que fuiste mostrado al cliente."
           icon={<ReceiptText className="h-5 w-5" />}
-          trend={{ direction: items.length > 0 ? "up" : "flat", text: `${items.length} en esta vista` }}
+          trend={{ direction: items.length > 0 ? "up" : "flat", text: "Vista actual" }}
           sparkline={[30, 55, 40, 70, 50, 80, 100]}
           isHot={items.length > 0}
         />
         <DashboardMetricCard
           title="Cotizadas"
           value={String(quotedCount)}
-          support="Aun disponibles o esperando decision."
+          support="Esperando decisión del cliente."
           icon={<FileText className="h-5 w-5" />}
-          trend={{ direction: quotedCount > 0 ? "up" : "flat", text: `${quotedCount} en espera` }}
+          trend={{ direction: quotedCount > 0 ? "up" : "flat", text: "Vista actual" }}
           sparkline={[40, 50, 45, 60, 55, 65, 70]}
         />
         <DashboardMetricCard
-          title="Valor listado"
-          value={formatMoney(totalValue)}
-          support="Suma de precios de la vista actual."
-          icon={<Wallet className="h-5 w-5" />}
-          trend={{ direction: totalValue > 0 ? "up" : "flat", text: "Vista actual" }}
-          sparkline={[35, 45, 55, 50, 75, 80, 90]}
-        />
-        <DashboardMetricCard
-          title="Ultima actividad"
+          title="Última actividad"
           value={lastQuote ? formatDateTime(quoteDate(lastQuote)).split(",")[0] : "Sin datos"}
-          support="Segun el filtro aplicado."
+          support="Según el filtro aplicado."
           icon={<Clock3 className="h-5 w-5" />}
           trend={{ direction: "flat", text: "Filtro actual" }}
           sparkline={[50, 55, 50, 60, 55, 65, 60]}
@@ -397,19 +388,6 @@ function QuotesContent({
             <QuoteDetailPanel quote={selectedQuote} isLoading={detailLoading} error={detailError} />
           </DashboardPanel>
 
-          <DashboardPanel
-            title="Criterio de privacidad"
-            description="Cotizaciones mantiene la misma regla del legacy."
-          >
-            <div className="space-y-3">
-              <div className="rounded-[1.15rem] border border-border/70 bg-background/70 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-                Cliente y archivos se muestran recien en Pedidos, cuando hay confirmacion operativa.
-              </div>
-              <div className="rounded-[1.15rem] border border-border/70 bg-background/70 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-                Esta vista sirve para entender precio, material, tiempo, seleccion y estado comercial.
-              </div>
-            </div>
-          </DashboardPanel>
         </div>
       </section>
     </div>
