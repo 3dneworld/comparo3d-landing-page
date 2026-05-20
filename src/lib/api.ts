@@ -17,6 +17,7 @@ export interface LandingProvider {
   name: string;
   logo: string;
   provider_id?: number | null;
+  slug?: string;
   source?: string;
 }
 

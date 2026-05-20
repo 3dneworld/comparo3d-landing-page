@@ -1,9 +1,11 @@
-import { type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 
 import AnimateOnScroll from "@/components/AnimateOnScroll";
+import { getLandingProviders, type LandingProvider } from "@/lib/api";
 
-const providers = [
+// Fallback hardcodeado por si la API falla. Los onboardings reales van a sobrescribir esto.
+const FALLBACK_PROVIDERS = [
   { name: "JOACO3D", logo: "/logos/JOACO3D.png", href: "/proveedores/9001-joaco3d" },
   { name: "NOST3R", logo: "/logos/Nost3rd.jpg", href: "/proveedores/9002-nost3r" },
   { name: "PRINTALOT", logo: "/logos/PAL.png", href: "/proveedores/9003-printalot" },
@@ -11,7 +13,34 @@ const providers = [
   { name: "PISCOBOT", logo: "/logos/Piscobot.png", href: "/proveedores/9005-piscobot" },
 ];
 
+type DisplayProvider = { name: string; logo: string; href: string };
+
+function buildProviderHref(p: LandingProvider): string {
+  // URL canónica: slug puro. /proveedores/printalot → backend resuelve el id real.
+  if (p.slug) return `/proveedores/${p.slug}`;
+  // Fallback legacy: si no vino slug en la API, usamos el listado.
+  return `/proveedores`;
+}
+
 const ProvidersSection = () => {
+  const [providers, setProviders] = useState<DisplayProvider[]>(FALLBACK_PROVIDERS);
+
+  useEffect(() => {
+    let cancelled = false;
+    getLandingProviders()
+      .then((items) => {
+        if (cancelled) return;
+        if (Array.isArray(items) && items.length > 0) {
+          setProviders(items.map((p) => ({ name: p.name, logo: p.logo, href: buildProviderHref(p) })));
+        }
+      })
+      .catch(() => {
+        // Si la API falla mantenemos el FALLBACK que ya está en state.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <section className="bg-muted/50 py-16 md:py-24">

@@ -161,8 +161,11 @@ export default {
       return serveSpaShell(request, env, url);
     }
 
-    // Perfil público de proveedor — /proveedores/123-nombre → SPA, sin auth
-    if (/^\/proveedores\/\d+-.+/.test(url.pathname)) {
+    // Perfil público de proveedor — SPA, sin auth.
+    // Acepta dos formatos:
+    //   /proveedores/123-nombre  (canónico con prefijo id)
+    //   /proveedores/printalot   (slug puro, el SPA lo resuelve vía /api/proveedores/by-slug)
+    if (/^\/proveedores\/[a-z0-9][a-z0-9-]*\/?$/i.test(url.pathname)) {
       return serveSpaShell(request, env, url);
     }
 

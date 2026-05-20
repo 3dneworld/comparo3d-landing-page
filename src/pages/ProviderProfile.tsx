@@ -25,15 +25,24 @@ function NotFoundState() {
       <h1 className="font-[Montserrat] text-2xl font-bold text-foreground">
         Proveedor no encontrado
       </h1>
-      <p className="text-sm text-muted-foreground">
-        Este proveedor no existe o no está disponible en este momento.
+      <p className="text-sm text-muted-foreground max-w-md">
+        Este proveedor todavía no está cargado o ya no está disponible. Mientras tanto
+        podés volver al inicio para seguir explorando Comparo3D.
       </p>
-      <a
-        href="/proveedores"
-        className="mt-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-      >
-        Ver todos los proveedores →
-      </a>
+      <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
+        <a
+          href="/"
+          className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+        >
+          Volver al inicio
+        </a>
+        <a
+          href="/proveedores"
+          className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+        >
+          Ver todos los proveedores →
+        </a>
+      </div>
     </div>
   );
 }
@@ -214,10 +223,41 @@ function useCanonicalRedirect(idslug: string | undefined, canonicalSlug: string)
   }, [idslug, canonicalSlug, navigate]);
 }
 
+// Resuelve un slug puro (sin prefijo id) al provider_id real vía endpoint backend.
+// Devuelve { id, slug } o lanza NOT_FOUND.
+async function resolveSlugToId(slug: string): Promise<{ id: number; slug: string }> {
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || "https://api.3dneworld.com";
+  const res = await fetch(`${API_BASE_URL}/api/proveedores/by-slug/${encodeURIComponent(slug)}`);
+  if (res.status === 404) throw new Error("NOT_FOUND");
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return { id: data.provider_id, slug: data.slug };
+}
+
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function ProviderProfile() {
   const { idslug } = useParams<{ idslug: string }>();
-  const providerId = parseInt(idslug?.split("-")[0] ?? "", 10);
+  const raw = (idslug ?? "").trim();
+  // Formato canónico: <id>-<slug>. Si arranca con "<num>-", usamos el id directo.
+  // Formato slug puro: usamos lookup-by-slug (después rutea al canonical via canonicalRedirect).
+  const idPrefixMatch = raw.match(/^(\d+)(?:-|$)/);
+  const idFromPrefix = idPrefixMatch ? parseInt(idPrefixMatch[1], 10) : NaN;
+  const hasIdPrefix = Number.isFinite(idFromPrefix) && idFromPrefix > 0;
+
+  // Query 1: lookup-by-slug si no hay prefijo numérico.
+  const slugQuery = useQuery({
+    queryKey: ["provider-profile-by-slug", raw],
+    queryFn: () => resolveSlugToId(raw),
+    enabled: !hasIdPrefix && raw.length > 0,
+    staleTime: 60_000,
+    retry: (failureCount, err) => {
+      if (err instanceof Error && err.message === "NOT_FOUND") return false;
+      return failureCount < 2;
+    },
+  });
+
+  const resolvedId = hasIdPrefix ? idFromPrefix : slugQuery.data?.id;
+  const providerId = resolvedId ?? 0;
   const isValidId = Number.isFinite(providerId) && providerId > 0;
   const staticProfile = VIDEO_PROVIDER_PROFILES[providerId];
 
@@ -233,15 +273,19 @@ export default function ProviderProfile() {
     },
   });
 
+  const slugLookupFailed = !hasIdPrefix && slugQuery.isError && slugQuery.error instanceof Error && slugQuery.error.message === "NOT_FOUND";
   const is404 =
     !staticProfile &&
-    (!isValidId || (isError && error instanceof Error && error.message === "NOT_FOUND"));
+    (slugLookupFailed || (hasIdPrefix && !isValidId) || (isError && error instanceof Error && error.message === "NOT_FOUND"));
 
   const profileData = staticProfile ?? withDemoCapacityFallback(data);
-  const canonicalSlug = profileData
-    ? `${profileData.provider.id}-${profileData.provider.slug_hint}`
-    : "";
-  useCanonicalRedirect(idslug, canonicalSlug);
+  // URL canónica: slug puro (sin prefijo id). Si el usuario entró por /proveedores/123-foo,
+  // lo redirigimos a /proveedores/foo. Los VIDEO_PROVIDER_PROFILES mantienen el formato id-slug
+  // porque sus IDs (9001-9005) son ficticios y no resuelven por slug.
+  const canonicalSlug = profileData && !staticProfile
+    ? profileData.provider.slug_hint || ""
+    : (profileData && staticProfile ? `${profileData.provider.id}-${profileData.provider.slug_hint}` : "");
+  useCanonicalRedirect(raw, canonicalSlug);
 
   const renderContent = () => {
     if (is404) return <NotFoundState />;
