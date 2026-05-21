@@ -19,6 +19,7 @@ const MATERIAL_OPTIONS_DEFAULT: MaterialOption[] = [
   { label: "PETG (Intermedio)", value: "PETG", hasStock: true },
   { label: "Nylon (Industrial)", value: "Nylon", hasStock: true },
   { label: "TPU (Flexible)", value: "TPU", hasStock: true },
+  { label: "Policarbonato (Técnico)", value: "PC", hasStock: true },
 ];
 
 interface MaterialOption {

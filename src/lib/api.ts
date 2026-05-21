@@ -13,6 +13,54 @@ console.log(
   API_BASE_URL.includes("localhost") ? "✓ LOCAL" : "⚠ PRODUCCION"
 );
 
+/** Calcula SHA256 hex del archivo en el browser usando Web Crypto API.
+ *  Lee el archivo entero como ArrayBuffer (en chunks no es necesario para
+ *  archivos hasta ~1GB en Chrome moderno). Costo en Einstein 162MB: ~2-3s. */
+export async function computeFileSha256(file: File): Promise<string> {
+  const buf = await file.arrayBuffer();
+  const hash = await crypto.subtle.digest("SHA-256", buf);
+  const bytes = new Uint8Array(hash);
+  let hex = "";
+  for (let i = 0; i < bytes.length; i++) {
+    hex += bytes[i].toString(16).padStart(2, "0");
+  }
+  return hex;
+}
+
+/** Pre-check: si el backend ya tiene este archivo cacheado por su SHA256,
+ *  devuelve el payload completo de UploadResponse sin que el cliente tenga
+ *  que subir nada. Si no esta cacheado, devuelve null y el caller debe
+ *  proceder al upload normal (multipart o R2).
+ *
+ *  Esto evita subir archivos grandes (Einstein 162MB) cuando ya los tenemos. */
+export async function checkUploadCacheBySha256(
+  sha256: string,
+  originalFilename: string,
+  sessionId?: string,
+): Promise<UploadResponse | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/upload-cache/check`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sha256,
+        original_filename: originalFilename,
+        session_id: sessionId || "",
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    // Backend devuelve {cached: false} si no hay hit; en cache hit devuelve
+    // el payload de UploadResponse con success: true.
+    if (data && data.success === true && data.cached === true) {
+      return data as UploadResponse;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /** Catalogo de materiales del quote flow con disponibilidad por proveedores. */
 export interface MaterialAvailabilityItem {
   code: string;
@@ -464,6 +512,24 @@ export async function uploadStl(
   onProgress?: (loaded: number, total: number) => void,
   onStep?: StepProgressCallback,
 ): Promise<UploadResponse | ApiError> {
+  // ── PRE-CHECK por SHA256: si el archivo ya lo tenemos cacheado, evitamos
+  //    subir 100-500MB que ya estan en el server. Costo: ~2-3s de hash en
+  //    browser (Einstein 162MB). Ganancia: ~30-60s de upload + procesamiento.
+  //    Si el pre-check falla por cualquier razon, seguimos al upload normal.
+  try {
+    onStep?.("Verificando si ya procesamos este archivo...", null);
+    const sha256 = await computeFileSha256(file);
+    const cached = await checkUploadCacheBySha256(sha256, file.name, sessionId);
+    if (cached) {
+      onStep?.("Archivo encontrado en cache, listo en segundos...", null);
+      return cached;
+    }
+  } catch {
+    // SubtleCrypto puede fallar en navegadores muy viejos o si el archivo
+    // es ilegible. En cualquier caso, seguimos al upload normal sin
+    // bloquear al usuario.
+  }
+
   if (needsLargeUploadFlow(file)) {
     void reportClientError({
       event_type: "upload_routed_to_large",
