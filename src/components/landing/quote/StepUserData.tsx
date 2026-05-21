@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, ChevronDown, ChevronRight, Eye, CheckCircle2, MapPin, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye, CheckCircle2, HelpCircle, MapPin, Trash2 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { TrimmedThumbnail } from "./TrimmedThumbnail";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -107,6 +107,8 @@ export function StepUserData({
   const [materialPickerOpen, setMaterialPickerOpen] = useState(false);
   const [noStockDialogOpen, setNoStockDialogOpen] = useState(false);
   const [noStockMaterialLabel, setNoStockMaterialLabel] = useState("");
+  // Dialog para el "?" al lado del badge Sin stock del material seleccionado
+  const [selectedOutOfStockDialogOpen, setSelectedOutOfStockDialogOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -339,27 +341,6 @@ export function StepUserData({
           </div>
         </div>
 
-        {/* Banner cuando el material seleccionado quedo sin stock (sesion previa) */}
-        {selectedMaterialOutOfStock && (
-          <div
-            role="alert"
-            className="mb-3 flex items-start gap-3 rounded-lg border-2 border-black bg-yellow-100 px-4 py-3 text-[14px] leading-snug text-black"
-          >
-            <AlertTriangle size={20} className="mt-0.5 shrink-0 text-yellow-500" aria-hidden />
-            <div>
-              El filamento seleccionado actualmente no se encuentra en stock de ninguno de los proveedores.
-              Alternativamente seleccionar otro filamento o puede enviarnos un e-mail{" "}
-              <a
-                href="mailto:info@comparo3d.com.ar"
-                className="font-semibold underline decoration-black/60 underline-offset-2 hover:decoration-black"
-              >
-                info@comparo3d.com.ar
-              </a>
-              .
-            </div>
-          </div>
-        )}
-
         {/* Material — picker custom con grisado para items sin stock */}
         <div>
           <label className="mb-1.5 block text-[14px] font-semibold text-foreground">Material *</label>
@@ -376,9 +357,30 @@ export function StepUserData({
               <span className="flex items-center gap-2">
                 <span>{currentMaterial?.label || "PLA"}</span>
                 {selectedMaterialOutOfStock && (
-                  <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-[11px] font-medium text-yellow-800 border border-yellow-500">
-                    Sin stock
-                  </span>
+                  <>
+                    <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-[11px] font-medium text-yellow-800 border border-yellow-500">
+                      Sin stock
+                    </span>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Por que esta sin stock?"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedOutOfStockDialogOpen(true);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedOutOfStockDialogOpen(true);
+                        }
+                      }}
+                      className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-white text-[12px] font-semibold leading-none hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    >
+                      <HelpCircle size={14} aria-hidden />
+                    </span>
+                  </>
                 )}
               </span>
               <ChevronDown size={16} className={`text-muted-foreground transition-transform ${materialPickerOpen ? "rotate-180" : ""}`} />
@@ -441,6 +443,38 @@ export function StepUserData({
             )}
           </div>
         </div>
+
+        {/* Dialog disparado por el "?" al lado del badge Sin stock del material seleccionado */}
+        <Dialog open={selectedOutOfStockDialogOpen} onOpenChange={setSelectedOutOfStockDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{currentMaterial?.label || "Material"} sin stock</DialogTitle>
+              <DialogDescription className="pt-2 text-[15px] leading-relaxed">
+                El filamento seleccionado actualmente no se encuentra en stock de ninguno de los proveedores.
+                Alternativamente seleccionar otro filamento o puede enviarnos un e-mail{" "}
+                <a
+                  href="mailto:info@comparo3d.com.ar"
+                  className="font-semibold underline underline-offset-2"
+                >
+                  info@comparo3d.com.ar
+                </a>
+                .
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setSelectedOutOfStockDialogOpen(false)}
+              >
+                Cerrar
+              </Button>
+              <Button type="button" asChild>
+                <a href="mailto:info@comparo3d.com.ar">Enviar correo</a>
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Dialog cuando el usuario clickea un material sin stock */}
         <Dialog open={noStockDialogOpen} onOpenChange={setNoStockDialogOpen}>
