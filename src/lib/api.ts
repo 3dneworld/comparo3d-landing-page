@@ -4,7 +4,7 @@
 
 import { reportClientError } from "./clientErrorReporter";
 
-const API_BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_URL || "";
 
 // Log de diagnóstico — visible en Console al cargar la app
@@ -12,6 +12,28 @@ console.log(
   `[API] Base URL: ${API_BASE_URL}`,
   API_BASE_URL.includes("localhost") ? "✓ LOCAL" : "⚠ PRODUCCION"
 );
+
+/** Catalogo de materiales del quote flow con disponibilidad por proveedores. */
+export interface MaterialAvailabilityItem {
+  code: string;
+  label: string;
+  has_stock: boolean;
+}
+
+/** Trae el catalogo de materiales con flag has_stock por cada uno.
+ *  Si la llamada falla, el caller debe asumir has_stock=true para todos
+ *  (degradacion permisiva — preferimos que el usuario pueda elegir y
+ *  fallar despues a bloquearle si la red anda mal). */
+export async function fetchMaterialsAvailability(): Promise<MaterialAvailabilityItem[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/materials-availability`);
+    if (!res.ok) return [];
+    const data = (await res.json()) as { items?: MaterialAvailabilityItem[] };
+    return data.items || [];
+  } catch {
+    return [];
+  }
+}
 
 export interface LandingProvider {
   name: string;

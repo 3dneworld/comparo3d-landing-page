@@ -1,18 +1,34 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Eye, CheckCircle2, MapPin, Trash2 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { TrimmedThumbnail } from "./TrimmedThumbnail";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { fetchMaterialsAvailability } from "@/lib/api";
 
 // ── Materiales ────────────────────────────────────────────────────────────────
-// "No estoy seguro" se muestra al usuario pero se envía "PLA" al backend
-const MATERIAL_OPTIONS = [
-  { label: "PLA (Económico) - Recomendado", value: "PLA" },
-  { label: "No estoy seguro (Asesorarme)", value: "ASESORAR" }, // → PLA internamente
-  { label: "ABS (Resistente)", value: "ABS" },
-  { label: "PETG (Intermedio)", value: "PETG" },
-  { label: "Nylon (Industrial)", value: "Nylon" },
-  { label: "TPU (Flexible)", value: "TPU" },
+// "No estoy seguro" se muestra al usuario pero se envía "PLA" al backend.
+// Estos son los defaults antes de que llegue la respuesta del backend con
+// has_stock real — todos arrancan como disponibles para no mostrar grisado
+// equivocado durante el flash inicial.
+const MATERIAL_OPTIONS_DEFAULT: MaterialOption[] = [
+  { label: "PLA (Económico) - Recomendado", value: "PLA", hasStock: true },
+  { label: "No estoy seguro (Asesorarme)", value: "ASESORAR", hasStock: true },
+  { label: "ABS (Resistente)", value: "ABS", hasStock: true },
+  { label: "PETG (Intermedio)", value: "PETG", hasStock: true },
+  { label: "Nylon (Industrial)", value: "Nylon", hasStock: true },
+  { label: "TPU (Flexible)", value: "TPU", hasStock: true },
 ];
+
+interface MaterialOption {
+  label: string;
+  value: string;
+  hasStock: boolean;
+}
+
+const NO_STOCK_MESSAGE =
+  "Si necesitas imprimir con este filamento envíanos un correo a info@comparo3d.com.ar para que podamos ayudarte";
 
 // ── Infill opciones ───────────────────────────────────────────────────────────
 const INFILL_OPTIONS = ["5%", "10%", "20%", "25%", "30%", "40%", "50%", "60%", "70%", "80%", "90%", "100%"];
@@ -84,6 +100,50 @@ export function StepUserData({
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [colorCustom, setColorCustom] = useState("");
   const thumbnailSrc = thumbnailUrl || null;
+
+  // ── Materiales con stock dinamico ────────────────────────────────────────
+  const [materialOptions, setMaterialOptions] = useState<MaterialOption[]>(MATERIAL_OPTIONS_DEFAULT);
+  const [materialPickerOpen, setMaterialPickerOpen] = useState(false);
+  const [noStockDialogOpen, setNoStockDialogOpen] = useState(false);
+  const [noStockMaterialLabel, setNoStockMaterialLabel] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const items = await fetchMaterialsAvailability();
+        if (cancelled || !items.length) return;
+        // Mantengo el orden y los labels del default (el backend tiene los
+        // mismos labels pero por las dudas uso los del frontend para no
+        // depender de cambios de copy en el server).
+        const byCode = new Map(items.map((i) => [i.code, i.has_stock]));
+        setMaterialOptions((prev) =>
+          prev.map((opt) => ({
+            ...opt,
+            hasStock: byCode.has(opt.value) ? !!byCode.get(opt.value) : opt.hasStock,
+          })),
+        );
+      } catch {
+        // Silencio: fallback permisivo. El usuario podra elegir cualquier
+        // material y el backend ya tiene su propia validacion.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleMaterialClick = (opt: MaterialOption) => {
+    if (!opt.hasStock) {
+      setNoStockMaterialLabel(opt.label);
+      setNoStockDialogOpen(true);
+      return;
+    }
+    onChange("material", opt.value);
+    setMaterialPickerOpen(false);
+  };
+
+  const currentMaterial = materialOptions.find((m) => m.value === (data.material || "PLA")) || materialOptions[0];
 
   const inputClass =
     "w-full rounded-xl border border-input bg-background px-4 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring";
@@ -274,25 +334,105 @@ export function StepUserData({
           </div>
         </div>
 
-        {/* Material */}
+        {/* Material — picker custom con grisado para items sin stock */}
         <div>
           <label className="mb-1.5 block text-[14px] font-semibold text-foreground">Material *</label>
           <div className="relative">
-            <select
-              value={data.material || "PLA"}
-              onChange={(e) => onChange("material", e.target.value)}
-              className={selectClass}
+            <button
+              type="button"
+              onClick={() => setMaterialPickerOpen((v) => !v)}
+              className={`${selectClass} flex items-center justify-between text-left`}
+              aria-haspopup="listbox"
+              aria-expanded={materialPickerOpen}
             >
-              
-              {MATERIAL_OPTIONS.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <span>{currentMaterial?.label || "PLA"}</span>
+              <ChevronDown size={16} className={`text-muted-foreground transition-transform ${materialPickerOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {materialPickerOpen && (
+              <>
+                {/* Backdrop para cerrar al click fuera */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setMaterialPickerOpen(false)}
+                  aria-hidden
+                />
+                <ul
+                  role="listbox"
+                  className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-input bg-background shadow-lg"
+                >
+                  <TooltipProvider delayDuration={150}>
+                    {materialOptions.map((opt) => {
+                      const isSelected = (data.material || "PLA") === opt.value;
+                      const greyed = !opt.hasStock;
+                      const item = (
+                        <li
+                          key={opt.value}
+                          role="option"
+                          aria-selected={isSelected}
+                          aria-disabled={greyed}
+                          onClick={() => handleMaterialClick(opt)}
+                          className={[
+                            "flex cursor-pointer items-center justify-between gap-2 px-4 py-2.5 text-[15px] transition-colors",
+                            greyed
+                              ? "text-muted-foreground/60 hover:bg-muted/40"
+                              : "text-foreground hover:bg-primary/5",
+                            isSelected && !greyed ? "bg-primary/5 font-medium" : "",
+                          ].join(" ")}
+                        >
+                          <span>{opt.label}</span>
+                          {greyed && (
+                            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                              Sin stock
+                            </span>
+                          )}
+                        </li>
+                      );
+                      if (!greyed) return item;
+                      // Para grisados envolvemos en Tooltip (hover desktop).
+                      // El click sigue funcionando — abre el Dialog.
+                      return (
+                        <Tooltip key={opt.value}>
+                          <TooltipTrigger asChild>{item}</TooltipTrigger>
+                          <TooltipContent side="left" className="max-w-xs text-sm">
+                            {NO_STOCK_MESSAGE}
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                  </TooltipProvider>
+                </ul>
+              </>
+            )}
           </div>
         </div>
+
+        {/* Dialog cuando el usuario clickea un material sin stock */}
+        <Dialog open={noStockDialogOpen} onOpenChange={setNoStockDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{noStockMaterialLabel} sin stock</DialogTitle>
+              <DialogDescription className="pt-2 text-[15px] leading-relaxed">
+                {NO_STOCK_MESSAGE}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setNoStockDialogOpen(false)}
+              >
+                Cerrar
+              </Button>
+              <Button
+                type="button"
+                asChild
+              >
+                <a href="mailto:info@comparo3d.com.ar">Enviar correo</a>
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Cantidad */}
         <div>
