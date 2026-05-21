@@ -172,7 +172,7 @@ export function useQuoteFlow({
         isLoading: true,
         error: null,
         progressMessage: isLarge
-          ? `Archivo grande (${sizeMb} MB). Debido a que el archivo tiene un peso superior a 100 MB este proceso puede demorar más de lo habitual. Subiendo por canal especial...`
+          ? `Archivo grande (${sizeMb} MB). Debido a que el archivo tiene un peso superior a 100 MB este proceso puede demorar más de lo habitual.`
           : "Subiendo y analizando tu archivo...",
       }));
 

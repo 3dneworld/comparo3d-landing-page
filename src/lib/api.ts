@@ -179,8 +179,8 @@ export function needsLargeUploadFlow(file: File): boolean {
 function buildLargeFileFallbackMessage(file: File): string {
   return (
     `Tu archivo "${file.name}" pesa ${formatBytes(file.size)} y supera el limite ` +
-    `de upload directo. No pudimos iniciar el canal alternativo. Por favor ` +
-    `escribinos a info@comparo3d.com.ar y te lo cargamos manualmente.`
+    `de upload directo. Por favor escribinos a info@comparo3d.com.ar y te lo ` +
+    `cargamos manualmente.`
   );
 }
 
@@ -327,7 +327,7 @@ export async function uploadStlLarge(
     if (!res.ok) {
       let errBody: { error?: string } = {};
       try { errBody = await res.json(); } catch { /* ignore */ }
-      const errMsg = errBody.error || `Init fallo HTTP ${res.status}`;
+      const errMsg = errBody.error || `Init fallo HTTP ${res.status} del servidor backend`;
       void reportClientError({
         event_type: "large_upload_init_fail",
         message: errMsg,
