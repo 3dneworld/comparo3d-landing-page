@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Eye, CheckCircle2, MapPin, Trash2 } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronRight, Eye, CheckCircle2, MapPin, Trash2 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { TrimmedThumbnail } from "./TrimmedThumbnail";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -145,6 +145,10 @@ export function StepUserData({
   };
 
   const currentMaterial = materialOptions.find((m) => m.value === (data.material || "PLA")) || materialOptions[0];
+  // Si el material actualmente seleccionado (puede venir de sessionStorage de
+  // una visita anterior) ya no tiene stock, mostramos un banner arriba del
+  // campo. No bloqueamos seguir — solo avisamos.
+  const selectedMaterialOutOfStock = !!currentMaterial && currentMaterial.hasStock === false;
 
   const inputClass =
     "w-full rounded-xl border border-input bg-background px-4 py-3 text-[15px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring";
@@ -335,6 +339,27 @@ export function StepUserData({
           </div>
         </div>
 
+        {/* Banner cuando el material seleccionado quedo sin stock (sesion previa) */}
+        {selectedMaterialOutOfStock && (
+          <div
+            role="alert"
+            className="mb-3 flex items-start gap-3 rounded-lg border-2 border-black bg-yellow-100 px-4 py-3 text-[14px] leading-snug text-black"
+          >
+            <AlertTriangle size={20} className="mt-0.5 shrink-0 text-yellow-500" aria-hidden />
+            <div>
+              El filamento seleccionado actualmente no se encuentra en stock de ninguno de los proveedores.
+              Alternativamente seleccionar otro filamento o puede enviarnos un e-mail{" "}
+              <a
+                href="mailto:info@comparo3d.com.ar"
+                className="font-semibold underline decoration-black/60 underline-offset-2 hover:decoration-black"
+              >
+                info@comparo3d.com.ar
+              </a>
+              .
+            </div>
+          </div>
+        )}
+
         {/* Material — picker custom con grisado para items sin stock */}
         <div>
           <label className="mb-1.5 block text-[14px] font-semibold text-foreground">Material *</label>
@@ -342,11 +367,20 @@ export function StepUserData({
             <button
               type="button"
               onClick={() => setMaterialPickerOpen((v) => !v)}
-              className={`${selectClass} flex items-center justify-between text-left`}
+              className={`${selectClass} flex items-center justify-between text-left ${
+                selectedMaterialOutOfStock ? "border-yellow-500 text-muted-foreground" : ""
+              }`}
               aria-haspopup="listbox"
               aria-expanded={materialPickerOpen}
             >
-              <span>{currentMaterial?.label || "PLA"}</span>
+              <span className="flex items-center gap-2">
+                <span>{currentMaterial?.label || "PLA"}</span>
+                {selectedMaterialOutOfStock && (
+                  <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-[11px] font-medium text-yellow-800 border border-yellow-500">
+                    Sin stock
+                  </span>
+                )}
+              </span>
               <ChevronDown size={16} className={`text-muted-foreground transition-transform ${materialPickerOpen ? "rotate-180" : ""}`} />
             </button>
 
