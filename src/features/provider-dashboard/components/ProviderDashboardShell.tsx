@@ -25,19 +25,53 @@ import type { DashboardProvider, DashboardUser } from "@/features/provider-dashb
 import { cn } from "@/lib/utils";
 import logoWhite from "@/assets/logo-white.png";
 
-const navigationItems = [
-  { key: "resumen", label: "Resumen", to: "resumen", icon: Boxes, available: true },
-  { key: "perfil", label: "Perfil", to: "perfil", icon: ClipboardList, available: true },
-  { key: "produccion", label: "Produccion", to: "produccion", icon: Printer, available: true },
-  { key: "materiales", label: "Materiales", to: "materiales", icon: PackageCheck, available: true },
-  { key: "logistica", label: "Logistica", to: "logistica", icon: Truck, available: true },
-  { key: "cotizaciones", label: "Cotizaciones", to: "cotizaciones", icon: ReceiptText, available: true },
-  { key: "pedidos", label: "Pedidos", to: "pedidos", icon: PackageOpen, available: true },
-  { key: "envios", label: "Envios", to: "envios", icon: MapPinned, available: true },
-  { key: "portfolio", label: "Portfolio", to: "portfolio", icon: Star, available: true },
-  { key: "certificacion", label: "Certificacion", to: "certificacion", icon: ShieldCheck, available: true },
-  { key: "competitividad", label: "Competitividad", to: "competitividad", icon: TrendingUp, available: true },
-] as const;
+type NavItem = {
+  key: string;
+  label: string;
+  to: string;
+  icon: typeof Boxes;
+  available: boolean;
+};
+
+type NavGroup = {
+  id: string;
+  label: string;
+  items: NavItem[];
+};
+
+const navigationGroups: NavGroup[] = [
+  {
+    id: "operacion",
+    label: "Operacion",
+    items: [
+      { key: "resumen", label: "Resumen", to: "resumen", icon: Boxes, available: true },
+      { key: "cotizaciones", label: "Cotizaciones", to: "cotizaciones", icon: ReceiptText, available: true },
+      { key: "pedidos", label: "Pedidos", to: "pedidos", icon: PackageOpen, available: true },
+      { key: "envios", label: "Envios", to: "envios", icon: MapPinned, available: true },
+    ],
+  },
+  {
+    id: "configuracion",
+    label: "Configuracion",
+    items: [
+      { key: "perfil", label: "Perfil", to: "perfil", icon: ClipboardList, available: true },
+      { key: "produccion", label: "Produccion", to: "produccion", icon: Printer, available: true },
+      { key: "materiales", label: "Materiales", to: "materiales", icon: PackageCheck, available: true },
+      { key: "logistica", label: "Logistica", to: "logistica", icon: Truck, available: true },
+    ],
+  },
+  {
+    id: "reputacion",
+    label: "Reputacion",
+    items: [
+      { key: "portfolio", label: "Portfolio", to: "portfolio", icon: Star, available: true },
+      { key: "certificacion", label: "Certificacion", to: "certificacion", icon: ShieldCheck, available: true },
+      { key: "competitividad", label: "Competitividad", to: "competitividad", icon: TrendingUp, available: true },
+    ],
+  },
+];
+
+const allNavigationItems: NavItem[] = navigationGroups.flatMap((g) => g.items);
 
 function formatProviderLocation(provider?: DashboardProvider | null) {
   const parts = [provider?.localidad, provider?.provincia].filter(Boolean);
@@ -98,7 +132,7 @@ export function ProviderDashboardShell({
         .join("") || providerName[0]?.toUpperCase()
     : "";
   const sectionLabel =
-    navigationItems.find((item) => item.key === currentSection)?.label ?? "Dashboard";
+    allNavigationItems.find((item) => item.key === currentSection)?.label ?? "Dashboard";
   const routeSuffix = location.search || "";
 
   const handleLogout = async () => {
@@ -166,7 +200,7 @@ export function ProviderDashboardShell({
 
           <nav className="flex-1 px-4 py-5">
             <div className="space-y-1">
-              {navigationItems.map((item) => {
+              {allNavigationItems.map((item) => {
                 const Icon = item.icon;
 
                 if (!item.available || !item.to) {
@@ -264,7 +298,7 @@ export function ProviderDashboardShell({
               </div>
 
               <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden scrollbar-hide">
-                {navigationItems.map((item) => {
+                {allNavigationItems.map((item) => {
                   if (!item.available || !item.to) {
                     return (
                       <span
