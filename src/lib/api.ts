@@ -733,6 +733,29 @@ export async function getQuoteOptions(
   }
 }
 
+/** Reinicia el slicing cuando quedo en error. Llamar desde el boton
+ *  "Reintentar". Devuelve 202 con success=true si arranco el BG thread. */
+export async function retryQuoteSlicing(sessionId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/quotes/${sessionId}/retry-slicing`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    let data: { success?: boolean; error?: string } = {};
+    try { data = await res.json(); } catch { /* ignore */ }
+    if (!res.ok || !data.success) {
+      return {
+        success: false,
+        error: data.error || `No se pudo reintentar (HTTP ${res.status})`,
+      };
+    }
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Error de red";
+    return { success: false, error: `No se pudo conectar al servidor: ${message}` };
+  }
+}
+
 /** Re-cotizar la sesión con una nueva cantidad de piezas. */
 export async function updateQuantity(
   sessionId: string,

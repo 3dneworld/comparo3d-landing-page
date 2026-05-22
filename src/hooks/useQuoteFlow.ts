@@ -15,6 +15,7 @@ import {
   initDraft,
   isApiError,
   QuoteOption,
+  retryQuoteSlicing,
   updateQuantity,
   uploadStl,
 } from "@/lib/api";
@@ -495,6 +496,39 @@ export function useQuoteFlow({
     [sessionId]
   );
 
+  // Reintenta el slicing cuando quedo en error: llama el endpoint
+  // /retry-slicing y, si OK, vuelve a iniciar el polling.
+  const handleRetrySlicing = useCallback(async () => {
+    if (!sessionId) {
+      setError("Sesión no inicializada.");
+      return;
+    }
+    setState((s) => ({
+      ...s,
+      isProcessing: true,
+      error: null,
+      progressMessage: "Reintentando cotización...",
+      progressPct: null,
+      progressStep: null,
+      progressStartedAt: Date.now(),
+    }));
+    const result = await retryQuoteSlicing(sessionId);
+    if (!isMountedRef.current) return;
+    if (!result.success) {
+      setState((s) => ({
+        ...s,
+        isProcessing: false,
+        progressMessage: "",
+        error:
+          result.error ||
+          "No pudimos reintentar la cotización. Escribinos a info@comparo3d.com.ar y te ayudamos.",
+      }));
+      return;
+    }
+    // Backend ya relanzo el BG thread → arrancar polling de nuevo
+    startPollingOptions();
+  }, [sessionId, startPollingOptions]);
+
   return {
     ...state,
     setStlFile,
@@ -507,5 +541,6 @@ export function useQuoteFlow({
     startPollingOptions,
     handleUpdateQuantity,
     handleAcceptQuote,
+    handleRetrySlicing,
   };
 }

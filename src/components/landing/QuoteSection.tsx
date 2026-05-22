@@ -763,7 +763,10 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
               onRetry={() => {
                 flow.clearError();
                 polledSessionRef.current = ""; // permite reiniciar el polling
-                flow.startPollingOptions();
+                // RETRY REAL: llama /retry-slicing en backend (resetea
+                // slicing_status y relanza BG thread). Antes solo reiniciaba
+                // polling -> mismo error en <1s.
+                void flow.handleRetrySlicing();
               }}
               onBack={() => {
                 flow.clearError();
