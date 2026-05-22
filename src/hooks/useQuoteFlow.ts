@@ -27,6 +27,12 @@ export interface QuoteFlowState {
   isProcessing: boolean;
   /** Mensaje de progreso visible al usuario */
   progressMessage: string;
+  /** Porcentaje real del slicing (0-100). null si no hay info aun. */
+  progressPct: number | null;
+  /** Step del backend (slicing, finalizing, etc.). null si no hay info. */
+  progressStep: string | null;
+  /** Timestamp ms cuando arranco el processing actual. Usado para ETA. */
+  progressStartedAt: number | null;
   /** Error a mostrar. null si no hay error. */
   error: string | null;
   /** Lista de cotizaciones disponibles (Paso 3) */
@@ -68,6 +74,9 @@ export function useQuoteFlow({
     isLoading: false,
     isProcessing: false,
     progressMessage: "",
+    progressPct: null,
+    progressStep: null,
+    progressStartedAt: null,
     error: null,
     quotes: [],
     orderId: null,
@@ -297,14 +306,18 @@ export function useQuoteFlow({
     console.log("[POLL] Iniciando polling para session:", sessionId);
     if (pollRef.current) clearTimeout(pollRef.current);
 
+    const startedAtMs = Date.now();
     setState((s) => ({
       ...s,
       isProcessing: true,
       quotes: [],
       error: null,
       progressMessage: "Buscando cotizaciones disponibles...",
+      progressPct: null,
+      progressStep: null,
+      progressStartedAt: startedAtMs,
     }));
-    processingStartedAtRef.current = Date.now();
+    processingStartedAtRef.current = startedAtMs;
     abandonedReportKeyRef.current = null;
 
     const poll = async (attempt = 1) => {
@@ -342,10 +355,35 @@ export function useQuoteFlow({
 
       if (result.success === false && result.status === "processing") {
         const delay = Math.min(2000 + attempt * 500, 5000);
-        console.log(`[POLL] Aún procesando — reintentando en ${delay}ms`);
+        // Backend (>=2026-05-22) devuelve progress_pct + progress_message
+        // reales del slicing PrusaSlicer. Si vienen, los usamos. Si no,
+        // fallback al mensaje rotativo basado en tiempo transcurrido.
+        const pct = typeof result.progress_pct === "number" ? result.progress_pct : null;
+        const backendMsg = (result.progress_message || "").trim();
+        const elapsedS = Math.floor((Date.now() - startedAtMs) / 1000);
+
+        // Mensajes contextuales de customer care basados en elapsed.
+        // No bloquea; complementa el mensaje real del backend.
+        let careMsg = "";
+        if (elapsedS < 30) {
+          careMsg = "Calculando cotizaciones, un momento...";
+        } else if (elapsedS < 90) {
+          careMsg = "Procesando tu pieza con detalle, puede tardar 1-2 minutos...";
+        } else if (elapsedS < 180) {
+          careMsg = "Tu pieza es compleja, seguimos trabajando. Gracias por la paciencia.";
+        } else if (elapsedS < 300) {
+          careMsg = "Casi listo. Slicing de piezas grandes puede demorar hasta 5 minutos, ¡no cierres la pestaña!";
+        } else {
+          careMsg = "Tu pieza es excepcionalmente compleja. Seguimos procesando — gracias por aguantar.";
+        }
+
+        const displayMsg = backendMsg || careMsg;
+        console.log(`[POLL] Aún procesando — pct=${pct} | msg='${displayMsg}' | reintentando en ${delay}ms`);
         setState((s) => ({
           ...s,
-          progressMessage: `Calculando cotizaciones${".".repeat((attempt % 3) + 1)}`,
+          progressMessage: displayMsg,
+          progressPct: pct,
+          progressStep: result.progress_step || null,
         }));
         pollRef.current = setTimeout(() => poll(attempt + 1), delay);
         return;
@@ -357,6 +395,9 @@ export function useQuoteFlow({
         console.log(`[POLL] Completado — ${result.quotes.length} cotizaciones recibidas`);
         setState((s) => ({
           ...s,
+          progressPct: 100,
+          progressStep: "done",
+          progressStartedAt: null,
           isProcessing: false,
           quotes: result.quotes,
           material: result.material,

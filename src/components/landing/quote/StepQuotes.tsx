@@ -29,6 +29,12 @@ interface StepQuotesProps {
   isEmpresa: boolean;
   isProcessing: boolean;
   progressMessage: string;
+  /** Porcentaje real del slicing 0-100 (puede ser null si backend no lo provee). */
+  progressPct?: number | null;
+  /** Step actual del backend (slicing, finalizing, etc.). */
+  progressStep?: string | null;
+  /** Timestamp ms cuando arranco el processing. Usado para mensajes contextuales. */
+  progressStartedAt?: number | null;
   error: string | null;
   quotes: QuoteOption[];
   sessionId: string;
@@ -308,10 +314,104 @@ function SortButton({
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// SlicingProgressBlock — barra de progreso real (cuando backend la provee)
+// + mensajes contextuales de customer care basados en tiempo transcurrido.
+//
+// Diseno: 4 minutos de slicing en Einstein cama 500x500 es legitimo. La
+// pieza no se cuelga — PrusaSlicer simplemente tarda. Pero sin feedback
+// visual el usuario asume cuelgue. La barra reduce esa ansiedad mostrando
+// (a) avance real, (b) tiempo transcurrido, (c) mensajes rotativos de
+// customer care que prometen que seguimos trabajando.
+// ─────────────────────────────────────────────────────────────────────────
+function SlicingProgressBlock({
+  pct,
+  message,
+  step,
+  startedAt,
+}: {
+  pct: number | null;
+  message: string;
+  step: string | null;
+  startedAt: number | null;
+}) {
+  const [now, setNow] = useState(Date.now());
+  const [tipIdx, setTipIdx] = useState(0);
+
+  // Tick cada segundo para mostrar tiempo transcurrido sin re-renders del padre.
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  // Tip rotativo cada 15s entre frases de customer care.
+  const tips = [
+    "Estamos calculando el costo exacto para cada proveedor disponible.",
+    "Tu pieza está siendo procesada con el mismo slicer que usan los proveedores reales — el precio que veas es el de impresión exacto.",
+    "Gracias por tu paciencia. Las piezas grandes requieren más cálculo.",
+    "Seguimos trabajando. No cierres la pestaña, estamos por terminar.",
+    "Cuanto más compleja la pieza, más tiempo lleva calcular un precio honesto.",
+  ];
+  useEffect(() => {
+    const id = window.setInterval(() => setTipIdx((i) => (i + 1) % tips.length), 15000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const elapsedS = startedAt ? Math.max(0, Math.floor((now - startedAt) / 1000)) : 0;
+  const mm = Math.floor(elapsedS / 60).toString().padStart(2, "0");
+  const ss = (elapsedS % 60).toString().padStart(2, "0");
+
+  // Pct visible: si backend lo provee lo usamos. Si no, animamos lento basado
+  // en tiempo (techo 95% para no llegar a 100% antes de terminar).
+  const hasRealPct = pct !== null && pct > 0;
+  let visualPct = hasRealPct ? pct! : Math.min(95, Math.round((elapsedS / 240) * 95));
+  visualPct = Math.max(2, Math.min(100, visualPct));
+
+  return (
+    <div className="mt-6 rounded-2xl border border-primary/15 bg-card/60 p-5">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-[15px] font-semibold text-foreground">{message || "Calculando cotizaciones..."}</p>
+        <span className="rounded-full bg-primary/10 px-2.5 py-1 font-mono text-[11px] font-semibold text-primary">
+          {mm}:{ss}
+        </span>
+      </div>
+
+      {/* Barra de progreso */}
+      <div className="relative h-3 w-full overflow-hidden rounded-full bg-primary/10">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary transition-all duration-700 ease-out"
+          style={{ width: `${visualPct}%` }}
+        />
+        {!hasRealPct && (
+          // Cuando no hay pct real, animacion shimmer para indicar "trabajando".
+          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.8s_infinite] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+        )}
+      </div>
+
+      <div className="mt-2 flex items-center justify-between text-[12px] text-muted-foreground">
+        <span>{visualPct}%</span>
+        {step && <span className="font-mono uppercase tracking-wide opacity-70">{step}</span>}
+      </div>
+
+      <p className="mt-4 text-[13px] leading-relaxed text-muted-foreground">{tips[tipIdx]}</p>
+
+      <style>{`
+        @keyframes shimmer {
+          100% { transform: translateX(200%); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export function StepQuotes({
   isEmpresa,
   isProcessing,
   progressMessage,
+  progressPct,
+  progressStep,
+  progressStartedAt,
   error,
   quotes,
   thumbnailUrl,
@@ -795,13 +895,12 @@ export function StepQuotes({
           )}
 
           {isProcessing && (
-            <div className="mt-6 flex flex-col items-center gap-4 py-8">
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-              <p className="text-[15px] font-medium text-foreground">{progressMessage}</p>
-              <p className="text-[13px] text-muted-foreground">
-                Estamos calculando el costo exacto con PrusaSlicer para cada proveedor disponible
-              </p>
-            </div>
+            <SlicingProgressBlock
+              pct={progressPct ?? null}
+              message={progressMessage}
+              step={progressStep ?? null}
+              startedAt={progressStartedAt ?? null}
+            />
           )}
 
           {error && !isProcessing && (

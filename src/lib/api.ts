@@ -212,6 +212,12 @@ export interface QuoteOptionsProcessing {
   slicing_status: string;
   message: string;
   eta_seconds: number;
+  /** Backend (>=2026-05-22): porcentaje real del slicing 0-100. null si aun no hay data. */
+  progress_pct?: number | null;
+  /** Mensaje del backend ("Generating perimeters (cama 500x500)", etc.). */
+  progress_message?: string | null;
+  /** Step actual (slicing, finalizing, etc.). */
+  progress_step?: string | null;
 }
 
 export interface AcceptQuoteResponse {
