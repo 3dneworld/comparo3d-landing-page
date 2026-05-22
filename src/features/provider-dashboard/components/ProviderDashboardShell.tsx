@@ -189,6 +189,11 @@ export function ProviderDashboardShell({
               </div>
             </div>
             <div className="mt-5 flex flex-wrap items-center gap-2">
+              {effectiveProvider?.estado === "activo" ? (
+                <DashboardStatePill tone="success" className="border-white/10 bg-white/5">
+                  Activo
+                </DashboardStatePill>
+              ) : null}
               <DashboardStatePill
                 tone="muted"
                 className="border-white/10 bg-white/5 text-hero-muted"
