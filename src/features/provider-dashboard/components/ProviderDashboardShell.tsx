@@ -155,7 +155,7 @@ export function ProviderDashboardShell({
         }}
       />
       <div className="relative flex min-h-screen">
-        <aside className="hidden w-[292px] shrink-0 border-r border-white/10 bg-gradient-dark text-hero-foreground lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:overflow-y-auto">
+        <aside className="dashboard-dark__sidebar hidden w-[292px] shrink-0 border-r border-white/10 bg-gradient-dark text-hero-foreground lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:overflow-y-auto">
           <div className="border-b border-white/10 px-7 py-6">
             <Link to="/" className="inline-flex">
               <img src={logoWhite} alt="COMPARO3D" className="h-7 opacity-90" />
@@ -199,72 +199,75 @@ export function ProviderDashboardShell({
           </div>
 
           <nav className="flex-1 px-4 py-5">
-            <div className="space-y-1">
-              {allNavigationItems.map((item) => {
-                const Icon = item.icon;
+            {navigationGroups.map((group, groupIdx) => (
+              <div key={group.id} className={cn("space-y-1", groupIdx > 0 && "mt-4")}>
+                <div className="dashboard-dark__nav-section-label">{group.label}</div>
+                {group.items.map((item) => {
+                  const Icon = item.icon;
 
-                if (!item.available || !item.to) {
-                  return (
-                    <div
-                      key={item.key}
-                      className="flex items-center justify-between rounded-2xl border border-white/8 px-4 py-3 text-sm text-hero-muted/80"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </div>
-                      <DashboardStatePill
-                        tone="muted"
-                        className="border-white/8 bg-white/5 text-hero-muted"
+                  if (!item.available || !item.to) {
+                    return (
+                      <div
+                        key={item.key}
+                        className="flex items-center justify-between rounded-2xl border border-white/8 px-4 py-3 text-sm text-hero-muted/80"
                       >
-                        Luego
-                      </DashboardStatePill>
-                    </div>
-                  );
-                }
-
-                const badgeCount = badges[item.key];
-                return (
-                  <NavLink
-                    key={item.key}
-                    to={`${item.to}${routeSuffix}`}
-                    className={({ isActive }) =>
-                      cn(
-                        "group flex items-center justify-between rounded-2xl px-4 py-3 text-sm transition-colors",
-                        isActive
-                          ? "bg-white/10 text-hero-foreground shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
-                          : "text-hero-muted hover:bg-white/6 hover:text-hero-foreground"
-                      )
-                    }
-                    end
-                  >
-                    {({ isActive }) => (
-                      <>
                         <div className="flex items-center gap-3">
-                          <Icon className={cn("h-4 w-4", isActive ? "text-primary" : "")} />
-                          <span className="font-medium">{item.label}</span>
+                          <Icon className="h-4 w-4" />
+                          <span>{item.label}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {badgeCount != null && badgeCount > 0 ? (
-                            <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold leading-none text-white">
-                              {badgeCount}
-                            </span>
-                          ) : null}
-                          <ChevronRight
-                            className={cn(
-                              "h-4 w-4 transition-transform",
-                              isActive
-                                ? "translate-x-0 text-primary"
-                                : "-translate-x-1 opacity-40 group-hover:translate-x-0"
-                            )}
-                          />
-                        </div>
-                      </>
-                    )}
-                  </NavLink>
-                );
-              })}
-            </div>
+                        <DashboardStatePill
+                          tone="muted"
+                          className="border-white/8 bg-white/5 text-hero-muted"
+                        >
+                          Luego
+                        </DashboardStatePill>
+                      </div>
+                    );
+                  }
+
+                  const badgeCount = badges[item.key];
+                  return (
+                    <NavLink
+                      key={item.key}
+                      to={`${item.to}${routeSuffix}`}
+                      className={({ isActive }) =>
+                        cn(
+                          "group flex items-center justify-between rounded-2xl px-4 py-3 text-sm transition-colors",
+                          isActive
+                            ? "bg-white/10 text-hero-foreground shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
+                            : "text-hero-muted hover:bg-white/6 hover:text-hero-foreground"
+                        )
+                      }
+                      end
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <div className="flex items-center gap-3">
+                            <Icon className={cn("h-4 w-4", isActive ? "text-primary" : "")} />
+                            <span className="font-medium">{item.label}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {badgeCount != null && badgeCount > 0 ? (
+                              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold leading-none text-white">
+                                {badgeCount}
+                              </span>
+                            ) : null}
+                            <ChevronRight
+                              className={cn(
+                                "h-4 w-4 transition-transform",
+                                isActive
+                                  ? "translate-x-0 text-primary"
+                                  : "-translate-x-1 opacity-40 group-hover:translate-x-0"
+                              )}
+                            />
+                          </div>
+                        </>
+                      )}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
 
         </aside>
