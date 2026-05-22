@@ -545,7 +545,7 @@ function ScenePay({ progress }: { progress: number }) {
       <div style={{ background: "#fafbfc", borderRadius: 14, border: `1px solid ${PAL.borderSoft}`, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 9 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ fontFamily: FONT_BODY, fontSize: 10, fontWeight: 600, letterSpacing: ".12em", textTransform: "uppercase", color: PAL.inkSoft }}>Resumen</div>
-          <img src="/how-it-works/mercado-pago-transp.png" alt="Mercado Pago" style={{ height: 28, objectFit: "contain" }} />
+          <img src="/how-it-works/mercado-pago.svg" alt="Mercado Pago" style={{ height: 28, objectFit: "contain" }} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 36, height: 36, borderRadius: 8, background: "#f7f8fa", border: `1px solid ${PAL.borderSoft}`, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -606,8 +606,8 @@ function SceneDeliver({ progress }: { progress: number }) {
           <div style={{ fontFamily: FONT_BODY, fontSize: 11, color: PAL.inkDim, marginTop: 2 }}>Pedido #C3D-04821 · Printalot · {delivered ? "Entregada" : "En reparto vía Correo Argentino"}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 146, height: 40, borderRadius: 10, background: "#FFD100", border: `1px solid ${PAL.borderSoft}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 4px 12px rgba(45,50,119,.12)" }}>
-            <img src="/how-it-works/correo-argentino-amarillo.jpg" alt="Correo Argentino" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <div style={{ width: 146, height: 40, borderRadius: 10, border: `1px solid ${PAL.borderSoft}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", boxShadow: "0 4px 12px rgba(45,50,119,.12)" }}>
+            <img src="/how-it-works/correo-argentino.svg" alt="Correo Argentino" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
           <span style={{ fontSize: 10, fontWeight: 600, padding: "5px 11px", borderRadius: 999, background: delivered ? PAL.successSoft : "#fff4dd", color: delivered ? PAL.success : "#a06a05" }}>{delivered ? "✓ Entregada" : "🚚 En tránsito"}</span>
         </div>

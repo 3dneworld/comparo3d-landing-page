@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 44" width="160" height="44" role="img" aria-label="Correo Argentino">
+  <defs>
+    <clipPath id="ca-clip">
+      <rect x="0" y="0" width="160" height="44" rx="8"/>
+    </clipPath>
+  </defs>
+
+  <!-- Yellow background -->
+  <rect x="0" y="0" width="160" height="44" rx="8" fill="#FFD100"/>
+
+  <!-- Red diagonal accent band -->
+  <g clip-path="url(#ca-clip)">
+    <polygon points="0,0 32,0 0,44" fill="#CC2229" opacity="0.88"/>
+  </g>
+
+  <!-- Inner white diagonal line -->
+  <g clip-path="url(#ca-clip)">
+    <line x1="34" y1="0" x2="2" y2="44" stroke="#ffffff" stroke-width="2.5" opacity="0.55"/>
+  </g>
+
+  <!-- Wordmark -->
+  <g font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#1a2d4f" text-anchor="middle">
+    <text x="92" y="18" font-size="11" font-weight="800" letter-spacing="0.4">CORREO</text>
+    <text x="92" y="32" font-size="11" font-weight="800" letter-spacing="0.4">ARGENTINO</text>
+  </g>
+</svg>
