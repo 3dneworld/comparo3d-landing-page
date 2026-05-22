@@ -315,41 +315,34 @@ function SortButton({
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// SlicingProgressBlock — barra de progreso real (cuando backend la provee)
-// + mensajes contextuales de customer care basados en tiempo transcurrido.
+// SlicingProgressBlock — feedback visual durante el slicing.
 //
-// Diseno: 4 minutos de slicing en Einstein cama 500x500 es legitimo. La
-// pieza no se cuelga — PrusaSlicer simplemente tarda. Pero sin feedback
-// visual el usuario asume cuelgue. La barra reduce esa ansiedad mostrando
-// (a) avance real, (b) tiempo transcurrido, (c) mensajes rotativos de
-// customer care que prometen que seguimos trabajando.
+// Diseno (revisado 2026-05-22 tras feedback Chris):
+//   - SIN timer visible (genera ansiedad y decepcion en piezas largas).
+//   - Shimmer permanente (no solo cuando pct=null) para que SIEMPRE haya
+//     movimiento visible aunque el pct este clavado entre fases de PrusaSlicer.
+//   - Mensaje claro de que pueden cerrar la pestana y volver: la cotizacion
+//     queda guardada en background.
+//   - Tips de customer care rotativos sin presion temporal.
 // ─────────────────────────────────────────────────────────────────────────
 function SlicingProgressBlock({
   pct,
   message,
   step,
-  startedAt,
 }: {
   pct: number | null;
   message: string;
   step: string | null;
-  startedAt: number | null;
 }) {
-  const [now, setNow] = useState(Date.now());
   const [tipIdx, setTipIdx] = useState(0);
 
-  // Tick cada segundo para mostrar tiempo transcurrido sin re-renders del padre.
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
-
-  // Tip rotativo cada 15s entre frases de customer care.
+  // Tips rotativos cada 15s. Sin promesas de tiempo ("estamos por terminar",
+  // "no cierres la pestana"). Mensajes honestos sobre lo que esta pasando.
   const tips = [
     "Estamos calculando el costo exacto para cada proveedor disponible.",
-    "Tu pieza está siendo procesada con el mismo slicer que usan los proveedores reales — el precio que veas es el de impresión exacto.",
+    "Tu pieza está siendo procesada con el mismo slicer que usan los proveedores para poder darte un precio preciso.",
     "Gracias por tu paciencia. Las piezas grandes requieren más cálculo.",
-    "Seguimos trabajando. No cierres la pestaña, estamos por terminar.",
+    "Podés cerrar esta pestaña tranquilo: tu cotización se guarda y la vas a poder retomar más tarde con el mismo enlace.",
     "Cuanto más compleja la pieza, más tiempo lleva calcular un precio honesto.",
   ];
   useEffect(() => {
@@ -358,41 +351,36 @@ function SlicingProgressBlock({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const elapsedS = startedAt ? Math.max(0, Math.floor((now - startedAt) / 1000)) : 0;
-  const mm = Math.floor(elapsedS / 60).toString().padStart(2, "0");
-  const ss = (elapsedS % 60).toString().padStart(2, "0");
-
-  // Pct visible: si backend lo provee lo usamos. Si no, animamos lento basado
-  // en tiempo (techo 95% para no llegar a 100% antes de terminar).
+  // Pct visible: si backend lo provee lo usamos directo. Si no, escondemos el
+  // numero — solo mostramos shimmer permanente. Mostrar 7% animado a 12% y
+  // congelado por 3 min era peor que no mostrar nada.
   const hasRealPct = pct !== null && pct > 0;
-  let visualPct = hasRealPct ? pct! : Math.min(95, Math.round((elapsedS / 240) * 95));
-  visualPct = Math.max(2, Math.min(100, visualPct));
+  const visualPct = hasRealPct ? Math.max(2, Math.min(100, pct!)) : 50; // 50 = barra "media" mientras shimmer corre encima
 
   return (
     <div className="mt-6 rounded-2xl border border-primary/15 bg-card/60 p-5">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-[15px] font-semibold text-foreground">{message || "Calculando cotizaciones..."}</p>
-        <span className="rounded-full bg-primary/10 px-2.5 py-1 font-mono text-[11px] font-semibold text-primary">
-          {mm}:{ss}
-        </span>
-      </div>
+      <p className="mb-3 text-[15px] font-semibold text-foreground">
+        {message || "Calculando cotizaciones..."}
+      </p>
 
-      {/* Barra de progreso */}
+      {/* Barra con shimmer permanente. El pct real (si existe) marca cuanto se llena.
+          El shimmer corre por encima SIEMPRE para que se sienta vivo aunque PrusaSlicer
+          este en una fase larga sin emitir progress. */}
       <div className="relative h-3 w-full overflow-hidden rounded-full bg-primary/10">
         <div
           className="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary transition-all duration-700 ease-out"
-          style={{ width: `${visualPct}%` }}
+          style={{ width: hasRealPct ? `${visualPct}%` : "100%", opacity: hasRealPct ? 1 : 0.4 }}
         />
-        {!hasRealPct && (
-          // Cuando no hay pct real, animacion shimmer para indicar "trabajando".
-          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.8s_infinite] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-        )}
+        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.8s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
       </div>
 
-      <div className="mt-2 flex items-center justify-between text-[12px] text-muted-foreground">
-        <span>{visualPct}%</span>
-        {step && <span className="font-mono uppercase tracking-wide opacity-70">{step}</span>}
-      </div>
+      {/* Solo mostramos % si hay pct real del backend. Sin numero clavado falso. */}
+      {hasRealPct && (
+        <div className="mt-2 flex items-center justify-between text-[12px] text-muted-foreground">
+          <span>{visualPct}%</span>
+          {step && <span className="font-mono uppercase tracking-wide opacity-70">{step}</span>}
+        </div>
+      )}
 
       <p className="mt-4 text-[13px] leading-relaxed text-muted-foreground">{tips[tipIdx]}</p>
 
@@ -899,7 +887,6 @@ export function StepQuotes({
               pct={progressPct ?? null}
               message={progressMessage}
               step={progressStep ?? null}
-              startedAt={progressStartedAt ?? null}
             />
           )}
 
