@@ -1,10 +1,12 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Bell,
   Boxes,
   Building2,
   ChevronRight,
   ClipboardList,
+  HelpCircle,
   MapPinned,
   PackageCheck,
   PackageOpen,
@@ -117,6 +119,15 @@ export function ProviderDashboardShell({
     const pathname = location.pathname.split("/").filter(Boolean);
     return pathname[pathname.length - 1] ?? "resumen";
   }, [location.pathname]);
+
+  const hasUnreadNotifications = useMemo(() => {
+    const m = summaryQuery.data?.metrics;
+    if (!m) return false;
+    return (
+      (m.cotizaciones_participadas ?? 0) > 0 ||
+      (m.pedidos_abiertos ?? 0) > 0
+    );
+  }, [summaryQuery.data]);
 
   const fetchedProvider = summaryQuery.data?.provider ?? null;
   const effectiveProvider = provider ?? fetchedProvider;
@@ -278,71 +289,99 @@ export function ProviderDashboardShell({
         </aside>
 
         <div className="flex min-h-screen flex-1 flex-col">
-          <header className="dash-topbar">
-            <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-5 py-4 md:px-6 xl:px-8">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="space-y-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
-                    Dashboard COMPARO3D
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-[hsl(var(--hero-muted))]">
-                    <span className="font-semibold text-white">{providerName || "Tu marca"}</span>
-                    <span className="hidden opacity-40 md:inline">/</span>
-                    <span>{sectionLabel}</span>
-                    <span className="hidden opacity-40 md:inline">/</span>
-                    <span>{providerLocation}</span>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button
-                    onClick={() => void handleLogout()}
-                    variant="outline"
-                    className="h-10 rounded-xl border-white/15 bg-white/10 px-4 text-white hover:bg-white/20"
-                    disabled={isLoggingOut}
-                  >
-                    {isLoggingOut ? "Cerrando..." : "Cerrar sesion"}
-                  </Button>
-                </div>
+          <header className="dashboard-dark__topbar">
+            <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-6 px-5 py-3 md:px-6 xl:px-8">
+              {/* Breadcrumbs */}
+              <div className="flex min-w-0 items-center gap-2 text-sm">
+                <span className="truncate font-semibold text-white">
+                  {providerName || "Tu marca"}
+                </span>
+                <span className="opacity-40">/</span>
+                <span className="truncate text-[hsl(var(--hero-muted))]">{sectionLabel}</span>
               </div>
 
-              <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden scrollbar-hide">
-                {allNavigationItems.map((item) => {
-                  if (!item.available || !item.to) {
-                    return (
-                      <span
-                        key={item.key}
-                        className="inline-flex whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-[hsl(var(--hero-muted))]"
-                      >
-                        {item.label}
-                      </span>
-                    );
-                  }
+              {/* Right actions: notif + help + avatar + logout */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  aria-label="Notificaciones"
+                  className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  onClick={() => {
+                    window.location.assign(`/proveedores-v2/resumen${routeSuffix}`);
+                  }}
+                >
+                  <Bell className="h-4 w-4" />
+                  {hasUnreadNotifications ? (
+                    <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary ring-2 ring-[#0a0d12]" />
+                  ) : null}
+                </button>
 
-                  const mobileBadge = badges[item.key];
+                <a
+                  href="/proveedores/ayuda"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Ayuda"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </a>
+
+                <div
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-cyan-500 font-[Montserrat] text-[11px] font-bold text-white"
+                  aria-label={`Avatar ${providerName || "proveedor"}`}
+                >
+                  {providerInitials || "?"}
+                </div>
+
+                <Button
+                  onClick={() => void handleLogout()}
+                  variant="outline"
+                  className="hidden h-9 rounded-xl border-white/15 bg-white/10 px-3 text-sm text-white hover:bg-white/20 md:inline-flex"
+                  disabled={isLoggingOut}
+                >
+                  {isLoggingOut ? "Cerrando..." : "Salir"}
+                </Button>
+              </div>
+            </div>
+
+            {/* Mobile horizontal scroll de tabs — se mantiene */}
+            <div className="mx-auto flex w-full max-w-[1600px] gap-2 overflow-x-auto px-5 pb-2 md:px-6 lg:hidden xl:px-8 scrollbar-hide">
+              {allNavigationItems.map((item) => {
+                if (!item.available || !item.to) {
                   return (
-                    <NavLink
+                    <span
                       key={item.key}
-                      to={`${item.to}${routeSuffix}`}
-                      end
-                      className={({ isActive }) =>
-                        cn(
-                          "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-xs font-semibold transition-colors",
-                          isActive
-                            ? "border-primary/40 bg-primary/20 text-white"
-                            : "border-white/10 bg-white/6 text-[hsl(var(--hero-muted))] hover:text-white"
-                        )
-                      }
+                      className="inline-flex whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-[hsl(var(--hero-muted))]"
                     >
                       {item.label}
-                      {mobileBadge != null && mobileBadge > 0 ? (
-                        <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-white">
-                          {mobileBadge}
-                        </span>
-                      ) : null}
-                    </NavLink>
+                    </span>
                   );
-                })}
-              </div>
+                }
+
+                const mobileBadge = badges[item.key];
+                return (
+                  <NavLink
+                    key={item.key}
+                    to={`${item.to}${routeSuffix}`}
+                    end
+                    className={({ isActive }) =>
+                      cn(
+                        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-xs font-semibold transition-colors",
+                        isActive
+                          ? "border-primary/40 bg-primary/20 text-white"
+                          : "border-white/10 bg-white/6 text-[hsl(var(--hero-muted))] hover:text-white"
+                      )
+                    }
+                  >
+                    {item.label}
+                    {mobileBadge != null && mobileBadge > 0 ? (
+                      <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-white">
+                        {mobileBadge}
+                      </span>
+                    ) : null}
+                  </NavLink>
+                );
+              })}
             </div>
           </header>
 
