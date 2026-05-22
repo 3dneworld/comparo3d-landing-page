@@ -1,0 +1,86 @@
+/* src/features/provider-dashboard/styles/provider-dashboard-dark.css
+ *
+ * Tokens dark mode para el dashboard de proveedores.
+ * Scope: clase .dashboard-dark aplicada al wrapper del shell.
+ * NO afecta al resto de la app — todos los selectores parten de .dashboard-dark.
+ *
+ * Spec: docs/superpowers/specs/2026-05-22-dashboard-proveedor-dark-redesign-design.md s2.1
+ */
+
+.dashboard-dark {
+  /* Surface tokens — usados por las cards y paneles via var() inline */
+  --c3d-bg: #0a0d12;
+  --c3d-card-bg: rgba(255, 255, 255, 0.05);
+  --c3d-card-bg-alt: rgba(255, 255, 255, 0.025);
+  --c3d-card-border: rgba(255, 255, 255, 0.11);
+  --c3d-card-border-soft: rgba(255, 255, 255, 0.07);
+  --c3d-card-shadow: none;
+  --c3d-text-strong: #ffffff;
+  --c3d-text-muted: rgba(255, 255, 255, 0.6);
+  --c3d-text-faint: rgba(255, 255, 255, 0.45);
+
+  background: var(--c3d-bg);
+  color: var(--c3d-text-strong);
+  min-height: 100vh;
+}
+
+/* Patrón grid SVG sutil para el body — coincide con el mock Dashboard Completo v2 */
+.dashboard-dark__bg-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><g fill='none' stroke='%23ffffff' stroke-opacity='.025' stroke-width='.8'><path d='M0 20h40M20 0v40'/></g></svg>");
+}
+
+.dashboard-dark__content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Sidebar glow — gradiente azul desde el borde derecho del sidebar hacia adentro */
+.dashboard-dark .dashboard-dark__sidebar {
+  position: relative;
+}
+
+.dashboard-dark .dashboard-dark__sidebar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 75%;
+  background: linear-gradient(
+    to left,
+    hsl(220 70% 45% / 0.28),
+    hsl(220 70% 45% / 0.08) 35%,
+    transparent 75%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dashboard-dark .dashboard-dark__sidebar > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Topbar sticky con blur */
+.dashboard-dark .dashboard-dark__topbar {
+  background: rgba(10, 13, 18, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+/* Caption mayúsculo para grupos de nav */
+.dashboard-dark .dashboard-dark__nav-section-label {
+  font: 700 10px/1 "Montserrat", system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 12px 11px 5px;
+}
