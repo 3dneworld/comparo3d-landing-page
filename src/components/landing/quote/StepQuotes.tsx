@@ -335,21 +335,44 @@ function SlicingProgressBlock({
   step: string | null;
 }) {
   const [tipIdx, setTipIdx] = useState(0);
+  const [mountedAt] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 5000);
+    return () => window.clearInterval(id);
+  }, []);
+  const elapsedS = Math.max(0, Math.floor((now - mountedAt) / 1000));
 
-  // Tips rotativos cada 15s. Sin promesas de tiempo ("estamos por terminar",
-  // "no cierres la pestana"). Mensajes honestos sobre lo que esta pasando.
-  const tips = [
+  // Dos bancos de mensajes:
+  //  - Primer minuto: mensajes cortos sobre el proceso (esperando rapido).
+  //  - Despues de 1 min: contenido engaging sobre Comparo3D para que el
+  //    cliente vea valor del producto mientras espera, en lugar de sentir
+  //    que la pagina es pedorra.
+  const earlyTips = [
     "Estamos calculando el costo exacto para cada proveedor disponible.",
     "Tu pieza está siendo procesada con el mismo slicer que usan los proveedores para poder darte un precio preciso.",
     "Gracias por tu paciencia. Las piezas grandes requieren más cálculo.",
-    "Podés cerrar esta pestaña tranquilo: tu cotización se guarda y la vas a poder retomar más tarde con el mismo enlace.",
     "Cuanto más compleja la pieza, más tiempo lleva calcular un precio honesto.",
   ];
+  const engagingTips = [
+    "Comparo3D compara TODOS los proveedores activos de Argentina en una sola cotización. Ahorrás tiempo y plata.",
+    "El precio que ves es el de impresión exacto, calculado capa por capa. Sin estimaciones ni sorpresas al final.",
+    "Cada proveedor está certificado y validado por nosotros. Tu pieza queda en manos seguras.",
+    "Si tu pieza tarda en cotizar, es porque la estamos midiendo a fondo: cada gramo de filamento y cada minuto de impresión.",
+    "Tenés proveedores en CABA, Córdoba, Mendoza, Rosario, Neuquén y más — comparalos por precio, calidad o cercanía.",
+    "Una vez aceptes una cotización, pagás con MercadoPago y elegís cuotas. El proveedor empieza a imprimir apenas confirmás.",
+    "Hacemos seguimiento del pedido de punta a punta: desde que arranca la impresora hasta que llega a tu casa.",
+    "Tu archivo STL nunca se comparte públicamente. Solo el proveedor que elijas lo va a recibir.",
+  ];
+  // Despues de 60s rotamos sobre engagingTips. Si el slicing es corto, el
+  // cliente solo ve earlyTips y nunca se aburre.
+  const tipsActive = elapsedS < 60 ? earlyTips : engagingTips;
   useEffect(() => {
-    const id = window.setInterval(() => setTipIdx((i) => (i + 1) % tips.length), 15000);
+    const id = window.setInterval(() => setTipIdx((i) => (i + 1) % tipsActive.length), 12000);
     return () => window.clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tipsActive.length]);
+  // Reset del index cuando cambia el banco para que no se vaya fuera de rango.
+  useEffect(() => { setTipIdx(0); }, [tipsActive.length]);
 
   // Pct visible: si backend lo provee lo usamos directo. Si no, escondemos el
   // numero — solo mostramos shimmer permanente. Mostrar 7% animado a 12% y
@@ -382,7 +405,7 @@ function SlicingProgressBlock({
         </div>
       )}
 
-      <p className="mt-4 text-[13px] leading-relaxed text-muted-foreground">{tips[tipIdx]}</p>
+      <p className="mt-4 text-[13px] leading-relaxed text-muted-foreground">{tipsActive[tipIdx]}</p>
 
       <style>{`
         @keyframes shimmer {
