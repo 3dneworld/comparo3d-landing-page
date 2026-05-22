@@ -78,15 +78,15 @@ function priceFor(provider: Provider | undefined, qty: number) {
 
 function BadgeIcon({ kind, size = 20 }: { kind: string; size?: number }) {
   if (kind === "10y") {
-    return <img src="/badges/badge-10-anos.png" alt="10+ años" title="10+ años en Comparo3D" style={{ width: size, height: size, objectFit: "contain" }} />;
+    return <img src="/badges/trayectoria-10.svg" alt="10+ años" title="10+ años en Comparo3D" style={{ width: size, height: size, objectFit: "contain" }} />;
   }
   if (kind === "5y") {
     return (
-      <img src="/badges/badge-5-anos.png" alt="5+ años" title="5+ años en Comparo3D" style={{ width: size, height: size, objectFit: "contain" }} />
+      <img src="/badges/trayectoria-5.svg" alt="5+ años" title="5+ años en Comparo3D" style={{ width: size, height: size, objectFit: "contain" }} />
     );
   }
   if (kind === "org") {
-    return <img src="/badges/badge-organico.png" alt="Certificado orgánico" title="Certificado Orgánico" style={{ width: size, height: size, objectFit: "contain" }} />;
+    return <img src="/badges/certificado-organico.svg" alt="Certificado orgánico" title="Certificado Orgánico" style={{ width: size, height: size, objectFit: "contain" }} />;
   }
   return null;
 }

@@ -17,9 +17,9 @@ const BADGE_TOOLTIPS: Record<string, string> = {
 
 function badgeImgSrc(badge: ListingProviderBadge): string {
   if (badge.type === "seleccion_fundador") {
-    return badge.tier === "10+" ? "/badges/badge-10-anos.png" : "/badges/badge-5-anos.png";
+    return badge.tier === "10+" ? "/badges/trayectoria-10.svg" : "/badges/trayectoria-5.svg";
   }
-  return "/badges/badge-organico.png";
+  return "/badges/certificado-organico.svg";
 }
 
 function BadgePill({ badge }: { badge: ListingProviderBadge }) {

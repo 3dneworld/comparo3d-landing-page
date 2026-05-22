@@ -29,9 +29,9 @@ function getBadgeImage(badge: PublicProviderBadge): string | null {
   const type = String(badge.type || "").toLowerCase();
   const tier = String(badge.tier || "").toLowerCase();
 
-  if (type.includes("organico")) return "/badges/badge-organico.png";
+  if (type.includes("organico")) return "/badges/certificado-organico.svg";
   if (type.includes("fundador") || type.includes("trayectoria")) {
-    return tier.includes("10") ? "/badges/badge-10-anos.png" : "/badges/badge-5-anos.png";
+    return tier.includes("10") ? "/badges/trayectoria-10.svg" : "/badges/trayectoria-5.svg";
   }
   return null;
 }

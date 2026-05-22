@@ -19,7 +19,7 @@ function getBadgeMeta(badge: QuoteOptionBadge): BadgeMeta {
       tooltip: is5
         ? "Comparo3D validó que el proveedor posee una trayectoria de 5 años en el mercado de Impresión 3D"
         : "Comparo3D validó que el proveedor posee una trayectoria de +10 años en el mercado de Impresión 3D",
-      imgSrc: is5 ? "/badges/badge-5-anos.png" : "/badges/badge-10-anos.png",
+      imgSrc: is5 ? "/badges/trayectoria-5.svg" : "/badges/trayectoria-10.svg",
       tone: "trust",
     };
   }
@@ -28,7 +28,7 @@ function getBadgeMeta(badge: QuoteOptionBadge): BadgeMeta {
     labelShort: "Certificado",
     tooltip:
       "Sello que Comparo3D otorga a proveedores con trayectoria operativa sostenida: entregas a tiempo, rating consistente y volumen real de órdenes completadas.",
-    imgSrc: "/badges/badge-organico.png",
+    imgSrc: "/badges/certificado-organico.svg",
     tone: "certified",
   };
 }
