@@ -1,13 +1,12 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowUpRight,
+  AlertTriangle,
+  ArrowRight,
   BadgeCheck,
-  CircleAlert,
+  CheckCircle2,
   CircleDashed,
   ClipboardList,
-  Eye,
-  MapPinned,
   PackageOpen,
   Sparkles,
   Wallet,
@@ -29,24 +28,6 @@ import type {
   ProviderSummaryResponse,
 } from "@/features/provider-dashboard/types";
 import { cn } from "@/lib/utils";
-
-const readinessCopy = {
-  quote_ready: {
-    label: "Participacion en cotizaciones",
-    success: "Operativa",
-    pending: "Faltan requisitos",
-  },
-  visibility_ready: {
-    label: "Visibilidad en marketplace",
-    success: "Visible",
-    pending: "Todavia no visible",
-  },
-  order_ready: {
-    label: "Recepcion de pedidos",
-    success: "Lista para aceptar pedidos",
-    pending: "Aun no habilitada",
-  },
-} as const;
 
 const onboardingCopy: Record<string, string> = {
   SIN_IMPRESORAS_ACTIVAS: "Definir impresoras activas",
@@ -71,12 +52,6 @@ const onboardingCopy: Record<string, string> = {
   LOGO_URL_FALTANTE: "Agregar logo",
   DESCRIPCION_PUBLICA_FALTANTE: "Sumar descripcion publica",
   HORARIO_OPERATIVO_FALTANTE: "Definir horario operativo",
-  PROXIMITY_PROVIDER_NOT_ACTIVE: "El proveedor no esta activo",
-  PROXIMITY_MARKETPLACE_HIDDEN: "La visibilidad esta desactivada",
-  PROXIMITY_VISIBILITY_NOT_READY: "Falta readiness de visibilidad",
-  PROXIMITY_COORDS_MISSING: "Faltan coordenadas",
-  PROXIMITY_GEO_SOURCE_MISSING: "Falta fuente geo",
-  PROXIMITY_POSTAL_NOT_VALIDATED: "Falta validacion postal",
 };
 
 function formatMoney(value: number) {
@@ -91,408 +66,339 @@ function formatCount(value: number) {
   return new Intl.NumberFormat("es-AR").format(value || 0);
 }
 
-function formatBooleanLabel(value: boolean, positive: string, negative: string) {
-  return value ? positive : negative;
-}
-
 function humanizeReason(reason: string) {
   return onboardingCopy[reason] ?? reason.replaceAll("_", " ").toLowerCase();
 }
 
-function getStageTone(stage?: DashboardOnboardingStage) {
-  if (!stage) return "muted";
-  return stage.complete ? "success" : "warning";
+function greetByHour(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Buenos dias";
+  if (h < 19) return "Buenas tardes";
+  return "Buenas noches";
 }
 
-function PermissionRow({
-  label,
-  enabled,
-}: {
-  label: string;
-  enabled?: boolean;
-}) {
+function ReadyRow({ label, ok, pending }: { label: string; ok: boolean; pending: string }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
-      <span className="text-sm text-foreground">{label}</span>
-      <DashboardStatePill tone={enabled ? "success" : "muted"}>
-        {enabled ? "Activo" : "Pendiente"}
+    <div className="flex items-center justify-between rounded-2xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-4 py-3">
+      <div className="flex items-center gap-3">
+        {ok ? (
+          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+        ) : (
+          <CircleDashed className="h-4 w-4 text-[var(--c3d-text-faint)]" />
+        )}
+        <span className="text-sm text-[var(--c3d-text-strong)]">{label}</span>
+      </div>
+      <DashboardStatePill tone={ok ? "success" : "muted"} className="border-white/10 bg-white/5">
+        {ok ? "OK" : pending}
       </DashboardStatePill>
     </div>
   );
 }
 
-
 function SummaryContent({ summary }: { summary: ProviderSummaryResponse }) {
-  const readinessItems = [
-    {
-      key: "quote_ready",
-      enabled: summary.readiness.quote_ready,
-      ...readinessCopy.quote_ready,
-    },
-    {
-      key: "visibility_ready",
-      enabled: summary.readiness.visibility_ready,
-      ...readinessCopy.visibility_ready,
-    },
-    {
-      key: "order_ready",
-      enabled: summary.readiness.order_ready,
-      ...readinessCopy.order_ready,
-    },
-  ] as const;
+  const m = summary.metrics;
+  const provider = summary.provider;
+  const providerName = (provider as Record<string, unknown>).nombre_comercial as string | undefined
+    || provider.nombre
+    || "Proveedor";
 
-  const onboardingStages = [
-    {
-      label: "Cotizaciones",
-      stage: summary.onboarding.quote_stage,
-    },
-    {
-      label: "Marketplace",
-      stage: summary.onboarding.visibility_stage,
-    },
-    {
-      label: "Pedidos",
-      stage: summary.onboarding.order_stage,
-    },
-    {
-      label: "Plus de perfil",
-      stage: summary.onboarding.optional_stage,
-    },
-  ];
+  const scoreDeltaText = useMemo(() => {
+    const d = m.score_delta_30d;
+    if (d == null) return null;
+    if (d > 0) return `+${d} pts este mes`;
+    if (d < 0) return `${d} pts este mes`;
+    return "Sin cambios";
+  }, [m.score_delta_30d]);
 
-  const locationLabel =
-    [summary.provider.localidad, summary.provider.provincia].filter(Boolean).join(", ") ||
-    summary.provider.ubicacion ||
-    "Ubicacion pendiente";
+  const nextAction = useMemo(() => {
+    const missing = [
+      ...(summary.onboarding.quote_stage?.missing || []),
+      ...(summary.onboarding.visibility_stage?.missing || []),
+      ...(summary.onboarding.order_stage?.missing || []),
+    ];
+    if (missing.length === 0) return null;
+    return { reason: missing[0], label: humanizeReason(missing[0]) };
+  }, [summary.onboarding]);
 
-  const postalStatus = summary.postal_validation.postal_validation_status || "pending";
-  const normalizedAddress =
-    summary.postal_validation.postal_normalized_address ||
-    summary.postal_validation.postal_normalized_locality ||
-    "Sin normalizacion disponible";
+  const revenueTrendDirection = useMemo((): "up" | "down" | "flat" => {
+    const curr = m.revenue_month ?? 0;
+    const prev = m.revenue_prev_month ?? 0;
+    if (prev === 0) return curr > 0 ? "up" : "flat";
+    return curr > prev ? "up" : curr < prev ? "down" : "flat";
+  }, [m.revenue_month, m.revenue_prev_month]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <DashboardPageHeader
         variant="dark"
         eyebrow="PANORAMA OPERATIVO"
-        title={`Bienvenido, ${summary.provider.nombre_comercial || summary.provider.nombre || "Proveedor"}`}
+        title={`${greetByHour()}, ${providerName}`}
         description={
           summary.readiness.order_ready
             ? "Tu operacion esta activa. Revisa cotizaciones nuevas y el estado de tus pedidos en curso."
-            : "Completá los requisitos pendientes para activar tu participacion en cotizaciones y pedidos."
+            : "Completa los requisitos pendientes para activar tu participacion en cotizaciones y pedidos."
         }
         metaPills={
           <>
-            <DashboardStatePill tone={summary.readiness.order_ready ? "success" : "warning"}>
-              {summary.readiness.order_ready ? "Proveedor operativo" : "Proveedor en configuracion"}
+            <DashboardStatePill
+              tone={provider.estado === "activo" ? "success" : "warning"}
+              className="border-white/10 bg-white/5"
+            >
+              {provider.estado === "activo" ? "Participacion activa" : "En configuracion"}
             </DashboardStatePill>
-            <DashboardStatePill tone={summary.effective_permissions.visible_in_marketplace ? "success" : "muted"}>
+            <DashboardStatePill
+              tone={summary.effective_permissions.visible_in_marketplace ? "info" : "muted"}
+              className="border-white/10 bg-white/5"
+            >
               {summary.effective_permissions.visible_in_marketplace
                 ? "Visible en marketplace"
                 : "No visible"}
             </DashboardStatePill>
-            <DashboardStatePill tone={summary.proximity.proximity_enabled ? "info" : "muted"}>
-              {summary.proximity.proximity_enabled ? "Cercania activa" : "Cercania pendiente"}
-            </DashboardStatePill>
+            {summary.onboarding.quote_stage?.missing?.length ||
+            summary.onboarding.visibility_stage?.missing?.length ||
+            summary.onboarding.order_stage?.missing?.length ? (
+              <DashboardStatePill tone="warning" className="border-white/10 bg-white/5">
+                {(summary.onboarding.quote_stage?.missing?.length ?? 0) +
+                  (summary.onboarding.visibility_stage?.missing?.length ?? 0) +
+                  (summary.onboarding.order_stage?.missing?.length ?? 0)}{" "}
+                validaciones pendientes
+              </DashboardStatePill>
+            ) : null}
           </>
         }
-        lastSync="hace 3 min"
         actions={
           <Button
             asChild
-            className="h-10 rounded-xl bg-white/10 border border-white/15 px-4 text-white hover:bg-white/20"
-            variant="outline"
+            className="h-10 rounded-xl border border-white/15 bg-gradient-to-r from-primary to-cyan-500 px-5 text-sm font-semibold text-white hover:from-primary/90 hover:to-cyan-500/90"
           >
-            <a href="/proveedores" target="_blank" rel="noreferrer">
-              Ver dashboard legacy
-              <ArrowUpRight className="h-4 w-4 ml-1.5" />
+            <a href="/proveedores-v2/cotizaciones">
+              Ver cotizaciones
+              <ArrowRight className="ml-1.5 h-4 w-4" />
             </a>
           </Button>
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {/* Metric grid — 4 cards */}
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <DashboardMetricCard
           title="Cotizaciones activas"
-          value={formatCount(summary.metrics.cotizaciones_participadas)}
-          support={`${formatCount(summary.metrics.cotizaciones_mostradas)} oportunidades mostradas`}
+          value={formatCount(m.cotizaciones_participadas)}
+          support={`${formatCount(m.cotizaciones_mostradas)} oportunidades`}
           icon={<ClipboardList className="h-5 w-5" />}
-          trend={{ direction: "up", text: `+${formatCount(summary.metrics.cotizaciones_participadas)} participadas` }}
-          sparkline={[30, 55, 40, 70, 50, 80, 100]}
+          trend={{ direction: "up", text: `+${formatCount(m.cotizaciones_participadas)} participadas` }}
+          sparkline={m.sparkline_quotes_7d || [0, 0, 0, 0, 0, 0, 0]}
           isHot
         />
         <DashboardMetricCard
           title="Pedidos en produccion"
-          value={formatCount(summary.metrics.pedidos_abiertos)}
-          support={`${formatCount(summary.metrics.pedidos_historicos)} pedidos historicos`}
+          value={formatCount(m.pedidos_abiertos)}
+          support={`${formatCount(m.pedidos_historicos)} historicos`}
           icon={<PackageOpen className="h-5 w-5" />}
-          trend={{ direction: "flat", text: `${formatCount(summary.metrics.pedidos_historicos)} historicos` }}
-          sparkline={[60, 50, 65, 55, 70, 60, 65]}
+          trend={{ direction: "flat", text: `${formatCount(m.pedidos_historicos)} historicos` }}
+          sparkline={m.sparkline_orders_7d || [0, 0, 0, 0, 0, 0, 0]}
         />
         <DashboardMetricCard
-          title="Ingresos acumulados"
-          value={formatMoney(summary.metrics.ventas)}
-          support="Total acumulado reportado"
+          title="Ingresos del mes"
+          value={formatMoney(m.revenue_month ?? 0)}
+          support={`Mes anterior: ${formatMoney(m.revenue_prev_month ?? 0)}`}
           icon={<Wallet className="h-5 w-5" />}
-          trend={{ direction: "up", text: "Total acumulado" }}
-          sparkline={[35, 45, 55, 50, 75, 80, 90]}
+          trend={{ direction: revenueTrendDirection, text: `vs ${formatMoney(m.revenue_prev_month ?? 0)} anterior` }}
+          sparkline={m.sparkline_revenue_7d || [0, 0, 0, 0, 0, 0, 0]}
         />
         <DashboardMetricCard
-          title="Score de perfil"
+          title="Score de confianza"
           value={`${summary.profile_score}`}
-          valueSuffix="%"
+          valueSuffix="/100"
           support="Nivel de completitud operacional"
           icon={<Sparkles className="h-5 w-5" />}
-          trend={{ direction: summary.profile_score >= 80 ? "up" : "flat", text: `${summary.profile_score}% completitud` }}
-          sparkline={[70, 75, 72, 78, 80, 85, summary.profile_score]}
+          trend={
+            scoreDeltaText
+              ? { direction: (m.score_delta_30d ?? 0) >= 0 ? "up" : "down", text: scoreDeltaText }
+              : { direction: "flat", text: "Sin historico aun" }
+          }
         />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+      {/* Row 2: Estado del perfil + Siguiente accion */}
+      <section className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
         <DashboardPanel
-          title="Estado comercial y operativo"
-          description="Las tres capas criticas para que el proveedor participe, sea visible y pueda aceptar pedidos."
+          title="Estado del perfil"
+          description="Habilitaciones criticas para participar en cotizaciones, ser visible y aceptar pedidos."
         >
-          <div className="space-y-4">
-            {readinessItems.map((item) => (
-              <div
-                key={item.key}
-                className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <p className="font-medium text-foreground">{item.label}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {item.enabled ? item.success : item.pending}
-                    </p>
-                  </div>
-                  <DashboardStatePill tone={item.enabled ? "success" : "warning"}>
-                    {formatBooleanLabel(item.enabled, "OK", "Revisar")}
-                  </DashboardStatePill>
-                </div>
-              </div>
-            ))}
+          <div className="space-y-2.5">
+            <ReadyRow
+              label="Cotizaciones"
+              ok={summary.readiness.quote_ready}
+              pending="Faltan requisitos"
+            />
+            <ReadyRow
+              label="Marketplace"
+              ok={summary.readiness.visibility_ready}
+              pending="No visible aun"
+            />
+            <ReadyRow
+              label="Pedidos directos"
+              ok={summary.readiness.order_ready}
+              pending="Falta vincular MP"
+            />
+            <ReadyRow
+              label="Datos legales"
+              ok={
+                !!(provider as Record<string, unknown>).cuit &&
+                !!(provider as Record<string, unknown>).nombre_legal
+              }
+              pending="Faltan CUIT/razon social"
+            />
           </div>
         </DashboardPanel>
 
         <DashboardPanel
-          title="Permisos efectivos"
-          description="Lo que hoy ya puede hacer el proveedor segun su estado y readiness real."
+          title="Siguiente accion"
+          description={
+            nextAction
+              ? "La tarea mas importante para avanzar tu operacion."
+              : "Tu perfil esta completo. Segui atendiendo cotizaciones."
+          }
         >
-          <div className="space-y-3">
-            <PermissionRow
-              label="Participar en nuevas cotizaciones"
-              enabled={summary.effective_permissions.included_in_new_quotes}
-            />
-            <PermissionRow
-              label="Ser visible en marketplace"
-              enabled={summary.effective_permissions.visible_in_marketplace}
-            />
-            <PermissionRow
-              label="Gestionar pedidos existentes"
-              enabled={summary.effective_permissions.can_manage_existing_orders}
-            />
-            <PermissionRow
-              label="Aceptar pedidos confirmados"
-              enabled={summary.effective_permissions.can_accept_confirmed_orders}
-            />
-          </div>
-        </DashboardPanel>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <DashboardPanel
-          title="Cobertura y validacion"
-          description="Estado de ubicacion, postal y proximidad para experiencia de matching."
-        >
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
+          {nextAction ? (
+            <div className="flex flex-col items-start gap-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <MapPinned className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Ubicacion operativa</p>
-                  <p className="text-sm text-muted-foreground">{locationLabel}</p>
-                </div>
+                <AlertTriangle className="h-5 w-5 text-amber-400" />
+                <p className="font-semibold text-[var(--c3d-text-strong)]">
+                  {nextAction.label}
+                </p>
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <DashboardStatePill tone={summary.proximity.proximity_enabled ? "success" : "muted"}>
-                  {summary.proximity.proximity_enabled ? "Cercania habilitada" : "Cercania pendiente"}
-                </DashboardStatePill>
-                <DashboardStatePill tone={summary.proximity.geo_source ? "info" : "muted"}>
-                  {summary.proximity.geo_source || "Sin geo source"}
-                </DashboardStatePill>
-              </div>
-            </div>
-
-            <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-accent/15 text-foreground">
-                  <BadgeCheck className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Direccion postal</p>
-                  <p className="text-sm text-muted-foreground">{normalizedAddress}</p>
-                </div>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <DashboardStatePill
-                  tone={postalStatus === "validated" ? "success" : postalStatus === "rejected" ? "danger" : "warning"}
-                >
-                  {postalStatus.replaceAll("_", " ")}
-                </DashboardStatePill>
-                {summary.postal_validation.postal_normalized_cpa ? (
-                  <DashboardStatePill tone="info">
-                    CPA {summary.postal_validation.postal_normalized_cpa}
-                  </DashboardStatePill>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          {summary.proximity.proximity_block_reasons?.length ? (
-            <div className="mt-4 rounded-[1.25rem] border border-border/70 bg-white p-4">
-              <p className="text-sm font-medium text-foreground">Bloqueos de cercania</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {summary.proximity.proximity_block_reasons.map((reason) => (
-                  <DashboardStatePill key={reason} tone="muted">
-                    {humanizeReason(reason)}
-                  </DashboardStatePill>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </DashboardPanel>
-
-        <DashboardPanel
-          title="Checklist de onboarding"
-          description="Resumen claro de lo que ya esta resuelto y de lo que todavia bloquea operacion o visibilidad."
-        >
-          <div className="grid gap-3 md:grid-cols-2">
-            {onboardingStages.map((item) => (
-              <div
-                key={item.label}
-                className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4"
+              <p className="text-sm text-[var(--c3d-text-muted)]">
+                Resolver esto desbloquea la siguiente capa de readiness para tu proveedor.
+              </p>
+              <Button
+                asChild
+                variant="outline"
+                className="rounded-xl border-white/15 bg-white/10 px-4 text-sm text-white hover:bg-white/20"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium text-foreground">{item.label}</p>
-                  <DashboardStatePill tone={getStageTone(item.stage)}>
-                    {item.stage?.complete ? "Completa" : "Pendiente"}
-                  </DashboardStatePill>
-                </div>
-                <div className="mt-3 space-y-2">
-                  {item.stage?.complete ? (
-                    <p className="text-sm text-muted-foreground">
-                      Esta etapa ya no bloquea la evolucion del proveedor.
-                    </p>
-                  ) : item.stage?.missing?.length ? (
-                    item.stage.missing.slice(0, 3).map((reason) => (
-                      <div key={reason} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <CircleDashed className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                        <span>{humanizeReason(reason)}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Todavia faltan definiciones para cerrar esta etapa.
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </DashboardPanel>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <DashboardPanel
-          title="Bloqueos prioritarios"
-          description="Lo que mas conviene resolver despues de esta etapa piloto para mejorar readiness real."
-        >
-          {summary.readiness.blocking_reasons.length ? (
-            <div className="space-y-3">
-              {summary.readiness.blocking_reasons.slice(0, 8).map((reason, index) => (
-                <div
-                  key={reason}
-                  className="flex items-start gap-4 rounded-[1.25rem] border border-border/70 bg-background/70 px-4 py-4"
-                >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                    {index + 1}
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-medium text-foreground">{humanizeReason(reason)}</p>
-                    <p className="text-sm text-muted-foreground">{reason}</p>
-                  </div>
-                </div>
-              ))}
+                <a href="/proveedores-v2/perfil">Ir a configurar</a>
+              </Button>
             </div>
           ) : (
-            <div className="rounded-[1.25rem] border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-700">
-              No detectamos bloqueos criticos en este snapshot. La base operativa esta sana para seguir migrando.
+            <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+              <BadgeCheck className="h-5 w-5 text-emerald-400" />
+              <p className="text-sm text-emerald-300">
+                Perfil completo. Segui atendiendo cotizaciones y pedidos.
+              </p>
             </div>
           )}
         </DashboardPanel>
+      </section>
 
-        <DashboardPanel
-          title="Snapshot del proveedor"
-          description="Lectura compacta para validar continuidad visual y contexto operativo sin entrar todavia en edicion."
-        >
-          <div className="grid gap-3 sm:grid-cols-2">
+      {/* Row 3: Datos comerciales + Onboarding + Bloqueos */}
+      <section className="grid gap-5 xl:grid-cols-3">
+        <DashboardPanel title="Datos comerciales">
+          <div className="grid gap-2.5 sm:grid-cols-2">
             {[
+              { label: "Nombre", value: providerName },
               {
-                label: "Estado actual",
-                value: summary.provider.estado
-                  ? summary.provider.estado.replaceAll("_", " ")
-                  : "Pendiente de configuracion",
+                label: "CUIT",
+                value: (provider as Record<string, unknown>).cuit as string || "Pendiente",
               },
               {
-                label: "Tier",
-                value: summary.provider.tier || "No definido",
-              },
-              {
-                label: "Trabajo minimo",
+                label: "Ubicacion",
                 value:
-                  summary.provider.min_trabajo != null
-                    ? formatMoney(summary.provider.min_trabajo)
-                    : "Pendiente",
+                  [provider.localidad, provider.provincia].filter(Boolean).join(", ") ||
+                  "Pendiente",
               },
               {
                 label: "Tiempo de entrega",
                 value:
-                  summary.provider.tiempo_entrega_dias != null
-                    ? `${summary.provider.tiempo_entrega_dias} dias`
+                  provider.tiempo_entrega_dias != null
+                    ? `${provider.tiempo_entrega_dias} dias`
                     : "Pendiente",
+              },
+              {
+                label: "Trabajo minimo",
+                value:
+                  provider.min_trabajo != null
+                    ? formatMoney(provider.min_trabajo)
+                    : "Pendiente",
+              },
+              {
+                label: "Calificacion",
+                value:
+                  (provider as Record<string, unknown>).calificacion != null
+                    ? `★ ${Number((provider as Record<string, unknown>).calificacion).toFixed(1)}`
+                    : "Sin calificar",
               },
             ].map((item) => (
               <div
                 key={item.label}
-                className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4"
+                className="rounded-2xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] p-3.5"
               >
-                <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--c3d-text-faint)]">
                   {item.label}
                 </p>
-                <p className={cn("mt-2 font-[Montserrat] text-lg font-bold tracking-tight text-foreground")}>
+                <p className="mt-1.5 font-[Montserrat] text-sm font-bold text-[var(--c3d-text-strong)]">
                   {item.value}
                 </p>
               </div>
             ))}
           </div>
+        </DashboardPanel>
 
-          <div className="mt-4 rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
-            <div className="flex items-center gap-3">
-              <Eye className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm font-medium text-foreground">Lectura de visibilidad</p>
-                <p className="text-sm text-muted-foreground">
-                  {summary.effective_permissions.visible_in_marketplace
-                    ? "La ficha del proveedor ya puede aparecer en marketplace."
-                    : "Aun falta readiness o activacion comercial para aparecer en marketplace."}
-                </p>
+        <DashboardPanel title="Checklist de onboarding">
+          <div className="space-y-2">
+            {(
+              [
+                { label: "Cotizaciones", stage: summary.onboarding.quote_stage },
+                { label: "Marketplace", stage: summary.onboarding.visibility_stage },
+                { label: "Pedidos", stage: summary.onboarding.order_stage },
+                { label: "Plus de perfil", stage: summary.onboarding.optional_stage },
+              ] as { label: string; stage?: DashboardOnboardingStage }[]
+            ).map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center justify-between rounded-2xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  {item.stage?.complete ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  ) : (
+                    <CircleDashed className="h-4 w-4 text-[var(--c3d-text-faint)]" />
+                  )}
+                  <span className="text-sm text-[var(--c3d-text-strong)]">{item.label}</span>
+                </div>
+                <DashboardStatePill
+                  tone={item.stage?.complete ? "success" : "warning"}
+                  className="border-white/10 bg-white/5"
+                >
+                  {item.stage?.complete ? "Completa" : `${item.stage?.missing?.length ?? 0} pendientes`}
+                </DashboardStatePill>
               </div>
-            </div>
+            ))}
           </div>
+        </DashboardPanel>
+
+        <DashboardPanel title="Bloqueos prioritarios">
+          {summary.readiness.blocking_reasons.length ? (
+            <div className="space-y-2">
+              {summary.readiness.blocking_reasons.slice(0, 5).map((reason, i) => (
+                <div
+                  key={reason}
+                  className="flex items-start gap-3 rounded-2xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-4 py-3"
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
+                    {i + 1}
+                  </span>
+                  <span className="text-sm text-[var(--c3d-text-muted)]">
+                    {humanizeReason(reason)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/5 p-4 text-sm text-emerald-300">
+              Sin bloqueos criticos detectados.
+            </div>
+          )}
         </DashboardPanel>
       </section>
     </div>
@@ -512,29 +418,14 @@ export function ProviderSummaryView() {
   const summary = useMemo(() => summaryQuery.data, [summaryQuery.data]);
 
   if (summaryQuery.isLoading || summaryQuery.isFetching) {
-    return (
-      <DashboardLoadingState
-        title="Armando el resumen del proveedor"
-        description="Estamos conectando la primera vista React con los datos reales del dashboard."
-      />
-    );
+    return <DashboardLoadingState />;
   }
 
-  if (summaryQuery.error) {
+  if (summaryQuery.isError || !summary) {
     return (
       <DashboardErrorState
-        title="No pudimos cargar el resumen"
-        description="La base del dashboard ya esta montada, pero este snapshot no se pudo recuperar. Conviene revisar sesion, permisos o disponibilidad del endpoint."
-      />
-    );
-  }
-
-  if (!summary) {
-    return (
-      <DashboardErrorState
-        title="No encontramos datos para este proveedor"
-        description="La vista React esta lista, pero no recibimos un resumen valido para renderizar."
-        icon={<CircleAlert className="h-6 w-6" />}
+        message="No pudimos cargar el resumen del proveedor."
+        onRetry={() => void summaryQuery.refetch()}
       />
     );
   }
