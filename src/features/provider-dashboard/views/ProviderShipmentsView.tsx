@@ -146,7 +146,7 @@ function ShipmentCard({
       className={cn(
         "overflow-hidden rounded-[14px] bg-[var(--c3d-card-bg)] shadow-[var(--c3d-card-shadow)]",
         isAction
-          ? "border-2 border-amber-300/40"
+          ? "border border-[#fde68a]"
           : "border border-[var(--c3d-card-border)]"
       )}
     >

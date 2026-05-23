@@ -42,11 +42,11 @@ export function DashboardMetricCard({
         <div className="absolute left-0 top-0 h-full w-[3px] bg-primary" />
       )}
       <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 space-y-2">
+        <div className="min-w-0 flex flex-col">
           <p className="font-[Montserrat] text-[10px] font-bold uppercase leading-none tracking-[0.16em] text-[var(--c3d-text-faint)]">
             {title}
           </p>
-          <p className="break-words font-[Montserrat] text-[24px] font-extrabold tracking-[-0.02em] leading-none tabular-nums text-[var(--c3d-text-strong)]">
+          <p className="mt-[7px] break-words font-[Montserrat] text-[24px] font-extrabold tracking-[-0.02em] leading-none tabular-nums text-[var(--c3d-text-strong)]">
             {value}
             {valueSuffix ? (
               <small className="ml-[3px] font-[Montserrat] text-[13px] font-semibold text-[var(--c3d-text-muted)]">

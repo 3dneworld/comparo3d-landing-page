@@ -212,7 +212,7 @@
 
   /* Sparkline (7 barras) */
   .dash-spark {
-    @apply mt-3 flex items-end gap-[3px] h-8;
+    @apply mt-[9px] flex items-end gap-0.5 h-[26px];
   }
   .dash-spark > span {
     @apply flex-1 rounded-sm;

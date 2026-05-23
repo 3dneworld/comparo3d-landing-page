@@ -19,7 +19,7 @@ export function MetricTrend({ direction, children }: MetricTrendProps) {
         : "text-muted-foreground";
 
   return (
-    <div className={cn("mt-2 flex items-center gap-1.5 text-xs font-semibold", color)}>
+    <div className={cn("mt-[6px] flex items-center gap-[5px] font-[Montserrat] text-[11px] font-semibold leading-none", color)}>
       <Icon className="h-3.5 w-3.5" />
       {children}
     </div>
