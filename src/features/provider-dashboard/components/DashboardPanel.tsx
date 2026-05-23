@@ -34,7 +34,7 @@ export function DashboardPanel({
       {...props}
     >
       {hasHeader && (
-        <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0 px-5 py-4 border-b border-[var(--c3d-card-border-soft)]">
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 px-5 pb-[11px] pt-4 border-b border-[var(--c3d-card-border-soft)]">
           <div className="flex items-center gap-3">
             {icon ? (
               <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] bg-primary/10 text-primary">
@@ -60,7 +60,7 @@ export function DashboardPanel({
           {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
         </CardHeader>
       )}
-      <CardContent className={cn(hasHeader ? "px-5 py-[14px]" : "p-5", contentClassName)}>
+      <CardContent className={cn(hasHeader ? "px-5 pb-[18px] pt-[14px]" : "p-5", contentClassName)}>
         {children}
       </CardContent>
     </Card>

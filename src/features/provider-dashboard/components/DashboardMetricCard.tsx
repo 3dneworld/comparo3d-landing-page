@@ -30,22 +30,26 @@ export function DashboardMetricCard({
   return (
     <div
       className={cn(
-        "group rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5",
-        "border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg)]",
+        "group relative overflow-hidden rounded-[15px] border p-[15px] transition-all duration-200 hover:-translate-y-0.5",
+        "border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg)] shadow-[var(--c3d-card-shadow)]",
         "hover:border-primary/20",
-        isHot && "ring-1 ring-primary/20",
+        isHot && "bg-gradient-to-br from-[var(--c3d-card-bg)] to-primary/[0.04]",
         className
       )}
     >
+      {/* Hot left accent bar */}
+      {isHot && (
+        <div className="absolute left-0 top-0 h-full w-[3px] bg-primary" />
+      )}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 space-y-2">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--c3d-text-faint)]">
+          <p className="font-[Montserrat] text-[10px] font-bold uppercase leading-none tracking-[0.16em] text-[var(--c3d-text-faint)]">
             {title}
           </p>
-          <p className="break-words font-[Montserrat] text-[28px] font-extrabold tracking-tight leading-none tabular-nums text-[var(--c3d-text-strong)]">
+          <p className="break-words font-[Montserrat] text-[24px] font-extrabold tracking-[-0.02em] leading-none tabular-nums text-[var(--c3d-text-strong)]">
             {value}
             {valueSuffix ? (
-              <small className="ml-1 text-sm font-semibold text-[var(--c3d-text-muted)]">
+              <small className="ml-[3px] font-[Montserrat] text-[13px] font-semibold text-[var(--c3d-text-muted)]">
                 {valueSuffix}
               </small>
             ) : null}
@@ -58,7 +62,7 @@ export function DashboardMetricCard({
         </div>
         <div
           className={cn(
-            "flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl transition-colors",
+            "flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] transition-colors",
             isHot
               ? "bg-gradient-to-br from-primary to-cyan-500 text-white"
               : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white"
