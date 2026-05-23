@@ -283,7 +283,7 @@ function QuotesTable({ quotes }: { quotes: DashboardQuoteMatch[] }) {
                       <FileText className="h-[17px] w-[17px]" />
                     </div>
                     <div>
-                      <p className="font-[Montserrat] text-[13px] font-bold leading-none text-[var(--c3d-text-strong)]">
+                      <p className="max-w-[180px] truncate font-[Montserrat] text-[13px] font-bold leading-none text-[var(--c3d-text-strong)]" title={q.quote_uid || `#${q.id}`}>
                         {q.quote_uid || `#${q.id}`}
                       </p>
                     </div>
