@@ -105,6 +105,12 @@ export interface DashboardMetrics {
   pedidos_historicos: number;
   ventas: number;
   cotizaciones_mostradas: number;
+  revenue_month?: number;
+  revenue_prev_month?: number;
+  sparkline_quotes_7d?: number[];
+  sparkline_orders_7d?: number[];
+  sparkline_revenue_7d?: number[];
+  score_delta_30d?: number | null;
 }
 
 export interface DashboardOnboardingStage {
@@ -368,6 +374,7 @@ export interface DashboardOrder {
   files?: DashboardOrderFile[];
   shipment_tracking_code?: string | null;
   review_reminder_status?: string | null;
+  fecha_entrega_estimada?: string | null;
 }
 
 export interface ProviderOrdersResponse {
