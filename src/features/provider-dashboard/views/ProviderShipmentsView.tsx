@@ -1,18 +1,14 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  Bell,
-  CalendarClock,
+  Camera,
   CheckCircle2,
-  ClipboardCheck,
-  ExternalLink,
   LoaderCircle,
-  MapPinned,
+  MapPin,
   PackageCheck,
+  QrCode,
   RefreshCcw,
-  Route,
-  Search,
   Send,
   Truck,
 } from "lucide-react";
@@ -21,20 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
 import {
-  fetchProviderNotifications,
   fetchProviderShipments,
-  markAllProviderNotificationsRead,
-  markProviderNotificationRead,
   updateProviderShipmentStatus,
   updateProviderShipmentTracking,
 } from "@/features/provider-dashboard/api";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
-import {
-  DashboardDataRow,
-  DashboardDataValue,
-} from "@/features/provider-dashboard/components/DashboardDataRow";
-import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
-import { DashboardPanel } from "@/features/provider-dashboard/components/DashboardPanel";
 import { DashboardStatePill } from "@/features/provider-dashboard/components/DashboardStatePill";
 import {
   DashboardEmptyState,
@@ -43,28 +30,35 @@ import {
 } from "@/features/provider-dashboard/components/DashboardStates";
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
 import { DispatchConfirmDialog, type DispatchConfirmParams } from "@/features/provider-dashboard/components/DispatchConfirmDialog";
-import type { DashboardNotification, DashboardShipment } from "@/features/provider-dashboard/types";
+import type { DashboardShipment } from "@/features/provider-dashboard/types";
+import { cn } from "@/lib/utils";
 
-const shipmentStatusOptions = [
-  { value: "", label: "Todos los estados" },
-  { value: "pending", label: "Pendiente" },
-  { value: "ready_to_ship", label: "Listo para despachar" },
-  { value: "dispatched", label: "Despachado" },
-  { value: "in_transit", label: "En transito" },
-  { value: "delivered", label: "Entregado" },
-  { value: "problem", label: "Con problema" },
-  { value: "cancelled", label: "Cancelado" },
-];
+/* ---------- status config matching envios.jsx ---------- */
 
-const shipmentStatusCopy: Record<string, { label: string; tone: "success" | "warning" | "danger" | "info" | "muted" }> = {
-  pending: { label: "Pendiente", tone: "muted" },
-  ready_to_ship: { label: "Listo para despachar", tone: "warning" },
-  dispatched: { label: "Despachado", tone: "info" },
-  in_transit: { label: "En transito", tone: "info" },
-  delivered: { label: "Entregado", tone: "success" },
-  cancelled: { label: "Cancelado", tone: "danger" },
-  problem: { label: "Con problema", tone: "danger" },
+const SM: Record<string, { label: string; color: string; icon: ReactNode }> = {
+  ready_to_ship: {
+    label: "Listo para despachar",
+    color: "#f59e0b",
+    icon: <PackageCheck className="h-5 w-5" />,
+  },
+  dispatched: {
+    label: "Despachado",
+    color: "#6366f1",
+    icon: <Send className="h-5 w-5" />,
+  },
+  in_transit: {
+    label: "En transito",
+    color: "#3b82f6",
+    icon: <Truck className="h-5 w-5" />,
+  },
+  delivered: {
+    label: "Entregado",
+    color: "#10b981",
+    icon: <CheckCircle2 className="h-5 w-5" />,
+  },
 };
+
+const STATUS_STRIP_ORDER = ["ready_to_ship", "dispatched", "in_transit", "delivered"];
 
 const methodLabels: Record<string, string> = {
   retiro_taller: "Retiro en taller",
@@ -73,8 +67,8 @@ const methodLabels: Record<string, string> = {
 };
 
 function statusMeta(status?: string | null) {
-  if (!status) return { label: "Pendiente", tone: "muted" as const };
-  return shipmentStatusCopy[status] ?? { label: status.replaceAll("_", " "), tone: "muted" as const };
+  if (!status) return { label: "Pendiente", color: "#6b7280", icon: <Truck className="h-5 w-5" /> };
+  return SM[status] ?? { label: status.replaceAll("_", " "), color: "#6b7280", icon: <Truck className="h-5 w-5" /> };
 }
 
 function methodLabel(method?: string | null) {
@@ -82,660 +76,373 @@ function methodLabel(method?: string | null) {
   return methodLabels[method] ?? method.replaceAll("_", " ");
 }
 
-function formatDateTime(value?: string | null) {
-  if (!value) return "Sin registro";
+function formatDate(value?: string | null) {
+  if (!value) return null;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Sin registro";
-  return new Intl.DateTimeFormat("es-AR", { dateStyle: "medium", timeStyle: "short" }).format(date);
-}
-
-function formatMoney(value?: number | null) {
-  const amount = Number(value) || 0;
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-function safeText(value?: string | number | null, fallback = "Sin dato") {
-  if (value == null || value === "") return fallback;
-  return String(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "2-digit" }).format(date);
 }
 
 function shipmentDestination(shipment: DashboardShipment) {
-  return [shipment.destino_nombre, shipment.destino_localidad, shipment.destino_provincia]
+  return [shipment.destino_localidad, shipment.destino_provincia]
     .filter(Boolean)
     .join(", ") || "Destino no cargado";
 }
 
-function shipmentOrigin(shipment: DashboardShipment) {
-  return [shipment.origen_nombre, shipment.origen_localidad, shipment.origen_provincia]
-    .filter(Boolean)
-    .join(", ") || "Origen no cargado";
-}
+/* ---------- Status strip card ---------- */
 
-function packageDimensions(shipment: DashboardShipment) {
-  const parts = [shipment.dimension_largo_cm, shipment.dimension_ancho_cm, shipment.dimension_alto_cm]
-    .map((value) => Number(value) || 0)
-    .filter((value) => value > 0);
-  return parts.length === 3 ? `${parts.join(" x ")} cm` : "Sin dimensiones";
-}
+function StatusStripCard({
+  statusKey,
+  count,
+}: {
+  statusKey: string;
+  count: number;
+}) {
+  const meta = SM[statusKey];
+  if (!meta) return null;
 
-function isOverdue(shipment: DashboardShipment) {
-  if (!shipment.fecha_limite_despacho) return false;
-  if (["delivered", "cancelled"].includes(String(shipment.status || ""))) return false;
-  const deadline = new Date(shipment.fecha_limite_despacho);
-  return Number.isFinite(deadline.getTime()) && deadline.getTime() < Date.now();
-}
-
-function publicTrackingPath(shipment: DashboardShipment) {
-  return shipment.cotizacion_id ? `/tracking/${shipment.cotizacion_id}` : "";
-}
-
-function DetailRow({ label, value, icon }: { label: string; value?: ReactNode; icon?: ReactNode }) {
   return (
-    <div className="rounded-[1rem] border border-border/70 bg-background/70 p-3">
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-        {icon}
-        <span>{label}</span>
+    <div className="flex items-center gap-[10px] rounded-xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg)] px-4 py-3 shadow-[var(--c3d-card-shadow)]">
+      <div
+        className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px]"
+        style={{ background: `${meta.color}14`, color: meta.color }}
+      >
+        {meta.icon}
       </div>
-      <div className="mt-2 text-sm font-medium leading-relaxed text-foreground">{value || "Sin dato"}</div>
+      <div>
+        <p
+          className="font-[Montserrat] text-[18px] font-extrabold leading-none tabular-nums"
+          style={{ color: "var(--c3d-text-strong)" }}
+        >
+          {count}
+        </p>
+        <p className="mt-[3px] font-[Montserrat] text-[10px] font-semibold uppercase leading-[1.2] tracking-[0.1em] text-[var(--c3d-text-faint)]">
+          {meta.label}
+        </p>
+      </div>
     </div>
   );
 }
 
-function ShipmentRow({
+/* ---------- ShipmentCard matching envios.jsx ---------- */
+
+function ShipmentCard({
   shipment,
-  selected,
-  onSelect,
+  onDispatch,
+  isMutating,
 }: {
   shipment: DashboardShipment;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  const meta = statusMeta(shipment.status);
-  const overdue = isOverdue(shipment);
-
-  return (
-    <DashboardDataRow
-      onClick={onSelect}
-      selected={selected}
-      columnsClassName="lg:grid-cols-[0.68fr_0.92fr_0.9fr_1.05fr_1.15fr_0.82fr]"
-    >
-      <DashboardDataValue label="Envio">
-        <p className="text-sm font-semibold text-foreground">#{shipment.id}</p>
-      </DashboardDataValue>
-      <DashboardDataValue label="Estado" className="flex flex-col items-start">
-        <DashboardStatePill tone={meta.tone}>{meta.label}</DashboardStatePill>
-      </DashboardDataValue>
-      <DashboardDataValue label="Metodo" className="text-sm text-muted-foreground">
-        {methodLabel(shipment.shipping_method)}
-      </DashboardDataValue>
-      <DashboardDataValue label="Tracking">
-        <p className="text-sm font-medium text-foreground">{safeText(shipment.tracking_code, "Sin tracking")}</p>
-        <p className="text-xs text-muted-foreground">{shipment.tracking_loaded_at ? "Tracking cargado" : "Pendiente"}</p>
-      </DashboardDataValue>
-      <DashboardDataValue label="Destino">
-        <p className="text-sm font-medium text-foreground">{shipmentDestination(shipment)}</p>
-        <p className="text-xs text-muted-foreground">CP {safeText(shipment.destino_cp)}</p>
-      </DashboardDataValue>
-      <DashboardDataValue label="Plazo" className="flex flex-col items-start gap-2">
-        <span className="text-sm text-muted-foreground">{formatDateTime(shipment.fecha_limite_despacho)}</span>
-        <DashboardStatePill tone={overdue ? "danger" : "muted"}>{overdue ? "Vencido" : "En plazo"}</DashboardStatePill>
-      </DashboardDataValue>
-    </DashboardDataRow>
-  );
-}
-
-function NotificationList({
-  items,
-  unread,
-  onMarkRead,
-  onMarkAllRead,
-  isMutating,
-}: {
-  items: DashboardNotification[];
-  unread: number;
-  onMarkRead: (id: number) => void;
-  onMarkAllRead: () => void;
+  onDispatch: (trackingCode: string) => void;
   isMutating: boolean;
 }) {
+  const meta = statusMeta(shipment.status);
+  const isAction = shipment.status === "ready_to_ship";
+  const [trackingInput, setTrackingInput] = useState(shipment.tracking_code || "");
+  const [confirmed, setConfirmed] = useState(false);
+  const deadlineStr = formatDate(shipment.fecha_limite_despacho);
+
   return (
-    <DashboardPanel
-      title="Notificaciones"
-      description="Alertas de pagos, despachos y cambios vinculados a envios."
-      headerAction={
-        <Button
-          type="button"
-          variant="outline"
-          className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
-          onClick={onMarkAllRead}
-          disabled={!unread || isMutating}
+    <div
+      className={cn(
+        "overflow-hidden rounded-[14px] bg-[var(--c3d-card-bg)] shadow-[var(--c3d-card-shadow)]",
+        isAction
+          ? "border-2 border-amber-300/40"
+          : "border border-[var(--c3d-card-border)]"
+      )}
+    >
+      {/* Main row */}
+      <div className="flex items-center gap-3 px-4 py-[13px]">
+        {/* Icon */}
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px]"
+          style={{ background: `${meta.color}14`, color: meta.color }}
         >
-          {isMutating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-          Marcar leidas
-        </Button>
-      }
-    >
-      <div className="space-y-3">
-        {items.length ? (
-          items.slice(0, 8).map((item) => {
-            const read = Boolean(item.leida);
-            return (
-              <div key={item.id} className="rounded-[1.15rem] border border-border/70 bg-background/70 px-4 py-3">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-foreground">{safeText(item.titulo, "Notificacion")}</p>
-                      <DashboardStatePill tone={read ? "muted" : "info"}>{read ? "Leida" : "Nueva"}</DashboardStatePill>
-                    </div>
-                    <p className="line-clamp-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-                      {safeText(item.mensaje, "Sin mensaje")}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{formatDateTime(item.created_at)}</p>
-                  </div>
-                  {!read ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-9 rounded-xl border-border/80 bg-white/90 px-3 text-xs text-foreground hover:bg-muted"
-                      onClick={() => onMarkRead(item.id)}
-                      disabled={isMutating}
-                    >
-                      OK
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="rounded-[1.15rem] border border-dashed border-border/80 bg-background/70 px-4 py-6 text-center text-sm text-muted-foreground">
-            Sin notificaciones para mostrar.
+          {meta.icon}
+        </div>
+
+        {/* Info */}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-[Montserrat] text-[13px] font-bold leading-none text-[var(--c3d-text-strong)]">
+              #{shipment.id}
+            </span>
+            <span className="font-[Montserrat] text-xs font-medium text-[var(--c3d-text-faint)]">
+              → {shipment.public_order_id || (shipment.cotizacion_id ? `ORD-${shipment.cotizacion_id}` : "")}
+            </span>
+            {deadlineStr && (
+              <span className="rounded-full bg-[var(--c3d-card-bg-alt)] px-[7px] py-0.5 font-[Montserrat] text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--c3d-text-faint)]">
+                Limite {deadlineStr}
+              </span>
+            )}
           </div>
-        )}
-      </div>
-    </DashboardPanel>
-  );
-}
-
-function ShipmentDetailPanel({
-  shipment,
-  trackingCode,
-  onTrackingCodeChange,
-  onSaveTracking,
-  onStatusChange,
-  isMutating,
-}: {
-  shipment?: DashboardShipment | null;
-  trackingCode: string;
-  onTrackingCodeChange: (value: string) => void;
-  onSaveTracking: () => void;
-  onStatusChange: (status: string) => void;
-  isMutating: boolean;
-}) {
-  if (!shipment) {
-    return (
-      <div className="rounded-[1.25rem] border border-dashed border-border/80 bg-background/70 p-5 text-sm leading-relaxed text-muted-foreground">
-        Elegi un envio para ver destino, paquete, tracking y acciones disponibles.
-      </div>
-    );
-  }
-
-  const meta = statusMeta(shipment.status);
-  const canLoadTracking = ["pending", "ready_to_ship"].includes(String(shipment.status || ""));
-  const canMarkDispatched = shipment.status === "ready_to_ship";
-  const canMarkDelivered = shipment.status === "dispatched" || shipment.status === "in_transit";
-  const trackingPath = publicTrackingPath(shipment);
-
-  return (
-    <div className="space-y-4">
-      <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="font-[Montserrat] text-lg font-bold tracking-tight text-foreground">Envio #{shipment.id}</p>
+          <div className="mt-[5px] flex flex-wrap gap-[14px]">
+            <span className="flex items-center gap-1 font-[Montserrat] text-xs font-medium text-[var(--c3d-text-faint)]">
+              <MapPin className="h-[13px] w-[13px]" />
+              {shipmentDestination(shipment)}
+            </span>
+            <span className="flex items-center gap-1 font-[Montserrat] text-xs font-medium text-[var(--c3d-text-faint)]">
+              <Truck className="h-[13px] w-[13px]" />
+              {methodLabel(shipment.shipping_method)}
+            </span>
+            {shipment.tracking_code && (
+              <span className="flex items-center gap-1 font-[Montserrat] text-xs font-semibold text-primary">
+                <QrCode className="h-[13px] w-[13px]" />
+                {shipment.tracking_code}
+              </span>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            <DashboardStatePill tone={meta.tone}>{meta.label}</DashboardStatePill>
-            <DashboardStatePill tone={shipment.tracking_code ? "success" : "warning"}>
-              {shipment.tracking_code ? "Con tracking" : "Sin tracking"}
-            </DashboardStatePill>
+        </div>
+
+        {/* Status pill */}
+        <div className="shrink-0">
+          <div
+            className="rounded-lg px-[10px] py-[5px] font-[Montserrat] text-[11px] font-semibold"
+            style={{
+              background: `${meta.color}14`,
+              color: meta.color,
+              border: `1px solid ${meta.color}28`,
+            }}
+          >
+            {meta.label}
           </div>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <DetailRow label="Metodo" value={methodLabel(shipment.shipping_method)} icon={<Truck className="h-3.5 w-3.5" />} />
-        <DetailRow label="Gestionado por" value={safeText(shipment.managed_by)} />
-        <DetailRow label="Origen" value={shipmentOrigin(shipment)} icon={<PackageCheck className="h-3.5 w-3.5" />} />
-        <DetailRow label="Destino" value={shipmentDestination(shipment)} icon={<MapPinned className="h-3.5 w-3.5" />} />
-        <DetailRow label="Direccion destino" value={safeText(shipment.destino_direccion)} />
-        <DetailRow label="Telefono destino" value={safeText(shipment.destino_telefono)} />
-        <DetailRow label="Peso" value={`${Number(shipment.peso_gramos) || 0} g`} />
-        <DetailRow label="Dimensiones" value={packageDimensions(shipment)} />
-        <DetailRow label="Costo real" value={formatMoney(shipment.shipping_cost_real_ars || shipment.tarifa_estimada_ars)} />
-        <DetailRow label="Cobrado cliente" value={formatMoney(shipment.precio_cobrado_cliente_ars)} />
-        <DetailRow label="Limite despacho" value={formatDateTime(shipment.fecha_limite_despacho)} icon={<CalendarClock className="h-3.5 w-3.5" />} />
-        <DetailRow label="Pickup sugerido" value={formatDateTime(shipment.fecha_pickup_sugerida)} />
-        <DetailRow label="Despachado" value={formatDateTime(shipment.fecha_despacho_real)} />
-        <DetailRow label="Entregado" value={formatDateTime(shipment.fecha_entrega_real)} />
-      </div>
-
-      <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-          <div className="flex-1">
-            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground" htmlFor="shipment-tracking-code">
-              Codigo de tracking
-            </label>
+      {/* Action row for ready_to_ship */}
+      {isAction && !confirmed && (
+        <div className="border-t border-[var(--c3d-card-border-soft)] px-4 pb-[14px] pt-[11px]">
+          <div className="grid grid-cols-[1fr_auto] gap-[9px]">
             <Input
-              id="shipment-tracking-code"
-              value={trackingCode}
-              onChange={(event) => onTrackingCodeChange(event.target.value)}
-              className="mt-2 h-11 rounded-xl border-border/80 bg-white"
-              placeholder="Codigo Correo Argentino"
-              disabled={!canLoadTracking || isMutating}
+              value={trackingInput}
+              onChange={(e) => setTrackingInput(e.target.value)}
+              placeholder="Numero de tracking (ej: LC123456789AR)"
+              className="h-[35px] rounded-[9px] border-[var(--c3d-card-border)] bg-transparent font-[Montserrat] text-[13px] font-medium text-[var(--c3d-text-strong)] placeholder:text-[var(--c3d-text-faint)]"
             />
-          </div>
-          <Button
-            type="button"
-            className="h-11 rounded-xl bg-gradient-primary px-5 text-primary-foreground shadow-cta hover:opacity-95"
-            onClick={onSaveTracking}
-            disabled={!canLoadTracking || !trackingCode.trim() || isMutating}
-          >
-            {isMutating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            Guardar tracking
-          </Button>
-        </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {shipment.tracking_url ? (
-            <Button asChild variant="outline" className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted">
-              <a href={shipment.tracking_url} target="_blank" rel="noreferrer">
-                Correo Argentino
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </Button>
-          ) : null}
-          {trackingPath ? (
-            <Button asChild variant="outline" className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted">
-              <a href={trackingPath} target="_blank" rel="noreferrer">
-                Tracking cliente
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </Button>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
-        <p className="text-sm font-semibold text-foreground">Acciones de estado</p>
-        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-          Las transiciones usan el flujo validado por backend para evitar saltos inconsistentes.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
-            onClick={() => onStatusChange("dispatched")}
-            disabled={!canMarkDispatched || isMutating}
-          >
-            <Truck className="h-4 w-4" />
-            Marcar despachado
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
-            onClick={() => onStatusChange("delivered")}
-            disabled={!canMarkDelivered || isMutating}
-          >
-            <ClipboardCheck className="h-4 w-4" />
-            Marcar entregado
-          </Button>
-        </div>
-      </div>
-
-      {shipment.dispatch_package ? (
-        <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
-          <p className="text-sm font-semibold text-foreground">Paquete de despacho</p>
-          <pre className="mt-3 max-h-[320px] overflow-auto whitespace-pre-wrap rounded-[1rem] border border-border/70 bg-white p-4 text-xs leading-relaxed text-muted-foreground">
-            {shipment.dispatch_package}
-          </pre>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function ShipmentsContent({
-  items,
-  notifications,
-  unreadNotifications,
-  selectedShipment,
-  selectedId,
-  statusFilter,
-  trackingCode,
-  onStatusChange,
-  onRefresh,
-  onSelectShipment,
-  onTrackingCodeChange,
-  onSaveTracking,
-  onMarkNotificationRead,
-  onMarkAllNotificationsRead,
-  isFetching,
-  isMutating,
-}: {
-  items: DashboardShipment[];
-  notifications: DashboardNotification[];
-  unreadNotifications: number;
-  selectedShipment?: DashboardShipment | null;
-  selectedId: number | null;
-  statusFilter: string;
-  trackingCode: string;
-  onStatusChange: (status: string) => void;
-  onRefresh: () => void;
-  onSelectShipment: (shipment: DashboardShipment) => void;
-  onTrackingCodeChange: (value: string) => void;
-  onSaveTracking: () => void;
-  onMarkNotificationRead: (id: number) => void;
-  onMarkAllNotificationsRead: () => void;
-  isFetching: boolean;
-  isMutating: boolean;
-}) {
-  const activeShipments = items.filter((item) => !["delivered", "cancelled"].includes(String(item.status || "")));
-  const readyShipments = items.filter((item) => item.status === "ready_to_ship");
-  const withTracking = items.filter((item) => item.tracking_code);
-  const overdueCount = items.filter(isOverdue).length;
-  const latestShipment = items[0];
-
-  return (
-    <div className="space-y-6">
-      <DashboardPageHeader
-        eyebrow="Vista operativa"
-        title="Mis envios"
-        description="Shipments reales del proveedor con tracking, deadlines de despacho y notificaciones operativas."
-        meta={
-          <>
-            <DashboardStatePill tone={items.length ? "info" : "muted"}>{items.length} envios</DashboardStatePill>
-            <DashboardStatePill tone={readyShipments.length ? "warning" : "success"}>
-              {readyShipments.length} listos
-            </DashboardStatePill>
-            <DashboardStatePill tone={unreadNotifications ? "warning" : "muted"}>
-              {unreadNotifications} alertas
-            </DashboardStatePill>
-            {isFetching ? <DashboardStatePill tone="warning">Actualizando</DashboardStatePill> : null}
-          </>
-        }
-        actions={
-          <>
-            <select
-              value={statusFilter}
-              onChange={(event) => onStatusChange(event.target.value)}
-              className="h-11 rounded-xl border border-border/80 bg-white px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {shipmentStatusOptions.map((option) => (
-                <option key={option.value || "all"} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
             <Button
               type="button"
-              variant="outline"
-              className="h-11 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
-              onClick={onRefresh}
-              disabled={isFetching || isMutating}
+              className="h-[35px] rounded-[10px] bg-gradient-to-r from-primary to-cyan-500 px-4 font-[Montserrat] text-[13px] font-bold text-white shadow-[0_4px_20px_hsl(220_70%_45%/0.35)] hover:opacity-90"
+              onClick={() => {
+                onDispatch(trackingInput);
+                setConfirmed(true);
+              }}
+              disabled={isMutating}
             >
-              {isFetching ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
-              Recargar
+              {isMutating ? (
+                <LoaderCircle className="mr-1.5 h-[14px] w-[14px] animate-spin" />
+              ) : (
+                <Send className="mr-1.5 h-[14px] w-[14px]" />
+              )}
+              Confirmar despacho
             </Button>
-          </>
-        }
-      />
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardMetricCard title="Envios activos" value={String(activeShipments.length)} support="Pendientes, listos, en transito o con revision." icon={<Route className="h-5 w-5" />} />
-        <DashboardMetricCard title="Listos para despacho" value={String(readyShipments.length)} support="Requieren tracking o salida operativa." icon={<Truck className="h-5 w-5" />} />
-        <DashboardMetricCard title="Con tracking" value={`${withTracking.length}/${items.length}`} support="Codigos cargados sobre el filtro actual." icon={<Search className="h-5 w-5" />} />
-        <DashboardMetricCard title="Vencidos" value={String(overdueCount)} support={`Ultima actividad: ${formatDateTime(latestShipment?.updated_at || latestShipment?.created_at)}`} icon={<CalendarClock className="h-5 w-5" />} />
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <DashboardPanel
-          title="Listado de shipments"
-          description="Click en un envio para abrir instrucciones, destino y acciones permitidas."
-          contentClassName="p-4 pt-0 md:p-5 md:pt-0"
-        >
-          {items.length ? (
-            <div className="space-y-3">
-              {items.map((shipment) => (
-                <ShipmentRow
-                  key={shipment.id}
-                  shipment={shipment}
-                  selected={selectedId === shipment.id}
-                  onSelect={() => onSelectShipment(shipment)}
-                />
-              ))}
-            </div>
-          ) : (
-            <DashboardEmptyState
-              title="No hay envios para este filtro"
-              description="El endpoint real no devolvio shipments visibles para el estado seleccionado."
-              icon={<Search className="h-6 w-6" />}
-              className="min-h-[420px]"
-            />
-          )}
-        </DashboardPanel>
-
-        <div className="space-y-6">
-          <DashboardPanel title="Detalle y acciones" description="Tracking, despacho y paquete operativo del shipment.">
-            <ShipmentDetailPanel
-              shipment={selectedShipment}
-              trackingCode={trackingCode}
-              onTrackingCodeChange={onTrackingCodeChange}
-              onSaveTracking={onSaveTracking}
-              onStatusChange={onStatusChange}
-              isMutating={isMutating}
-            />
-          </DashboardPanel>
-
-          <NotificationList
-            items={notifications}
-            unread={unreadNotifications}
-            onMarkRead={onMarkNotificationRead}
-            onMarkAllRead={onMarkAllNotificationsRead}
-            isMutating={isMutating}
-          />
-
-          <DashboardPanel title="Regla operativa" description="Frontera de esta migracion.">
-            <div className="space-y-3">
-              <div className="rounded-[1.15rem] border border-border/70 bg-background/70 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-                Envios opera sobre shipments ya creados por checkout/pago; no crea etiquetas nuevas desde React.
-              </div>
-              <div className="rounded-[1.15rem] border border-border/70 bg-background/70 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-                Tracking y estados avanzan con validaciones del backend compartidas con el dashboard legacy.
-              </div>
-            </div>
-          </DashboardPanel>
+          </div>
+          <p className="mt-[7px] flex items-center gap-[5px] font-[Montserrat] text-[11px] font-medium leading-[1.4] text-[var(--c3d-text-faint)]">
+            <Camera className="h-3 w-3" />
+            Recorda subir foto del paquete antes de confirmar el despacho.
+          </p>
         </div>
-      </section>
+      )}
     </div>
   );
 }
+
+/* ---------- Main export ---------- */
 
 export function ProviderShipmentsView() {
   const queryClient = useQueryClient();
   const { providerId } = useProviderDashboardSession();
-  const [statusFilter, setStatusFilter] = useState("");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [trackingCode, setTrackingCode] = useState("");
   const [showDispatchModal, setShowDispatchModal] = useState(false);
+  const [dispatchShipmentId, setDispatchShipmentId] = useState<number | null>(null);
 
   const shipmentsQuery = useQuery({
-    queryKey: ["provider-dashboard", "shipments", providerId, statusFilter],
-    queryFn: () => fetchProviderShipments(providerId!, statusFilter),
+    queryKey: ["provider-dashboard", "shipments", providerId],
+    queryFn: () => fetchProviderShipments(providerId!),
     enabled: providerId != null,
     staleTime: 20_000,
   });
 
-  const notificationsQuery = useQuery({
-    queryKey: ["provider-dashboard", "notifications", providerId],
-    queryFn: () => fetchProviderNotifications(providerId!),
-    enabled: providerId != null,
-    staleTime: 20_000,
-  });
+  const items = useMemo(() => shipmentsQuery.data?.items || [], [shipmentsQuery.data]);
 
-  const invalidateShipments = () => {
+  const invalidateAll = () => {
     void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "shipments", providerId] });
+    void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "orders", providerId] });
     void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "notifications", providerId] });
   };
 
   const trackingMutation = useMutation({
-    mutationFn: async () => {
-      if (!providerId || !selectedId) throw new Error("No encontramos un envio valido.");
-      const code = trackingCode.trim();
-      if (!code) throw new Error("Cargue un codigo de tracking.");
-      return updateProviderShipmentTracking(providerId, selectedId, code);
+    mutationFn: async ({ shipmentId, code }: { shipmentId: number; code: string }) => {
+      if (!providerId) throw new Error("No encontramos proveedor.");
+      return updateProviderShipmentTracking(providerId, shipmentId, code);
     },
-    onSuccess: (payload) => {
-      setTrackingCode(payload.shipment.tracking_code || "");
+    onSuccess: () => {
       toast.success("Tracking guardado");
-      invalidateShipments();
+      invalidateAll();
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "No pudimos guardar el tracking.");
+      toast.error(error instanceof Error ? error.message : "Error al guardar tracking.");
     },
   });
 
   const statusMutation = useMutation({
-    mutationFn: async ({ status, dispatchParams }: { status: string; dispatchParams?: DispatchConfirmParams }) => {
-      if (!providerId || !selectedId) throw new Error("No encontramos un envio valido.");
-      return updateProviderShipmentStatus(providerId, selectedId, status, dispatchParams);
-    },
-    onSuccess: (payload) => {
-      toast.success(`Envio actualizado a ${statusMeta(payload.shipment.status).label}`);
-      invalidateShipments();
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "No pudimos actualizar el envio.");
-    },
-  });
-
-  const readNotificationMutation = useMutation({
-    mutationFn: async (notificationId: number) => {
-      if (!providerId) throw new Error("No encontramos un proveedor valido.");
-      return markProviderNotificationRead(providerId, notificationId);
+    mutationFn: async ({
+      shipmentId,
+      status,
+      dispatchParams,
+    }: {
+      shipmentId: number;
+      status: string;
+      dispatchParams?: DispatchConfirmParams;
+    }) => {
+      if (!providerId) throw new Error("No encontramos proveedor.");
+      return updateProviderShipmentStatus(providerId, shipmentId, status, dispatchParams);
     },
     onSuccess: () => {
-      toast.success("Notificacion marcada como leida");
-      invalidateShipments();
+      toast.success("Envio actualizado.");
+      invalidateAll();
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "No pudimos actualizar la notificacion.");
+      toast.error(error instanceof Error ? error.message : "Error al actualizar envio.");
     },
   });
 
-  const readAllNotificationsMutation = useMutation({
-    mutationFn: async () => {
-      if (!providerId) throw new Error("No encontramos un proveedor valido.");
-      return markAllProviderNotificationsRead(providerId);
-    },
-    onSuccess: () => {
-      toast.success("Notificaciones marcadas como leidas");
-      invalidateShipments();
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "No pudimos actualizar las notificaciones.");
-    },
-  });
+  const isMutating = trackingMutation.isPending || statusMutation.isPending;
 
-  const items = useMemo(() => shipmentsQuery.data?.items || [], [shipmentsQuery.data]);
-  const notifications = useMemo(() => notificationsQuery.data?.items || [], [notificationsQuery.data]);
-  const unreadNotifications = Number(notificationsQuery.data?.unread) || 0;
-  const selectedShipment = items.find((item) => item.id === selectedId) || null;
-  const isMutating =
-    trackingMutation.isPending ||
-    statusMutation.isPending ||
-    readNotificationMutation.isPending ||
-    readAllNotificationsMutation.isPending;
+  const readyCount = items.filter((s) => s.status === "ready_to_ship").length;
+
+  /* ---- Loading / Error ---- */
 
   if (shipmentsQuery.error) {
     return (
       <DashboardErrorState
         title="No pudimos cargar Envios"
-        description="La ruta React esta lista, pero el endpoint real de shipments no respondio correctamente."
+        description="El endpoint de shipments no respondio correctamente."
       />
     );
   }
 
   if (shipmentsQuery.isLoading || (shipmentsQuery.isFetching && !shipmentsQuery.data)) {
-    return (
-      <DashboardLoadingState
-        title="Armando envios"
-        description="Estamos conectando shipments, tracking y notificaciones reales del proveedor."
-      />
-    );
+    return <DashboardLoadingState title="Cargando envios" description="Conectando shipments reales..." />;
   }
 
   if (!shipmentsQuery.data) {
     return (
       <DashboardEmptyState
         title="No encontramos envios"
-        description="La sesion esta activa, pero no recibimos una respuesta valida para esta vista."
+        description="Sin respuesta valida del backend."
         icon={<AlertTriangle className="h-6 w-6" />}
       />
     );
   }
 
-  const isPickupShipment = selectedShipment?.shipping_method === "retiro_taller";
-  const shipmentHasTracking = !!selectedShipment?.tracking_code;
+  function handleDispatch(shipmentId: number, trackingCode: string) {
+    if (trackingCode.trim()) {
+      // Save tracking first, then mark dispatched
+      void trackingMutation
+        .mutateAsync({ shipmentId, code: trackingCode.trim() })
+        .then(() => {
+          void statusMutation.mutateAsync({ shipmentId, status: "dispatched" });
+        });
+    } else {
+      // Open dispatch confirm dialog for cases without tracking
+      setDispatchShipmentId(shipmentId);
+      setShowDispatchModal(true);
+    }
+  }
+
+  const dispatchShipment = items.find((s) => s.id === dispatchShipmentId) || null;
 
   return (
     <>
-      <ShipmentsContent
-        items={items}
-        notifications={notifications}
-        unreadNotifications={unreadNotifications}
-        selectedShipment={selectedShipment}
-        selectedId={selectedId}
-        statusFilter={statusFilter}
-        trackingCode={trackingCode}
-        onStatusChange={(status) => {
-          if (status === "dispatched") {
-            setShowDispatchModal(true);
-            return;
+      <div className="flex flex-col gap-4">
+        {/* --- PageHeader --- */}
+        <DashboardPageHeader
+          variant="dark"
+          eyebrow="LOGISTICA OPERATIVA"
+          title="Mis envios"
+          description="Seguimiento de despachos activos. Confirma cada envio con numero de tracking."
+          metaPills={
+            <>
+              {readyCount > 0 && (
+                <DashboardStatePill tone="warning">
+                  {readyCount} listo/s para despachar
+                </DashboardStatePill>
+              )}
+              <DashboardStatePill tone="info">
+                {items.length} envios activos
+              </DashboardStatePill>
+              {shipmentsQuery.isFetching && (
+                <DashboardStatePill tone="warning">Actualizando</DashboardStatePill>
+              )}
+            </>
           }
-          const label = statusMeta(status).label.toLowerCase();
-          if (!window.confirm(`Confirmar cambio de estado a ${label}?`)) return;
-          void statusMutation.mutateAsync({ status });
-        }}
-        onRefresh={() => {
-          void shipmentsQuery.refetch();
-          void notificationsQuery.refetch();
-        }}
-        onSelectShipment={(shipment) => {
-          setSelectedId(shipment.id);
-          setTrackingCode(shipment.tracking_code || "");
-        }}
-        onTrackingCodeChange={setTrackingCode}
-        onSaveTracking={() => void trackingMutation.mutateAsync()}
-        onMarkNotificationRead={(id) => void readNotificationMutation.mutateAsync(id)}
-        onMarkAllNotificationsRead={() => void readAllNotificationsMutation.mutateAsync()}
-        isFetching={shipmentsQuery.isFetching || notificationsQuery.isFetching}
-        isMutating={isMutating}
-      />
+          actions={
+            <Button
+              type="button"
+              variant="outline"
+              className="h-[38px] rounded-[10px] border-white/15 bg-white/10 px-4 font-[Montserrat] text-[13px] font-semibold text-white hover:bg-white/20"
+              onClick={() => void shipmentsQuery.refetch()}
+              disabled={shipmentsQuery.isFetching}
+            >
+              {shipmentsQuery.isFetching ? (
+                <LoaderCircle className="mr-1.5 h-[15px] w-[15px] animate-spin" />
+              ) : (
+                <RefreshCcw className="mr-1.5 h-[15px] w-[15px]" />
+              )}
+              Recargar
+            </Button>
+          }
+        />
+
+        {/* --- Status strip (4 cols) --- */}
+        <section className="grid grid-cols-4 gap-[11px]">
+          {STATUS_STRIP_ORDER.map((key) => (
+            <StatusStripCard
+              key={key}
+              statusKey={key}
+              count={items.filter((s) => s.status === key).length}
+            />
+          ))}
+        </section>
+
+        {/* --- Shipment cards --- */}
+        <section className="flex flex-col gap-[9px]">
+          {items.length ? (
+            items.map((shipment) => (
+              <ShipmentCard
+                key={shipment.id}
+                shipment={shipment}
+                onDispatch={(trackingCode) =>
+                  handleDispatch(shipment.id, trackingCode)
+                }
+                isMutating={isMutating}
+              />
+            ))
+          ) : (
+            <DashboardEmptyState
+              title="No hay envios"
+              description="Todavia no hay shipments creados para tu cuenta."
+              icon={<Truck className="h-6 w-6" />}
+              className="min-h-[200px]"
+            />
+          )}
+        </section>
+      </div>
 
       <DispatchConfirmDialog
         open={showDispatchModal}
         onOpenChange={setShowDispatchModal}
-        orderId={selectedShipment?.cotizacion_id ?? selectedShipment?.id}
-        isPickup={isPickupShipment}
-        hasTracking={shipmentHasTracking}
+        orderId={dispatchShipment?.cotizacion_id ?? dispatchShipment?.id}
+        isPickup={dispatchShipment?.shipping_method === "retiro_taller"}
+        hasTracking={!!dispatchShipment?.tracking_code}
         isSubmitting={statusMutation.isPending}
         onConfirm={(params) => {
           setShowDispatchModal(false);
-          void statusMutation.mutateAsync({ status: "dispatched", dispatchParams: params });
+          if (dispatchShipmentId) {
+            void statusMutation.mutateAsync({
+              shipmentId: dispatchShipmentId,
+              status: "dispatched",
+              dispatchParams: params,
+            });
+          }
         }}
       />
     </>

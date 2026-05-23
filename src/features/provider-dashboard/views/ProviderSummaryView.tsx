@@ -1,19 +1,28 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  AlertTriangle,
   ArrowRight,
-  BadgeCheck,
   CheckCircle2,
   CircleDashed,
   ClipboardList,
+  Eye,
+  FileText,
   PackageOpen,
+  RefreshCcw,
+  Shield,
   Sparkles,
+  UserCircle,
   Wallet,
+  Boxes,
+  AlertCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { fetchProviderSummary } from "@/features/provider-dashboard/api";
+import {
+  fetchProviderSummary,
+  fetchProviderQuotes,
+  fetchProviderProfile,
+} from "@/features/provider-dashboard/api";
 import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
 import { DashboardPanel } from "@/features/provider-dashboard/components/DashboardPanel";
@@ -24,10 +33,13 @@ import {
 import { DashboardStatePill } from "@/features/provider-dashboard/components/DashboardStatePill";
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
 import type {
-  DashboardOnboardingStage,
+  DashboardMaterial,
+  DashboardQuoteMatch,
   ProviderSummaryResponse,
 } from "@/features/provider-dashboard/types";
 import { cn } from "@/lib/utils";
+
+/* ---------- helpers ---------- */
 
 const onboardingCopy: Record<string, string> = {
   SIN_IMPRESORAS_ACTIVAS: "Definir impresoras activas",
@@ -77,30 +89,245 @@ function greetByHour(): string {
   return "Buenas noches";
 }
 
-function ReadyRow({ label, ok, pending }: { label: string; ok: boolean; pending: string }) {
+const quoteStatusCopy: Record<string, { label: string; tone: "success" | "warning" | "danger" | "info" | "muted" }> = {
+  quoted: { label: "Pendiente", tone: "warning" },
+  selected_pending_payment: { label: "En revision", tone: "info" },
+  paid_confirmed: { label: "Aceptada", tone: "success" },
+  won: { label: "Aceptada", tone: "success" },
+  not_selected: { label: "Vencida", tone: "danger" },
+  payment_rejected: { label: "Rechazada", tone: "danger" },
+  expired: { label: "Vencida", tone: "danger" },
+};
+
+function quoteStatusMeta(status?: string | null) {
+  if (!status) return { label: "Pendiente", tone: "warning" as const };
+  return quoteStatusCopy[status] ?? { label: status.replaceAll("_", " "), tone: "muted" as const };
+}
+
+/* ---------- ReadyRow matching mockup ---------- */
+
+function ReadyRow({
+  status,
+  title,
+  sub,
+  pillLabel,
+  pillTone,
+}: {
+  status: "ok" | "pend" | "idle" | "bad";
+  title: string;
+  sub: string;
+  pillLabel: string;
+  pillTone: "success" | "warning" | "muted" | "danger";
+}) {
+  const iconColors: Record<string, string> = {
+    ok: "bg-emerald-500/15 text-emerald-400",
+    pend: "bg-amber-500/15 text-amber-400",
+    bad: "bg-rose-500/15 text-rose-400",
+    idle: "bg-white/5 text-[var(--c3d-text-faint)]",
+  };
+
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-4 py-3">
-      <div className="flex items-center gap-3">
-        {ok ? (
-          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-        ) : (
-          <CircleDashed className="h-4 w-4 text-[var(--c3d-text-faint)]" />
-        )}
-        <span className="text-sm text-[var(--c3d-text-strong)]">{label}</span>
+    <div className="flex items-center justify-between rounded-[11px] border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-[13px] py-[11px]">
+      <div className="flex items-center gap-[11px]">
+        <div
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+            iconColors[status]
+          )}
+        >
+          {status === "ok" ? (
+            <CheckCircle2 className="h-4 w-4" />
+          ) : status === "pend" ? (
+            <AlertCircle className="h-4 w-4" />
+          ) : (
+            <CircleDashed className="h-4 w-4" />
+          )}
+        </div>
+        <div>
+          <p className="font-[Montserrat] text-[13px] font-bold leading-[1.3] text-[var(--c3d-text-strong)]">
+            {title}
+          </p>
+          <p className="mt-0.5 font-[Montserrat] text-[11px] font-medium leading-[1.4] text-[var(--c3d-text-muted)]">
+            {sub}
+          </p>
+        </div>
       </div>
-      <DashboardStatePill tone={ok ? "success" : "muted"} className="border-white/10 bg-white/5">
-        {ok ? "OK" : pending}
-      </DashboardStatePill>
+      <DashboardStatePill tone={pillTone}>{pillLabel}</DashboardStatePill>
     </div>
   );
 }
 
-function SummaryContent({ summary }: { summary: ProviderSummaryResponse }) {
+/* ---------- DataRow matching mockup ---------- */
+
+function DataRow({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="grid grid-cols-[1fr_auto] items-center gap-x-[18px] gap-y-2 border-t border-[var(--c3d-card-border-soft)] px-0 py-[10px] first:border-t-0 first:pt-0.5">
+      <span className="font-[Montserrat] text-xs font-semibold leading-[1.3] text-[var(--c3d-text-muted)]">
+        {label}
+      </span>
+      <span
+        className={cn(
+          "font-[Montserrat] text-[13px] font-bold leading-[1.3] text-[var(--c3d-text-strong)] text-right",
+          valueClassName
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+/* ---------- MatItem matching mockup ---------- */
+
+function MatItem({
+  name,
+  sub,
+  stockValue,
+  stockUnit,
+  colorHex,
+  isLow,
+}: {
+  name: string;
+  sub: string;
+  stockValue: string;
+  stockUnit: string;
+  colorHex?: string;
+  isLow?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-[11px] rounded-[11px] border border-[var(--c3d-card-border)] p-[9px]">
+      <div className="flex h-[38px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[var(--c3d-card-bg-alt)]">
+        {colorHex ? (
+          <div
+            className="h-7 w-7 rounded-md border border-white/10"
+            style={{ background: colorHex }}
+          />
+        ) : (
+          <Boxes className="h-4 w-4 text-[var(--c3d-text-faint)]" />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-[Montserrat] text-[13px] font-bold leading-[1.2] text-[var(--c3d-text-strong)]">
+          {name}
+        </p>
+        <p className="mt-0.5 font-[Montserrat] text-[11px] font-medium leading-[1.3] text-[var(--c3d-text-muted)]">
+          {sub}
+        </p>
+      </div>
+      <div className="ml-auto text-right">
+        <p
+          className={cn(
+            "font-[Montserrat] text-sm font-extrabold tabular-nums text-[var(--c3d-text-strong)]",
+            isLow && "text-amber-400"
+          )}
+        >
+          {stockValue}
+        </p>
+        <p className="mt-0.5 font-[Montserrat] text-[9px] font-bold uppercase tracking-[0.16em] text-[var(--c3d-text-muted)]">
+          {stockUnit}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- QuotesTable matching mockup ---------- */
+
+function QuotesTable({ quotes }: { quotes: DashboardQuoteMatch[] }) {
+  if (!quotes.length) {
+    return (
+      <div className="px-6 py-8 text-center font-[Montserrat] text-sm text-[var(--c3d-text-muted)]">
+        No hay cotizaciones abiertas en este momento.
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ paddingBottom: 4 }}>
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className="px-[11px] py-2 text-left font-[Montserrat] text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--c3d-text-faint)] border-b border-[var(--c3d-card-border-soft)]" style={{ paddingLeft: 24 }}>
+              Cotizacion
+            </th>
+            <th className="px-[11px] py-2 text-left font-[Montserrat] text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--c3d-text-faint)] border-b border-[var(--c3d-card-border-soft)]">
+              Material
+            </th>
+            <th className="px-[11px] py-2 text-left font-[Montserrat] text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--c3d-text-faint)] border-b border-[var(--c3d-card-border-soft)]">
+              Cant.
+            </th>
+            <th className="px-[11px] py-2 text-left font-[Montserrat] text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--c3d-text-faint)] border-b border-[var(--c3d-card-border-soft)]">
+              Sugerido
+            </th>
+            <th className="px-[11px] py-2 text-left font-[Montserrat] text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--c3d-text-faint)] border-b border-[var(--c3d-card-border-soft)]" style={{ paddingRight: 24 }}>
+              Estado
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {quotes.slice(0, 5).map((q) => {
+            const sm = quoteStatusMeta(q.estado);
+            return (
+              <tr key={q.id} className="transition-colors hover:bg-primary/[0.025]">
+                <td className="border-b border-[var(--c3d-card-border-soft)] px-[11px] py-[11px] align-middle" style={{ paddingLeft: 24 }}>
+                  <div className="flex items-center gap-[9px]">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 text-primary">
+                      <FileText className="h-[17px] w-[17px]" />
+                    </div>
+                    <div>
+                      <p className="font-[Montserrat] text-[13px] font-bold leading-none text-[var(--c3d-text-strong)]">
+                        {q.quote_uid || `#${q.id}`}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+                <td className="border-b border-[var(--c3d-card-border-soft)] px-[11px] py-[11px] align-middle font-[Montserrat] text-[13px] font-medium text-[var(--c3d-text-strong)]">
+                  {q.material ?? "Sin mat."}
+                  {q.color ? ` ${q.color}` : ""}
+                </td>
+                <td className="border-b border-[var(--c3d-card-border-soft)] px-[11px] py-[11px] align-middle font-[Montserrat] text-[13px] font-medium text-[var(--c3d-text-strong)]">
+                  x{Number(q.cantidad) || 1}
+                </td>
+                <td className="border-b border-[var(--c3d-card-border-soft)] px-[11px] py-[11px] align-middle font-[Montserrat] text-[13px] font-extrabold tabular-nums text-[var(--c3d-text-strong)]">
+                  {q.precio_final != null ? formatMoney(q.precio_final) : "-"}
+                </td>
+                <td className="border-b border-[var(--c3d-card-border-soft)] px-[11px] py-[11px] align-middle" style={{ paddingRight: 24 }}>
+                  <DashboardStatePill tone={sm.tone}>{sm.label}</DashboardStatePill>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ---------- SummaryContent ---------- */
+
+function SummaryContent({
+  summary,
+  quotes,
+  materials,
+}: {
+  summary: ProviderSummaryResponse;
+  quotes: DashboardQuoteMatch[];
+  materials: DashboardMaterial[];
+}) {
   const m = summary.metrics;
   const provider = summary.provider;
-  const providerName = (provider as Record<string, unknown>).nombre_comercial as string | undefined
-    || provider.nombre
-    || "Proveedor";
+  const providerName =
+    (provider as Record<string, unknown>).nombre_comercial as string | undefined ||
+    provider.nombre ||
+    "Proveedor";
 
   const scoreDeltaText = useMemo(() => {
     const d = m.score_delta_30d;
@@ -127,8 +354,49 @@ function SummaryContent({ summary }: { summary: ProviderSummaryResponse }) {
     return curr > prev ? "up" : curr < prev ? "down" : "flat";
   }, [m.revenue_month, m.revenue_prev_month]);
 
+  const pendingCount =
+    (summary.onboarding.quote_stage?.missing?.length ?? 0) +
+    (summary.onboarding.visibility_stage?.missing?.length ?? 0) +
+    (summary.onboarding.order_stage?.missing?.length ?? 0);
+
+  const hasLegalData =
+    !!(provider as Record<string, unknown>).cuit &&
+    !!(provider as Record<string, unknown>).nombre_legal;
+
+  const hasMpLinked = summary.readiness.order_ready;
+
+  const activeMaterials = materials.filter((mat) => mat.activo);
+
+  // CTA: first missing onboarding action
+  const ctaAction = useMemo(() => {
+    if (!hasMpLinked) {
+      return {
+        icon: <Wallet className="h-[22px] w-[22px]" />,
+        eyebrow: "Siguiente accion",
+        title: "Vincula MercadoPago",
+        description:
+          "Es el ultimo paso para aceptar pedidos directos. Toma menos de 3 minutos con tu cuenta operativa.",
+        href: "/proveedores-v2/perfil",
+        buttonLabel: "Vincular ahora",
+      };
+    }
+    if (nextAction) {
+      return {
+        icon: <AlertCircle className="h-[22px] w-[22px]" />,
+        eyebrow: "Siguiente accion",
+        title: nextAction.label,
+        description:
+          "Resolver esto desbloquea la siguiente capa de readiness para tu proveedor.",
+        href: "/proveedores-v2/perfil",
+        buttonLabel: "Ir a configurar",
+      };
+    }
+    return null;
+  }, [hasMpLinked, nextAction]);
+
   return (
-    <div className="space-y-5">
+    <div className="flex flex-col gap-4">
+      {/* --- PageHeader --- */}
       <DashboardPageHeader
         variant="dark"
         eyebrow="PANORAMA OPERATIVO"
@@ -141,46 +409,53 @@ function SummaryContent({ summary }: { summary: ProviderSummaryResponse }) {
         metaPills={
           <>
             <DashboardStatePill
-              tone={provider.estado === "activo" ? "success" : "warning"}
-              className="border-white/10 bg-white/5"
+              tone={provider.estado === "activo" || provider.estado === "active" ? "success" : "warning"}
             >
-              {provider.estado === "activo" ? "Participacion activa" : "En configuracion"}
+              {provider.estado === "activo" || provider.estado === "active"
+                ? "Participacion activa"
+                : "En configuracion"}
             </DashboardStatePill>
             <DashboardStatePill
               tone={summary.effective_permissions.visible_in_marketplace ? "info" : "muted"}
-              className="border-white/10 bg-white/5"
             >
               {summary.effective_permissions.visible_in_marketplace
                 ? "Visible en marketplace"
                 : "No visible"}
             </DashboardStatePill>
-            {summary.onboarding.quote_stage?.missing?.length ||
-            summary.onboarding.visibility_stage?.missing?.length ||
-            summary.onboarding.order_stage?.missing?.length ? (
-              <DashboardStatePill tone="warning" className="border-white/10 bg-white/5">
-                {(summary.onboarding.quote_stage?.missing?.length ?? 0) +
-                  (summary.onboarding.visibility_stage?.missing?.length ?? 0) +
-                  (summary.onboarding.order_stage?.missing?.length ?? 0)}{" "}
-                validaciones pendientes
+            {pendingCount > 0 ? (
+              <DashboardStatePill tone="warning">
+                {pendingCount} validaciones pendientes
               </DashboardStatePill>
             ) : null}
           </>
         }
         actions={
-          <Button
-            asChild
-            className="h-10 rounded-xl border border-white/15 bg-gradient-to-r from-primary to-cyan-500 px-5 text-sm font-semibold text-white hover:from-primary/90 hover:to-cyan-500/90"
-          >
-            <a href="/proveedores-v2/cotizaciones">
-              Ver cotizaciones
-              <ArrowRight className="ml-1.5 h-4 w-4" />
-            </a>
-          </Button>
+          <>
+            <Button
+              asChild
+              variant="outline"
+              className="h-[38px] rounded-[10px] border-white/15 bg-white/10 px-[15px] font-[Montserrat] text-[13px] font-semibold text-white hover:bg-white/20"
+            >
+              <a href="/proveedores-v2/cotizaciones">
+                <RefreshCcw className="mr-1.5 h-[15px] w-[15px]" />
+                Actualizar
+              </a>
+            </Button>
+            <Button
+              asChild
+              className="h-[38px] rounded-[10px] bg-gradient-to-r from-primary to-cyan-500 px-[17px] font-[Montserrat] text-[13px] font-bold text-white shadow-[0_4px_20px_hsl(220_70%_45%/0.35)] hover:from-primary/90 hover:to-cyan-500/90"
+            >
+              <a href="/proveedores-v2/cotizaciones">
+                Ver cotizaciones
+                <ArrowRight className="ml-1.5 h-[15px] w-[15px]" />
+              </a>
+            </Button>
+          </>
         }
       />
 
-      {/* Metric grid — 4 cards */}
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      {/* --- Metric grid (4 cols) --- */}
+      <section className="grid grid-cols-4 gap-[11px]">
         <DashboardMetricCard
           title="Cotizaciones activas"
           value={formatCount(m.cotizaciones_participadas)}
@@ -203,7 +478,10 @@ function SummaryContent({ summary }: { summary: ProviderSummaryResponse }) {
           value={formatMoney(m.revenue_month ?? 0)}
           support={`Mes anterior: ${formatMoney(m.revenue_prev_month ?? 0)}`}
           icon={<Wallet className="h-5 w-5" />}
-          trend={{ direction: revenueTrendDirection, text: `vs ${formatMoney(m.revenue_prev_month ?? 0)} anterior` }}
+          trend={{
+            direction: revenueTrendDirection,
+            text: `vs ${formatMoney(m.revenue_prev_month ?? 0)} anterior`,
+          }}
           sparkline={m.sparkline_revenue_7d || [0, 0, 0, 0, 0, 0, 0]}
         />
         <DashboardMetricCard
@@ -211,199 +489,221 @@ function SummaryContent({ summary }: { summary: ProviderSummaryResponse }) {
           value={`${summary.profile_score}`}
           valueSuffix="/100"
           support="Nivel de completitud operacional"
-          icon={<Sparkles className="h-5 w-5" />}
+          icon={<Shield className="h-5 w-5" />}
           trend={
             scoreDeltaText
-              ? { direction: (m.score_delta_30d ?? 0) >= 0 ? "up" : "down", text: scoreDeltaText }
+              ? {
+                  direction: (m.score_delta_30d ?? 0) >= 0 ? "up" : "down",
+                  text: scoreDeltaText,
+                }
               : { direction: "flat", text: "Sin historico aun" }
           }
         />
       </section>
 
-      {/* Row 2: Estado del perfil + Siguiente accion */}
-      <section className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
+      {/* --- Row 2: Cotizaciones abiertas (1.4fr) + Estado del perfil (1fr) --- */}
+      <section className="grid grid-cols-[1.4fr_1fr] gap-[14px]">
         <DashboardPanel
-          title="Estado del perfil"
-          description="Habilitaciones criticas para participar en cotizaciones, ser visible y aceptar pedidos."
+          eyebrow="Accion requerida"
+          icon={<ClipboardList className="h-[17px] w-[17px]" />}
+          title="Cotizaciones abiertas"
+          description="Ordenadas por cierre de ventana."
+          headerAction={
+            <Button
+              asChild
+              variant="outline"
+              className="h-[34px] rounded-[10px] border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-3 font-[Montserrat] text-[12px] font-semibold text-[var(--c3d-text-muted)] hover:bg-white/10"
+            >
+              <a href="/proveedores-v2/cotizaciones">
+                Ver todas
+                <ArrowRight className="ml-1 h-[13px] w-[13px]" />
+              </a>
+            </Button>
+          }
+          contentClassName="p-0"
         >
-          <div className="space-y-2.5">
-            <ReadyRow
-              label="Cotizaciones"
-              ok={summary.readiness.quote_ready}
-              pending="Faltan requisitos"
-            />
-            <ReadyRow
-              label="Marketplace"
-              ok={summary.readiness.visibility_ready}
-              pending="No visible aun"
-            />
-            <ReadyRow
-              label="Pedidos directos"
-              ok={summary.readiness.order_ready}
-              pending="Falta vincular MP"
-            />
-            <ReadyRow
-              label="Datos legales"
-              ok={
-                !!(provider as Record<string, unknown>).cuit &&
-                !!(provider as Record<string, unknown>).nombre_legal
-              }
-              pending="Faltan CUIT/razon social"
-            />
-          </div>
+          <QuotesTable quotes={quotes} />
         </DashboardPanel>
 
         <DashboardPanel
-          title="Siguiente accion"
-          description={
-            nextAction
-              ? "La tarea mas importante para avanzar tu operacion."
-              : "Tu perfil esta completo. Segui atendiendo cotizaciones."
-          }
+          eyebrow="Habilitaciones"
+          icon={<CheckCircle2 className="h-[17px] w-[17px]" />}
+          title="Estado del perfil"
+          description="Que se puede hacer hoy en la plataforma."
         >
-          {nextAction ? (
-            <div className="flex flex-col items-start gap-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-400" />
-                <p className="font-semibold text-[var(--c3d-text-strong)]">
-                  {nextAction.label}
-                </p>
-              </div>
-              <p className="text-sm text-[var(--c3d-text-muted)]">
-                Resolver esto desbloquea la siguiente capa de readiness para tu proveedor.
-              </p>
-              <Button
-                asChild
-                variant="outline"
-                className="rounded-xl border-white/15 bg-white/10 px-4 text-sm text-white hover:bg-white/20"
-              >
-                <a href="/proveedores-v2/perfil">Ir a configurar</a>
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
-              <BadgeCheck className="h-5 w-5 text-emerald-400" />
-              <p className="text-sm text-emerald-300">
-                Perfil completo. Segui atendiendo cotizaciones y pedidos.
-              </p>
-            </div>
-          )}
+          <div className="flex flex-col gap-[7px]">
+            <ReadyRow
+              status={summary.readiness.quote_ready ? "ok" : "pend"}
+              title="Cotizaciones"
+              sub={
+                summary.readiness.quote_ready
+                  ? "Impresoras y stock activos."
+                  : "Faltan requisitos."
+              }
+              pillLabel={summary.readiness.quote_ready ? "Operativa" : "Pendiente"}
+              pillTone={summary.readiness.quote_ready ? "success" : "warning"}
+            />
+            <ReadyRow
+              status={summary.readiness.visibility_ready ? "ok" : "pend"}
+              title="Marketplace"
+              sub={
+                summary.readiness.visibility_ready
+                  ? "Coordenadas validadas."
+                  : "No visible aun."
+              }
+              pillLabel={summary.readiness.visibility_ready ? "Visible" : "Pendiente"}
+              pillTone={summary.readiness.visibility_ready ? "success" : "warning"}
+            />
+            <ReadyRow
+              status={summary.readiness.order_ready ? "ok" : "pend"}
+              title="Pedidos directos"
+              sub={
+                summary.readiness.order_ready
+                  ? "MercadoPago vinculado."
+                  : "Falta vincular MercadoPago."
+              }
+              pillLabel={summary.readiness.order_ready ? "Activo" : "1 paso"}
+              pillTone={summary.readiness.order_ready ? "success" : "warning"}
+            />
+            <ReadyRow
+              status={hasLegalData ? "ok" : "idle"}
+              title="Datos legales"
+              sub={
+                hasLegalData
+                  ? "CUIT y razon social completos."
+                  : "CUIT y razon social pendientes."
+              }
+              pillLabel={hasLegalData ? "Completo" : "Pendiente"}
+              pillTone={hasLegalData ? "success" : "muted"}
+            />
+          </div>
         </DashboardPanel>
       </section>
 
-      {/* Row 3: Datos comerciales + Onboarding + Bloqueos */}
-      <section className="grid gap-5 xl:grid-cols-3">
-        <DashboardPanel title="Datos comerciales">
-          <div className="grid gap-2.5 sm:grid-cols-2">
-            {[
-              { label: "Nombre", value: providerName },
-              {
-                label: "CUIT",
-                value: (provider as Record<string, unknown>).cuit as string || "Pendiente",
-              },
-              {
-                label: "Ubicacion",
-                value:
-                  [provider.localidad, provider.provincia].filter(Boolean).join(", ") ||
-                  "Pendiente",
-              },
-              {
-                label: "Tiempo de entrega",
-                value:
-                  provider.tiempo_entrega_dias != null
-                    ? `${provider.tiempo_entrega_dias} dias`
-                    : "Pendiente",
-              },
-              {
-                label: "Trabajo minimo",
-                value:
-                  provider.min_trabajo != null
-                    ? formatMoney(provider.min_trabajo)
-                    : "Pendiente",
-              },
-              {
-                label: "Calificacion",
-                value:
-                  (provider as Record<string, unknown>).calificacion != null
-                    ? `★ ${Number((provider as Record<string, unknown>).calificacion).toFixed(1)}`
-                    : "Sin calificar",
-              },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-2xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] p-3.5"
-              >
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--c3d-text-faint)]">
-                  {item.label}
-                </p>
-                <p className="mt-1.5 font-[Montserrat] text-sm font-bold text-[var(--c3d-text-strong)]">
-                  {item.value}
-                </p>
-              </div>
-            ))}
+      {/* --- Row 3: Datos comerciales (1.1fr) + Materiales activos (1fr) + CTA (1fr) --- */}
+      <section className="grid grid-cols-[1.1fr_1fr_1fr] gap-[14px]">
+        <DashboardPanel
+          eyebrow="Perfil"
+          icon={<UserCircle className="h-[17px] w-[17px]" />}
+          title="Datos comerciales"
+        >
+          <div>
+            <DataRow label="Nombre comercial" value={providerName} />
+            <DataRow
+              label="CUIT"
+              value={
+                ((provider as Record<string, unknown>).cuit as string) || "Pendiente"
+              }
+            />
+            <DataRow
+              label="Ubicacion"
+              value={
+                [provider.localidad, provider.provincia].filter(Boolean).join(" - ") ||
+                "Pendiente"
+              }
+            />
+            <DataRow
+              label="Tiempo de entrega"
+              value={
+                provider.tiempo_entrega_dias != null
+                  ? `${provider.tiempo_entrega_dias} dias`
+                  : "Pendiente"
+              }
+            />
+            <DataRow
+              label="Trabajo minimo"
+              value={
+                provider.min_trabajo != null
+                  ? formatMoney(provider.min_trabajo)
+                  : "Pendiente"
+              }
+            />
           </div>
         </DashboardPanel>
 
-        <DashboardPanel title="Checklist de onboarding">
-          <div className="space-y-2">
-            {(
-              [
-                { label: "Cotizaciones", stage: summary.onboarding.quote_stage },
-                { label: "Marketplace", stage: summary.onboarding.visibility_stage },
-                { label: "Pedidos", stage: summary.onboarding.order_stage },
-                { label: "Plus de perfil", stage: summary.onboarding.optional_stage },
-              ] as { label: string; stage?: DashboardOnboardingStage }[]
-            ).map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center justify-between rounded-2xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-4 py-3"
-              >
-                <div className="flex items-center gap-3">
-                  {item.stage?.complete ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                  ) : (
-                    <CircleDashed className="h-4 w-4 text-[var(--c3d-text-faint)]" />
-                  )}
-                  <span className="text-sm text-[var(--c3d-text-strong)]">{item.label}</span>
-                </div>
-                <DashboardStatePill
-                  tone={item.stage?.complete ? "success" : "warning"}
-                  className="border-white/10 bg-white/5"
-                >
-                  {item.stage?.complete ? "Completa" : `${item.stage?.missing?.length ?? 0} pendientes`}
-                </DashboardStatePill>
-              </div>
-            ))}
+        <DashboardPanel
+          eyebrow="Inventario"
+          icon={<Boxes className="h-[17px] w-[17px]" />}
+          title="Materiales activos"
+        >
+          <div className="flex flex-col gap-[7px]">
+            {activeMaterials.length ? (
+              activeMaterials.slice(0, 4).map((mat) => {
+                const mainColor = mat.colores?.find((c) => c.activo)?.color_hex ?? undefined;
+                const stockKg =
+                  mat.stock_qty_grams != null
+                    ? (mat.stock_qty_grams / 1000).toFixed(1)
+                    : "?";
+                const isLow = mat.stock_status === "low" || mat.stock_status === "out";
+                return (
+                  <MatItem
+                    key={mat.id}
+                    name={mat.material_code}
+                    sub={`${formatMoney(mat.precio_hora)}/hr`}
+                    stockValue={stockKg}
+                    stockUnit="kg stock"
+                    colorHex={mainColor}
+                    isLow={isLow}
+                  />
+                );
+              })
+            ) : (
+              <p className="py-4 text-center font-[Montserrat] text-sm text-[var(--c3d-text-muted)]">
+                Sin materiales cargados.
+              </p>
+            )}
           </div>
         </DashboardPanel>
 
-        <DashboardPanel title="Bloqueos prioritarios">
-          {summary.readiness.blocking_reasons.length ? (
-            <div className="space-y-2">
-              {summary.readiness.blocking_reasons.slice(0, 5).map((reason, i) => (
-                <div
-                  key={reason}
-                  className="flex items-start gap-3 rounded-2xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-4 py-3"
-                >
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
-                    {i + 1}
-                  </span>
-                  <span className="text-sm text-[var(--c3d-text-muted)]">
-                    {humanizeReason(reason)}
-                  </span>
-                </div>
-              ))}
+        {/* CTA Panel — dark gradient matching mockup */}
+        {ctaAction ? (
+          <div className="relative overflow-hidden rounded-[17px] border border-white/8 bg-gradient-to-b from-[hsl(220,30%,8%)] to-[hsl(220,25%,14%)] p-5">
+            {/* Glow effect */}
+            <div className="pointer-events-none absolute -bottom-[60px] -right-[60px] h-[220px] w-[220px] rounded-full bg-[radial-gradient(circle,hsl(220_70%_45%/0.5)_0%,transparent_70%)]" />
+            <div className="relative">
+              <div className="mb-[11px] flex h-[44px] w-[44px] items-center justify-center rounded-xl bg-gradient-to-br from-primary to-cyan-500 text-white">
+                {ctaAction.icon}
+              </div>
+              <p className="mb-1.5 font-[Montserrat] text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
+                {ctaAction.eyebrow}
+              </p>
+              <h4 className="mb-[7px] font-[Montserrat] text-[17px] font-extrabold leading-[1.25] tracking-[-0.005em] text-white">
+                {ctaAction.title}
+              </h4>
+              <p className="mb-[15px] font-[Montserrat] text-xs font-medium leading-[1.6] text-[hsl(220,15%,65%)]">
+                {ctaAction.description}
+              </p>
+              <Button
+                asChild
+                className="h-[38px] rounded-[10px] bg-gradient-to-r from-primary to-cyan-500 px-[17px] font-[Montserrat] text-[13px] font-bold text-white shadow-[0_4px_20px_hsl(220_70%_45%/0.35)] hover:from-primary/90 hover:to-cyan-500/90"
+              >
+                <a href={ctaAction.href}>
+                  {ctaAction.buttonLabel}
+                  <ArrowRight className="ml-1.5 h-[15px] w-[15px]" />
+                </a>
+              </Button>
             </div>
-          ) : (
-            <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/5 p-4 text-sm text-emerald-300">
-              Sin bloqueos criticos detectados.
+          </div>
+        ) : (
+          <div className="relative overflow-hidden rounded-[17px] border border-white/8 bg-gradient-to-b from-[hsl(220,30%,8%)] to-[hsl(220,25%,14%)] p-5">
+            <div className="pointer-events-none absolute -bottom-[60px] -right-[60px] h-[220px] w-[220px] rounded-full bg-[radial-gradient(circle,hsl(220_70%_45%/0.5)_0%,transparent_70%)]" />
+            <div className="relative flex flex-col items-center justify-center py-6 text-center">
+              <CheckCircle2 className="mb-3 h-8 w-8 text-emerald-400" />
+              <h4 className="font-[Montserrat] text-[15px] font-bold text-white">
+                Perfil completo
+              </h4>
+              <p className="mt-2 font-[Montserrat] text-xs font-medium leading-[1.6] text-[hsl(220,15%,65%)]">
+                Segui atendiendo cotizaciones y pedidos.
+              </p>
             </div>
-          )}
-        </DashboardPanel>
+          </div>
+        )}
       </section>
     </div>
   );
 }
+
+/* ---------- Main export ---------- */
 
 export function ProviderSummaryView() {
   const { providerId } = useProviderDashboardSession();
@@ -415,7 +715,26 @@ export function ProviderSummaryView() {
     staleTime: 30_000,
   });
 
+  const quotesQuery = useQuery({
+    queryKey: ["provider-dashboard", "quotes", providerId],
+    queryFn: () => fetchProviderQuotes(providerId!),
+    enabled: providerId != null,
+    staleTime: 30_000,
+  });
+
+  const profileQuery = useQuery({
+    queryKey: ["provider-dashboard", "profile", providerId],
+    queryFn: () => fetchProviderProfile(providerId!),
+    enabled: providerId != null,
+    staleTime: 60_000,
+  });
+
   const summary = useMemo(() => summaryQuery.data, [summaryQuery.data]);
+  const quotes = useMemo(() => quotesQuery.data?.items || [], [quotesQuery.data]);
+  const materials = useMemo(
+    () => profileQuery.data?.materials || [],
+    [profileQuery.data]
+  );
 
   if (summaryQuery.isLoading || summaryQuery.isFetching) {
     return <DashboardLoadingState />;
@@ -430,5 +749,7 @@ export function ProviderSummaryView() {
     );
   }
 
-  return <SummaryContent summary={summary} />;
+  return (
+    <SummaryContent summary={summary} quotes={quotes} materials={materials} />
+  );
 }

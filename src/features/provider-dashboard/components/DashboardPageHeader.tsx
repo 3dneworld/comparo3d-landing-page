@@ -55,13 +55,13 @@ export function DashboardPageHeader({
           ) : null}
         </div>
 
-        {/* lowband — blanca con pills + última sync */}
-        <div className="bg-white border-t border-border/60 px-7 py-[18px] flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-2">
+        {/* lowband — white bg with pills + última sync */}
+        <div className="bg-white border-t border-[hsl(220,15%,88%,0.6)] px-7 py-[14px] flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-[6px]">
             {metaPills ?? meta}
           </div>
           {lastSync ? (
-            <p className="text-xs text-muted-foreground whitespace-nowrap">
+            <p className="text-xs font-[Montserrat] font-medium text-[hsl(220,10%,46%)] whitespace-nowrap">
               Última sync {lastSync}
             </p>
           ) : null}
