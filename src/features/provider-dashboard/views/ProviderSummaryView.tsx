@@ -743,8 +743,10 @@ export function ProviderSummaryView() {
   if (summaryQuery.isError || !summary) {
     return (
       <DashboardErrorState
-        message="No pudimos cargar el resumen del proveedor."
-        onRetry={() => void summaryQuery.refetch()}
+        title="Error al cargar"
+        description="No pudimos cargar el resumen del proveedor."
+        actionLabel="Reintentar"
+        onAction={() => void summaryQuery.refetch()}
       />
     );
   }
