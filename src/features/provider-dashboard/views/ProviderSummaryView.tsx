@@ -630,20 +630,16 @@ function SummaryContent({
             {activeMaterials.length ? (
               activeMaterials.slice(0, 4).map((mat) => {
                 const mainColor = mat.colores?.find((c) => c.activo)?.color_hex ?? undefined;
-                const stockKg =
-                  mat.stock_qty_grams != null
-                    ? (mat.stock_qty_grams / 1000).toFixed(1)
-                    : "?";
-                const isLow = mat.stock_status === "low" || mat.stock_status === "out";
+                const hasStock = mat.in_stock === 1;
                 return (
                   <MatItem
                     key={mat.id}
                     name={mat.material_code}
                     sub={`${formatMoney(mat.precio_hora)}/hr`}
-                    stockValue={stockKg}
-                    stockUnit="kg stock"
+                    stockValue={hasStock ? "Disponible" : "Sin stock"}
+                    stockUnit="estado"
                     colorHex={mainColor}
-                    isLow={isLow}
+                    isLow={!hasStock}
                   />
                 );
               })
