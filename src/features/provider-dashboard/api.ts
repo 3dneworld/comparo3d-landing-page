@@ -35,6 +35,7 @@ import type {
   ProviderShipmentsResponse,
   ProviderSummaryResponse,
   ProviderCompetitivenessResponse,
+  MarketplacePromediosResponse,
 } from "@/features/provider-dashboard/types";
 
 const DASHBOARD_API_BASE = (import.meta.env.VITE_DASHBOARD_API_BASE || "").replace(/\/$/, "");
@@ -398,4 +399,24 @@ export async function logoutDashboardSession() {
   await dashboardFetch<{ success: true; message: string }>("/api/auth/logout", {
     method: "POST",
   });
+}
+
+export async function confirmAllStock(providerId: number) {
+  const res = await fetch(
+    `/api/provider-dashboard/proveedores/${providerId}/materiales/confirmar-stock`,
+    { method: "POST", credentials: "include" }
+  );
+  if (!res.ok) throw new Error(`confirm-stock ${res.status}`);
+  return (await res.json()) as {
+    success: true;
+    materials_updated: number;
+    colors_updated: number;
+    confirmed_at: string;
+  };
+}
+
+export async function fetchMarketplacePromedios(): Promise<MarketplacePromediosResponse> {
+  const res = await fetch("/api/marketplace/precios-promedio", { credentials: "include" });
+  if (!res.ok) throw new Error(`precios-promedio ${res.status}`);
+  return await res.json();
 }

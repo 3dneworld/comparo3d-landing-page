@@ -170,19 +170,17 @@ export interface DashboardMaterialColor {
   color_name: string;
   color_hex?: string | null;
   activo: number;
-  stock_status?: string | null;
-  stock_qty_grams?: number | null;
+  in_stock: number;            // 0 | 1
+  last_confirmed_at?: string | null;
 }
-
-export type DashboardStockStatus = "available" | "low" | "out" | "on_request" | "unknown";
 
 export interface DashboardMaterial {
   id: number;
   material_code: string;
   activo: number;
   precio_hora: number;
-  stock_status?: string | null;
-  stock_qty_grams?: number | null;
+  in_stock: number;
+  last_confirmed_at?: string | null;
   allow_custom_color: number;
   trabajo_minimo_override?: number | null;
   colores: DashboardMaterialColor[];
@@ -192,20 +190,25 @@ export interface DashboardMaterialColorFormPayload {
   color_name: string;
   color_hex: string;
   activo: boolean;
-  stock_status: DashboardStockStatus;
-  stock_qty_grams: number | null;
+  in_stock: boolean;
 }
 
 export interface DashboardMaterialFormPayload {
   material_code: string;
   activo: boolean;
   precio_hora: number;
-  stock_status: DashboardStockStatus;
-  stock_qty_grams: number | null;
+  in_stock: boolean;
   allow_custom_color: boolean;
   trabajo_minimo_override: number | null;
   colores: DashboardMaterialColorFormPayload[];
 }
+
+export interface MarketplacePriceAverage {
+  avg_price_kg: number;
+  sample_count: number;
+}
+
+export type MarketplacePromediosResponse = Record<string, MarketplacePriceAverage>;
 
 export interface DashboardMaterialsFormPayload {
   materiales: DashboardMaterialFormPayload[];
