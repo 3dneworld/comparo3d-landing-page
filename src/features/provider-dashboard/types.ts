@@ -378,6 +378,9 @@ export interface DashboardOrder {
   shipment_tracking_code?: string | null;
   review_reminder_status?: string | null;
   fecha_entrega_estimada?: string | null;
+  cantidad?: number | null;
+  print_time_min?: number | null;
+  transit_days?: number | null;
 }
 
 export interface ProviderOrdersResponse {

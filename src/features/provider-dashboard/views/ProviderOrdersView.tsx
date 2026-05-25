@@ -5,20 +5,29 @@ import {
   AlertTriangle,
   ArrowRight,
   BadgeX,
+  Camera,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
   ChevronUp,
+  Clock,
+  Copy,
   Download,
   ExternalLink,
   FileText,
+  Hash,
   LoaderCircle,
+  Mail,
+  MapPin,
   PackageOpen,
+  Phone,
   Printer,
   RefreshCcw,
   Truck,
   Upload,
+  User,
   Star,
+  X,
 } from "lucide-react";
 
 import {
@@ -122,12 +131,34 @@ function formatDateTime(value?: string | null) {
   if (!value) return "Sin registro";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Sin registro";
-  return new Intl.DateTimeFormat("es-AR", { dateStyle: "medium", timeStyle: "short" }).format(date);
+  const raw = new Intl.DateTimeFormat("es-AR", { dateStyle: "medium", timeStyle: "short" }).format(date);
+  return raw.replace(/\b[a-z]/g, (c) => c.toUpperCase());
 }
 
 function safeText(value?: string | number | null, fallback = "Sin dato") {
   if (value == null || value === "") return fallback;
   return String(value);
+}
+
+function formatDeliveryMethod(method?: string | null): string {
+  if (!method) return "Sin método";
+  const map: Record<string, string> = {
+    paqar_clasico: "PAQ.AR Clásico",
+    paqar_express: "PAQ.AR Express",
+    retiro_taller: "Retiro Taller",
+    envio_local: "Envío Local",
+    envio_propio: "Envío Propio",
+  };
+  return map[method] ?? method.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatPrintHours(minutes?: number | null): string | null {
+  if (minutes == null || minutes <= 0) return null;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
 }
 
 function orderProgress(status?: string | null) {
@@ -188,10 +219,14 @@ function OrderCard({
   order,
   onAction,
   isActioning,
+  onSelect,
+  isSelected,
 }: {
   order: DashboardOrder;
   onAction: (action: "printing" | "ready" | "dispatch" | "cancel") => void;
   isActioning: boolean;
+  onSelect?: () => void;
+  isSelected?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const status = order.order_status || "paid_confirmed";
@@ -202,7 +237,11 @@ function OrderCard({
 
   return (
     <div
-      className="overflow-hidden rounded-[14px] border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg)] shadow-[var(--c3d-card-shadow)] transition-shadow hover:shadow-md"
+      className={cn(
+        "cursor-pointer overflow-hidden rounded-[14px] border bg-[var(--c3d-card-bg)] shadow-[var(--c3d-card-shadow)] transition-all hover:shadow-md",
+        isSelected ? "border-[#3b82f6]/50 ring-1 ring-[#3b82f6]/30" : "border-[var(--c3d-card-border)]"
+      )}
+      onClick={() => onSelect?.()}
     >
       {/* Main row */}
       <div className="flex items-center gap-3 px-4 py-[13px]">
@@ -222,8 +261,13 @@ function OrderCard({
             </span>
             <span className="font-[Montserrat] text-xs font-medium text-[var(--c3d-text-muted)]">
               {safeText(order.client_name, "")}
-              {order.delivery_method ? ` - ${order.delivery_method.replaceAll("_", " ")}` : ""}
+              {order.delivery_method ? ` - ${formatDeliveryMethod(order.delivery_method)}` : ""}
             </span>
+            {order.print_time_min ? (
+              <span className="font-[Montserrat] text-xs font-bold text-[var(--c3d-text-strong)]">
+                {formatPrintHours(order.print_time_min)}
+              </span>
+            ) : null}
           </div>
           <div className="mt-[7px]">
             <ProgressBar value={prog} color={meta.color} />
@@ -299,14 +343,14 @@ function OrderCard({
         <div className="flex items-center gap-5 border-t border-[var(--c3d-card-border-soft)] bg-[var(--c3d-card-bg-alt)] px-4 py-[11px]">
           <span className="flex items-center gap-1.5 font-[Montserrat] text-xs font-medium text-[var(--c3d-text-faint)]">
             <FileText className="h-[14px] w-[14px]" />
-            {safeText(order.delivery_method, "Sin metodo")}
+            {formatDeliveryMethod(order.delivery_method)}
           </span>
           <span className="flex items-center gap-1.5 font-[Montserrat] text-xs font-medium text-[var(--c3d-text-faint)]">
             <PackageOpen className="h-[14px] w-[14px]" />
-            {order.files_count ?? 0} archivos
+            {order.cantidad ?? 1} {(order.cantidad ?? 1) === 1 ? "unidad" : "unidades"}
           </span>
           <span className="flex items-center gap-1.5 font-[Montserrat] text-xs font-medium text-[var(--c3d-text-faint)]">
-            Creado: {formatDateTime(order.created_at)}
+            Recibido: {formatDateTime(order.created_at)}
           </span>
           <div className="ml-auto flex gap-2">
             {order.files?.length ? (
@@ -326,16 +370,12 @@ function OrderCard({
               </Button>
             ) : null}
             <Button
-              asChild
               variant="outline"
               className="h-[30px] rounded-[10px] border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-2.5 font-[Montserrat] text-[11px] font-semibold text-[var(--c3d-text-muted)] hover:bg-white/10"
+              onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
             >
-              <a
-                href={`/proveedores-v2/pedidos?pedido_id=${order.id}`}
-              >
-                <ExternalLink className="mr-1 h-3 w-3" />
-                Ver detalle
-              </a>
+              <ExternalLink className="mr-1 h-3 w-3" />
+              Ver detalle
             </Button>
           </div>
         </div>
@@ -378,21 +418,25 @@ function PipelineCard({
           : undefined
       }
     >
-      <div className="mb-2 flex items-center justify-between">
-        <span style={{ color: meta.color }}>{step.icon}</span>
-        {!isLast && (
-          <ChevronRight className="h-[15px] w-[15px] text-[var(--c3d-text-faint)]" />
-        )}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p
+            className="font-[Montserrat] text-[26px] font-extrabold leading-none tabular-nums"
+            style={{ color: active ? meta.color : "var(--c3d-text-strong)" }}
+          >
+            {count}
+          </p>
+          <p className="mt-1 font-[Montserrat] text-[11px] font-semibold uppercase leading-[1.3] tracking-[0.1em] text-[var(--c3d-text-faint)]">
+            {step.label}
+          </p>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="flex h-9 w-9 items-center justify-center" style={{ color: meta.color }}>{step.icon}</span>
+          {!isLast && (
+            <ChevronRight className="h-[15px] w-[15px] text-[var(--c3d-text-faint)]" />
+          )}
+        </div>
       </div>
-      <p
-        className="font-[Montserrat] text-[26px] font-extrabold leading-none tabular-nums"
-        style={{ color: active ? meta.color : "var(--c3d-text-strong)" }}
-      >
-        {count}
-      </p>
-      <p className="mt-1 font-[Montserrat] text-[11px] font-semibold uppercase leading-[1.3] tracking-[0.1em] text-[var(--c3d-text-faint)]">
-        {step.label}
-      </p>
     </button>
   );
 }
@@ -550,6 +594,268 @@ function CancelOrderDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/* ---------- OrderDetailPanel ---------- */
+
+function OrderDetailPanel({
+  providerId,
+  orderId,
+  onClose,
+  onAction,
+  isActioning,
+}: {
+  providerId: number;
+  orderId: number;
+  onClose: () => void;
+  onAction: (action: "printing" | "ready" | "dispatch" | "cancel") => void;
+  isActioning: boolean;
+}) {
+  const detailQuery = useQuery({
+    queryKey: ["provider-dashboard", "order-detail", providerId, orderId],
+    queryFn: () => fetchProviderOrderDetail(providerId, orderId),
+    enabled: providerId != null && orderId != null,
+    staleTime: 15_000,
+  });
+
+  const order = detailQuery.data?.item;
+
+  if (detailQuery.isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center rounded-2xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg)] p-8">
+        <LoaderCircle className="h-6 w-6 animate-spin text-[var(--c3d-text-muted)]" />
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="flex h-full items-center justify-center rounded-2xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg)] p-8">
+        <p className="text-sm text-[var(--c3d-text-muted)]">No se encontró el pedido.</p>
+      </div>
+    );
+  }
+
+  const status = order.order_status || "paid_confirmed";
+  const meta = ST[status] || ST.paid_confirmed;
+  const files = order.files || [];
+  const addr = (() => {
+    if (!order.delivery_address_json) return null;
+    if (typeof order.delivery_address_json === "string") {
+      try { return JSON.parse(order.delivery_address_json); } catch { return null; }
+    }
+    return order.delivery_address_json;
+  })();
+
+  const TIMELINE_STEPS = [
+    { key: "paid_confirmed", label: "Pedido recibido", icon: <CheckCircle2 className="h-4 w-4" /> },
+    { key: "in_production", label: "Impresión iniciada", icon: <Printer className="h-4 w-4" /> },
+    { key: "ready_to_ship", label: "Fotos subidas", icon: <Camera className="h-4 w-4" /> },
+    { key: "en_transito", label: "Despacho confirmado", icon: <Truck className="h-4 w-4" /> },
+    { key: "completed", label: "Entregado", icon: <CheckCircle2 className="h-4 w-4" /> },
+  ];
+
+  const STATUS_ORDER = ["paid_confirmed", "in_production", "ready_to_ship", "en_transito", "completed"];
+  const currentIdx = STATUS_ORDER.indexOf(status);
+  const isCancelled = status === "cancelled";
+
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg)] p-5">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="font-[Montserrat] text-[11px] font-semibold uppercase tracking-wider text-[var(--c3d-text-faint)]">
+            Detalle del Pedido
+          </p>
+          <p className="mt-0.5 text-xs text-[var(--c3d-text-muted)]">
+            Datos operativos confirmados para producir y entregar.
+          </p>
+        </div>
+        <button type="button" onClick={onClose} className="p-1 text-[var(--c3d-text-faint)] hover:text-[var(--c3d-text-strong)]">
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Order ID + Status */}
+      <div className="flex items-center justify-between rounded-xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-4 py-3">
+        <span className="font-[Montserrat] text-sm font-bold text-[var(--c3d-text-strong)]">
+          {order.public_order_id || `#${order.id}`}
+        </span>
+        <div
+          className="rounded-lg px-3 py-1 font-[Montserrat] text-[11px] font-semibold"
+          style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.color}28` }}
+        >
+          {meta.label}
+        </div>
+      </div>
+
+      {/* Timeline */}
+      {!isCancelled && (
+        <div className="flex flex-col gap-2 rounded-xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-4 py-3">
+          {TIMELINE_STEPS.map((step, i) => {
+            const done = currentIdx >= i;
+            const isCurrent = currentIdx === i;
+            return (
+              <div key={step.key} className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+                    done ? "bg-[#3b82f6]/15 text-[#3b82f6]" : "bg-[var(--c3d-card-border)]/30 text-[var(--c3d-text-faint)]"
+                  )}
+                >
+                  {step.icon}
+                </div>
+                <span className={cn(
+                  "font-[Montserrat] text-xs font-medium",
+                  done ? "text-[var(--c3d-text-strong)]" : "text-[var(--c3d-text-faint)]",
+                  isCurrent && "font-bold"
+                )}>
+                  {step.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {isCancelled && (
+        <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3">
+          <p className="font-[Montserrat] text-xs font-bold text-rose-400">Pedido cancelado</p>
+          {order.cancelled_at && (
+            <p className="mt-1 text-xs text-rose-300/70">{formatDateTime(order.cancelled_at)}</p>
+          )}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-2">
+        {meta.next && (
+          <Button
+            type="button"
+            className="h-[34px] flex-1 rounded-[10px] bg-gradient-to-r from-primary to-cyan-500 font-[Montserrat] text-[12px] font-bold text-white shadow-[0_4px_20px_hsl(220_70%_45%/0.35)] hover:opacity-90"
+            onClick={() => {
+              if (status === "paid_confirmed") onAction("printing");
+              else if (status === "in_production") onAction("ready");
+              else if (status === "ready_to_ship") onAction("dispatch");
+            }}
+            disabled={isActioning}
+          >
+            {isActioning ? <LoaderCircle className="mr-1 h-3 w-3 animate-spin" /> : null}
+            {meta.next}
+          </Button>
+        )}
+        {!isCancelled && status !== "completed" && (
+          <Button
+            type="button"
+            variant="outline"
+            className="h-[34px] rounded-[10px] border-rose-500/30 font-[Montserrat] text-[12px] font-semibold text-rose-400 hover:bg-rose-500/10"
+            onClick={() => onAction("cancel")}
+            disabled={isActioning}
+          >
+            <BadgeX className="mr-1 h-3 w-3" />
+            Cancelar pedido
+          </Button>
+        )}
+      </div>
+
+      {/* Client info grid */}
+      <div className="grid grid-cols-2 gap-2">
+        <DetailField icon={<User className="h-3.5 w-3.5" />} label="Cliente" value={safeText(order.client_name)} />
+        <DetailField icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={safeText(order.client_email)} />
+        <DetailField icon={<Phone className="h-3.5 w-3.5" />} label="Teléfono" value={safeText(order.client_phone)} />
+        <DetailField icon={<Truck className="h-3.5 w-3.5" />} label="Método de Entrega" value={formatDeliveryMethod(order.delivery_method)} />
+        <DetailField
+          icon={<MapPin className="h-3.5 w-3.5" />}
+          label="Dirección"
+          value={addr?.raw || addr?.direccion || safeText(null, "Sin dirección")}
+          className="col-span-2"
+        />
+        {order.print_time_min ? (
+          <DetailField icon={<Clock className="h-3.5 w-3.5" />} label="Tiempo de Impresión" value={formatPrintHours(order.print_time_min) || "—"} />
+        ) : null}
+        {order.cantidad ? (
+          <DetailField icon={<Hash className="h-3.5 w-3.5" />} label="Cantidad" value={`${order.cantidad} ${order.cantidad === 1 ? "unidad" : "unidades"}`} />
+        ) : null}
+        <DetailField icon={<Clock className="h-3.5 w-3.5" />} label="Recibido" value={formatDateTime(order.created_at)} />
+      </div>
+
+      {/* Files */}
+      {files.length > 0 && (
+        <div className="rounded-xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="font-[Montserrat] text-xs font-bold text-[var(--c3d-text-strong)]">
+              Archivos del pedido
+            </p>
+            <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 font-[Montserrat] text-[10px] font-bold text-emerald-400">
+              {files.length} {files.length === 1 ? "archivo" : "archivos"}
+            </span>
+          </div>
+          <p className="mb-3 text-[11px] text-[var(--c3d-text-faint)]">
+            STL y GCODE disponibles para fabricar esta orden confirmada.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {files.map((file, idx) => (
+              <div key={idx} className="overflow-hidden rounded-xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg)]">
+                {file.thumbnail_url ? (
+                  <img
+                    src={file.thumbnail_url}
+                    alt={file.label || file.file_type || "Archivo"}
+                    className="h-28 w-full object-contain bg-white/5 p-2"
+                  />
+                ) : (
+                  <div className="flex h-28 items-center justify-center bg-white/5">
+                    <FileText className="h-8 w-8 text-[var(--c3d-text-faint)]" />
+                  </div>
+                )}
+                <div className="p-3">
+                  <p className="font-[Montserrat] text-xs font-bold text-[var(--c3d-text-strong)]">
+                    {file.label || `Archivo ${file.file_type?.toUpperCase() || ""}`}
+                  </p>
+                  <p className="mt-0.5 truncate text-[10px] text-[var(--c3d-text-faint)]">
+                    {file.filename || file.file_path?.split("/").pop() || ""}
+                  </p>
+                  {(file.url || file.download_url) && (
+                    <a
+                      href={file.download_url || file.url || "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-[#3b82f6] hover:underline"
+                    >
+                      Abrir archivo <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DetailField({
+  icon,
+  label,
+  value,
+  className,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("rounded-xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-3 py-2.5", className)}>
+      <div className="mb-1 flex items-center gap-1.5">
+        <span className="text-[var(--c3d-text-faint)]">{icon}</span>
+        <span className="font-[Montserrat] text-[10px] font-semibold uppercase tracking-wider text-[var(--c3d-text-faint)]">
+          {label}
+        </span>
+      </div>
+      <p className="font-[Montserrat] text-xs font-medium text-[var(--c3d-text-strong)]">{value}</p>
+    </div>
   );
 }
 
@@ -734,69 +1040,73 @@ export function ProviderOrdersView() {
 
   return (
     <>
-      <div className="flex flex-col gap-4">
-        {/* --- PageHeader --- */}
-        <DashboardPageHeader
-          variant="dark"
-          eyebrow="GESTION DE PRODUCCION"
-          title="Pedidos"
-          description="Actualiza el estado de cada pedido para que el cliente este siempre informado."
-          metaPills={
-            <>
-              {slaViolations > 0 && (
-                <DashboardStatePill tone="warning">
-                  {slaViolations} supera SLA
-                </DashboardStatePill>
-              )}
-              <DashboardStatePill tone="info">
-                {activeCount} activos
+      {/* --- PageHeader --- */}
+      <DashboardPageHeader
+        variant="dark"
+        eyebrow="GESTIÓN DE PRODUCCIÓN"
+        title="Pedidos"
+        description="Actualizá el estado de cada pedido para que el cliente esté siempre informado."
+        metaPills={
+          <>
+            {slaViolations > 0 && (
+              <DashboardStatePill tone="warning">
+                {slaViolations} supera SLA
               </DashboardStatePill>
-              {ordersQuery.isFetching && (
-                <DashboardStatePill tone="warning">Actualizando</DashboardStatePill>
-              )}
-            </>
-          }
-          actions={
-            <Button
-              type="button"
-              variant="outline"
-              className="h-[38px] rounded-[10px] border-white/15 bg-white/10 px-4 font-[Montserrat] text-[13px] font-semibold text-white hover:bg-white/20"
-              onClick={() => void ordersQuery.refetch()}
-              disabled={ordersQuery.isFetching}
-            >
-              {ordersQuery.isFetching ? (
-                <LoaderCircle className="mr-1.5 h-[15px] w-[15px] animate-spin" />
-              ) : (
-                <RefreshCcw className="mr-1.5 h-[15px] w-[15px]" />
-              )}
-              Recargar
-            </Button>
-          }
-        />
+            )}
+            <DashboardStatePill tone="info">
+              {activeCount} activos
+            </DashboardStatePill>
+            {ordersQuery.isFetching && (
+              <DashboardStatePill tone="warning">Actualizando</DashboardStatePill>
+            )}
+          </>
+        }
+        actions={
+          <Button
+            type="button"
+            variant="outline"
+            className="h-[38px] rounded-[10px] border-white/15 bg-white/10 px-4 font-[Montserrat] text-[13px] font-semibold text-white hover:bg-white/20"
+            onClick={() => void ordersQuery.refetch()}
+            disabled={ordersQuery.isFetching}
+          >
+            {ordersQuery.isFetching ? (
+              <LoaderCircle className="mr-1.5 h-[15px] w-[15px] animate-spin" />
+            ) : (
+              <RefreshCcw className="mr-1.5 h-[15px] w-[15px]" />
+            )}
+            Recargar
+          </Button>
+        }
+      />
 
-        {/* --- Pipeline cards (4 cols) --- */}
-        <section className="grid grid-cols-4 gap-[11px]">
-          {PIPELINE_STEPS.map((step, i) => {
-            const count = items.filter((o) =>
-              step.ids.includes(o.order_status || "")
-            ).length;
-            const active = pipelineFilter === step.ids[0];
-            return (
-              <PipelineCard
-                key={step.ids[0]}
-                step={step}
-                count={count}
-                active={active}
-                isLast={i === PIPELINE_STEPS.length - 1}
-                onClick={() =>
-                  setPipelineFilter(active ? "all" : step.ids[0])
-                }
-              />
-            );
-          })}
-        </section>
+      {/* --- Pipeline cards (4 cols) --- */}
+      <section className="mt-4 grid grid-cols-4 gap-[11px]">
+        {PIPELINE_STEPS.map((step, i) => {
+          const count = items.filter((o) =>
+            step.ids.includes(o.order_status || "")
+          ).length;
+          const active = pipelineFilter === step.ids[0];
+          return (
+            <PipelineCard
+              key={step.ids[0]}
+              step={step}
+              count={count}
+              active={active}
+              isLast={i === PIPELINE_STEPS.length - 1}
+              onClick={() =>
+                setPipelineFilter(active ? "all" : step.ids[0])
+              }
+            />
+          );
+        })}
+      </section>
 
-        {/* --- Order cards list --- */}
+      {/* --- Main content: order list + detail panel --- */}
+      <div className={cn(
+        "mt-4 gap-4",
+        selectedId != null ? "grid grid-cols-[1fr_420px]" : "flex flex-col"
+      )}>
+        {/* Order cards list */}
         <section className="flex flex-col gap-[9px]">
           {filteredItems.length ? (
             filteredItems.map((order) => (
@@ -810,17 +1120,37 @@ export function ProviderOrdersView() {
                     readyToShipMutation.isPending ||
                     dispatchMutation.isPending)
                 }
+                onSelect={() => setSelectedId(order.id)}
+                isSelected={selectedId === order.id}
               />
             ))
           ) : (
             <DashboardEmptyState
               title="No hay pedidos para este filtro"
-              description="Proba con otro estado del pipeline."
+              description="Probá con otro estado del pipeline."
               icon={<PackageOpen className="h-6 w-6" />}
               className="min-h-[200px]"
             />
           )}
         </section>
+
+        {/* Detail panel */}
+        {selectedId != null && providerId != null && (
+          <aside className="sticky top-4 self-start overflow-y-auto" style={{ maxHeight: "calc(100vh - 120px)" }}>
+            <OrderDetailPanel
+              providerId={providerId}
+              orderId={selectedId}
+              onClose={() => setSelectedId(null)}
+              onAction={(action) => handleOrderAction(selectedId, action)}
+              isActioning={
+                actionOrderId === selectedId &&
+                (printingMutation.isPending ||
+                  readyToShipMutation.isPending ||
+                  dispatchMutation.isPending)
+              }
+            />
+          </aside>
+        )}
       </div>
 
       {/* --- Dialogs --- */}
