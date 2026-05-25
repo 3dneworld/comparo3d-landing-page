@@ -91,14 +91,30 @@ const FALLBACK_METHODS: ShippingMethod[] = [
 const formatRoundedArs = (value: number) =>
   Math.round(Number(value) || 0).toLocaleString("es-AR");
 
+// Suma N dias HABILES (saltea sabado/domingo) a la fecha actual.
+// El backend devuelve `delivery_days` como cantidad de dias habiles ya
+// calculados (offset + dias_prod + logistica_final), por lo tanto al
+// proyectar la fecha en el frontend no podemos sumar dias calendario.
+const addBusinessDays = (baseDate: Date, businessDays: number) => {
+  const result = new Date(baseDate);
+  let remaining = Math.max(0, Math.round(businessDays));
+  while (remaining > 0) {
+    result.setDate(result.getDate() + 1);
+    const day = result.getDay(); // 0=domingo, 6=sabado
+    if (day !== 0 && day !== 6) {
+      remaining -= 1;
+    }
+  }
+  return result;
+};
+
 const formatEstimatedDate = (days: number) => {
-  const baseDate = new Date();
-  baseDate.setDate(baseDate.getDate() + Math.max(0, days));
+  const target = addBusinessDays(new Date(), days);
   return new Intl.DateTimeFormat("es-AR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-  }).format(baseDate);
+  }).format(target);
 };
 
 const formatIsoDate = (value: string) => {
@@ -642,7 +658,10 @@ export function StepCheckout({
   const selectedLocality = localities.find((item) => item.id === address.locality_id) ?? null;
   const deliveryDays = estimateEta ?? selectedMethod?.eta_days ?? selectedQuote.delivery_days;
   const quantityLabel = `${cantidad ?? 1} ${(cantidad ?? 1) === 1 ? "pieza" : "piezas"}`;
-  const pickupReadyLabel = formatEstimatedDate(Math.max(1, selectedQuote.delivery_days || 0));
+  // selectedQuote.delivery_days viene del backend YA con la formula
+  // (camas + buffer + offset + logistica). Si por alguna razon llega 0,
+  // mostramos el minimo razonable (logistica + 1 cama + buffer = 3 hab).
+  const pickupReadyLabel = formatEstimatedDate(Math.max(3, selectedQuote.delivery_days || 0));
   const thumbnailSrc = thumbnailUrl
     ? thumbnailUrl.startsWith("data:")
       ? thumbnailUrl
