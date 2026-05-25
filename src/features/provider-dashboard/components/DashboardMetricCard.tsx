@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 import { MetricTrend } from "@/features/provider-dashboard/components/MetricTrend";
-import { Sparkline } from "@/features/provider-dashboard/components/Sparkline";
 import { cn } from "@/lib/utils";
 
 interface DashboardMetricCardProps {
@@ -11,7 +10,6 @@ interface DashboardMetricCardProps {
   icon: ReactNode;
   valueSuffix?: string;
   trend?: { direction: "up" | "down" | "flat"; text: string };
-  sparkline?: number[];
   isHot?: boolean;
   className?: string;
 }
@@ -23,7 +21,6 @@ export function DashboardMetricCard({
   icon,
   valueSuffix,
   trend,
-  sparkline,
   isHot = false,
   className,
 }: DashboardMetricCardProps) {
@@ -43,7 +40,7 @@ export function DashboardMetricCard({
       )}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex flex-col">
-          <p className="font-[Montserrat] text-[10px] font-bold uppercase leading-none tracking-[0.16em] text-[var(--c3d-text-faint)]">
+          <p className="font-[Montserrat] text-[10px] font-extrabold uppercase leading-none tracking-[0.16em] text-[hsl(200,85%,65%)]">
             {title}
           </p>
           <p className="mt-[7px] break-words font-[Montserrat] text-[24px] font-extrabold tracking-[-0.02em] leading-none tabular-nums text-[var(--c3d-text-strong)]">
@@ -62,16 +59,13 @@ export function DashboardMetricCard({
         </div>
         <div
           className={cn(
-            "flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] transition-colors",
-            isHot
-              ? "bg-gradient-to-br from-primary to-cyan-500 text-white"
-              : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white"
+            "flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px]",
+            "bg-gradient-to-br from-primary to-cyan-500 text-white"
           )}
         >
           {icon}
         </div>
       </div>
-      {sparkline ? <Sparkline values={sparkline} /> : null}
     </div>
   );
 }

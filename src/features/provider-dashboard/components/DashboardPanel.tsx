@@ -43,7 +43,7 @@ export function DashboardPanel({
             ) : null}
             <div>
               {eyebrow ? (
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary mb-1.5">{eyebrow}</p>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[hsl(200,85%,65%)] font-[Montserrat] mb-1.5">{eyebrow}</p>
               ) : null}
               {title ? (
                 <h3 className="font-[Montserrat] text-[16px] font-bold tracking-[-0.005em] leading-[1.2] text-[var(--c3d-text-strong)]">

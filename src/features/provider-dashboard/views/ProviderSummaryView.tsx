@@ -83,25 +83,31 @@ function humanizeReason(reason: string) {
 }
 
 function greetByHour(): string {
-  const h = new Date().getHours();
+  // Hora de Argentina (UTC-3) — no depende del timezone del browser
+  const argentinaTime = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" })
+  );
+  const h = argentinaTime.getHours();
   if (h < 12) return "Buenos dias";
   if (h < 19) return "Buenas tardes";
   return "Buenas noches";
 }
 
 const quoteStatusCopy: Record<string, { label: string; tone: "success" | "warning" | "danger" | "info" | "muted" }> = {
-  quoted: { label: "Pendiente", tone: "warning" },
-  selected_pending_payment: { label: "En revision", tone: "info" },
-  paid_confirmed: { label: "Aceptada", tone: "success" },
-  won: { label: "Aceptada", tone: "success" },
-  not_selected: { label: "Vencida", tone: "danger" },
-  payment_rejected: { label: "Rechazada", tone: "danger" },
-  expired: { label: "Vencida", tone: "danger" },
+  // COMPRA = la cotización llevó a una compra/orden y entró el dinero
+  paid_confirmed: { label: "Compra", tone: "success" },
+  won: { label: "Compra", tone: "success" },
+  // VISUALIZADA = el proveedor la vio / está participando
+  quoted: { label: "Visualizada", tone: "warning" },
+  selected_pending_payment: { label: "Visualizada", tone: "warning" },
+  not_selected: { label: "Visualizada", tone: "warning" },
+  payment_rejected: { label: "Visualizada", tone: "warning" },
+  expired: { label: "Visualizada", tone: "warning" },
 };
 
 function quoteStatusMeta(status?: string | null) {
-  if (!status) return { label: "Pendiente", tone: "warning" as const };
-  return quoteStatusCopy[status] ?? { label: status.replaceAll("_", " "), tone: "muted" as const };
+  if (!status) return { label: "Visualizada", tone: "warning" as const };
+  return quoteStatusCopy[status] ?? { label: "Visualizada", tone: "warning" as const };
 }
 
 /* ---------- ReadyRow matching mockup ---------- */
@@ -192,27 +198,22 @@ function MatItem({
   sub,
   stockValue,
   stockUnit,
-  colorHex,
   isLow,
 }: {
   name: string;
   sub: string;
   stockValue: string;
   stockUnit: string;
-  colorHex?: string;
   isLow?: boolean;
 }) {
   return (
     <div className="flex items-center gap-[11px] rounded-[11px] border border-[var(--c3d-card-border)] p-[9px]">
       <div className="flex h-[38px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[var(--c3d-card-bg-alt)]">
-        {colorHex ? (
-          <div
-            className="h-7 w-7 rounded-md border border-white/10"
-            style={{ background: colorHex }}
-          />
-        ) : (
-          <Boxes className="h-4 w-4 text-[var(--c3d-text-faint)]" />
-        )}
+        <img
+          src="/icons/fila-transp.png"
+          alt="Filamento"
+          className="h-7 w-7 object-contain"
+        />
       </div>
       <div className="min-w-0 flex-1">
         <p className="font-[Montserrat] text-[13px] font-bold leading-[1.2] text-[var(--c3d-text-strong)]">
@@ -231,9 +232,11 @@ function MatItem({
         >
           {stockValue}
         </p>
-        <p className="mt-0.5 font-[Montserrat] text-[9px] font-bold uppercase tracking-[0.16em] text-[var(--c3d-text-muted)]">
-          {stockUnit}
-        </p>
+        {stockUnit ? (
+          <p className="mt-0.5 font-[Montserrat] text-[9px] font-bold uppercase tracking-[0.16em] text-[var(--c3d-text-muted)]">
+            {stockUnit}
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -317,10 +320,12 @@ function SummaryContent({
   summary,
   quotes,
   materials,
+  onRefresh,
 }: {
   summary: ProviderSummaryResponse;
   quotes: DashboardQuoteMatch[];
   materials: DashboardMaterial[];
+  onRefresh?: () => void;
 }) {
   const m = summary.metrics;
   const provider = summary.provider;
@@ -432,14 +437,12 @@ function SummaryContent({
         actions={
           <>
             <Button
-              asChild
               variant="outline"
               className="h-[38px] rounded-[10px] border-white/15 bg-white/10 px-[15px] font-[Montserrat] text-[13px] font-semibold text-white hover:bg-white/20"
+              onClick={onRefresh}
             >
-              <a href="/proveedores-v2/cotizaciones">
-                <RefreshCcw className="mr-1.5 h-[15px] w-[15px]" />
-                Actualizar
-              </a>
+              <RefreshCcw className="mr-1.5 h-[15px] w-[15px]" />
+              Actualizar
             </Button>
             <Button
               asChild
@@ -462,7 +465,6 @@ function SummaryContent({
           support={`${formatCount(m.cotizaciones_mostradas)} oportunidades`}
           icon={<ClipboardList className="h-5 w-5" />}
           trend={{ direction: "up", text: `+${formatCount(m.cotizaciones_participadas)} participadas` }}
-          sparkline={m.sparkline_quotes_7d || [0, 0, 0, 0, 0, 0, 0]}
           isHot
         />
         <DashboardMetricCard
@@ -471,7 +473,6 @@ function SummaryContent({
           support={`${formatCount(m.pedidos_historicos)} historicos`}
           icon={<PackageOpen className="h-5 w-5" />}
           trend={{ direction: "flat", text: `${formatCount(m.pedidos_historicos)} historicos` }}
-          sparkline={m.sparkline_orders_7d || [0, 0, 0, 0, 0, 0, 0]}
         />
         <DashboardMetricCard
           title="Ingresos del mes"
@@ -482,7 +483,6 @@ function SummaryContent({
             direction: revenueTrendDirection,
             text: `vs ${formatMoney(m.revenue_prev_month ?? 0)} anterior`,
           }}
-          sparkline={m.sparkline_revenue_7d || [0, 0, 0, 0, 0, 0, 0]}
         />
         <DashboardMetricCard
           title="Score de confianza"
@@ -545,10 +545,10 @@ function SummaryContent({
             />
             <ReadyRow
               status={summary.readiness.visibility_ready ? "ok" : "pend"}
-              title="Marketplace"
+              title="Direccion"
               sub={
                 summary.readiness.visibility_ready
-                  ? "Coordenadas validadas."
+                  ? "Direccion validada con Correo Argentino"
                   : "No visible aun."
               }
               pillLabel={summary.readiness.visibility_ready ? "Visible" : "Pendiente"}
@@ -636,9 +636,8 @@ function SummaryContent({
                     key={mat.id}
                     name={mat.material_code}
                     sub={`${formatMoney(mat.precio_hora)}/hr`}
-                    stockValue={hasStock ? "Disponible" : "Sin stock"}
-                    stockUnit="estado"
-                    colorHex={mainColor}
+                    stockValue={hasStock ? "Disponible" : "No disponible"}
+                    stockUnit=""
                     isLow={!hasStock}
                   />
                 );
@@ -660,7 +659,7 @@ function SummaryContent({
               <div className="mb-[11px] flex h-[44px] w-[44px] items-center justify-center rounded-xl bg-gradient-to-br from-primary to-cyan-500 text-white">
                 {ctaAction.icon}
               </div>
-              <p className="mb-1.5 font-[Montserrat] text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
+              <p className="mb-1.5 font-[Montserrat] text-[10px] font-extrabold uppercase tracking-[0.18em] text-[hsl(200,85%,65%)]">
                 {ctaAction.eyebrow}
               </p>
               <h4 className="mb-[7px] font-[Montserrat] text-[17px] font-extrabold leading-[1.25] tracking-[-0.005em] text-white">
@@ -681,16 +680,19 @@ function SummaryContent({
             </div>
           </div>
         ) : (
-          <div className="relative overflow-hidden rounded-[17px] border border-white/8 bg-gradient-to-b from-[hsl(220,30%,8%)] to-[hsl(220,25%,14%)] p-5">
+          <div className="relative overflow-hidden rounded-[17px] border border-white/8 bg-gradient-to-b from-[hsl(220,30%,8%)] to-[hsl(220,25%,14%)] p-5 flex flex-col items-center justify-center">
             <div className="pointer-events-none absolute -bottom-[60px] -right-[60px] h-[220px] w-[220px] rounded-full bg-[radial-gradient(circle,hsl(220_70%_45%/0.5)_0%,transparent_70%)]" />
-            <div className="relative flex flex-col items-center justify-center py-6 text-center">
-              <CheckCircle2 className="mb-3 h-8 w-8 text-emerald-400" />
-              <h4 className="font-[Montserrat] text-[15px] font-bold text-white">
-                Perfil completo
-              </h4>
-              <p className="mt-2 font-[Montserrat] text-xs font-medium leading-[1.6] text-[hsl(220,15%,65%)]">
-                Segui atendiendo cotizaciones y pedidos.
-              </p>
+            <div className="relative flex flex-col items-center justify-center py-4 text-center">
+              <Button
+                asChild
+                className="h-[38px] rounded-[10px] bg-gradient-to-r from-primary to-cyan-500 px-[17px] font-[Montserrat] text-[13px] font-bold text-white shadow-[0_4px_20px_hsl(220_70%_45%/0.35)] hover:from-primary/90 hover:to-cyan-500/90"
+              >
+                <a href={`/proveedores/${provider.id}`} target="_blank" rel="noopener noreferrer">
+                  <Eye className="mr-1.5 h-[15px] w-[15px]" />
+                  Ir a Pagina Publica de Proveedor
+                  <ArrowRight className="ml-1.5 h-[15px] w-[15px]" />
+                </a>
+              </Button>
             </div>
           </div>
         )}
@@ -747,7 +749,13 @@ export function ProviderSummaryView() {
     );
   }
 
+  const handleRefresh = () => {
+    void summaryQuery.refetch();
+    void quotesQuery.refetch();
+    void profileQuery.refetch();
+  };
+
   return (
-    <SummaryContent summary={summary} quotes={quotes} materials={materials} />
+    <SummaryContent summary={summary} quotes={quotes} materials={materials} onRefresh={handleRefresh} />
   );
 }

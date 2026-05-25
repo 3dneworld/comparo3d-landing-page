@@ -248,7 +248,7 @@
 
   /* Eyebrow brand (consistente con landing) */
   .dash-eyebrow {
-    @apply text-[11px] font-bold uppercase tracking-[0.18em];
-    color: hsl(var(--primary));
+    @apply text-[11px] font-extrabold uppercase tracking-[0.18em] font-[Montserrat];
+    color: hsl(200, 85%, 65%);
   }
 }

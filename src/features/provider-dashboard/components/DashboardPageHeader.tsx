@@ -34,7 +34,7 @@ export function DashboardPageHeader({
         )}
       >
         {/* topband — dark gradient con glow */}
-        <div className="dash-hero-band px-6 py-5 flex justify-between items-start gap-[22px]">
+        <div className="dash-hero-band px-6 py-5 flex justify-between items-center gap-[22px]">
           <div style={{ position: "relative" }}>
             {eyebrow ? (
               <p className="dash-eyebrow">{eyebrow}</p>
@@ -55,8 +55,8 @@ export function DashboardPageHeader({
           ) : null}
         </div>
 
-        {/* lowband — white bg with pills + última sync */}
-        <div className="bg-white border-t border-[hsl(220,15%,88%,0.6)] px-6 py-[14px] flex flex-wrap items-center justify-between gap-[14px]">
+        {/* lowband — light gray bg with pills + última sync */}
+        <div className="bg-[hsl(220,10%,92%)] border-t border-[hsl(220,15%,88%,0.6)] px-6 py-[14px] flex flex-wrap items-center justify-between gap-[14px]">
           <div className="flex flex-wrap items-center gap-[6px]">
             {metaPills ?? meta}
           </div>
