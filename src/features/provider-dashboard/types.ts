@@ -380,6 +380,7 @@ export interface DashboardOrder {
   fecha_entrega_estimada?: string | null;
   cantidad?: number | null;
   print_time_min?: number | null;
+  print_hours_billable?: number | null;
   transit_days?: number | null;
 }
 

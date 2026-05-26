@@ -20,6 +20,7 @@ import {
   Mail,
   MapPin,
   PackageOpen,
+  Pencil,
   Phone,
   Printer,
   RefreshCcw,
@@ -152,13 +153,14 @@ function formatDeliveryMethod(method?: string | null): string {
   return map[method] ?? method.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function formatPrintHours(minutes?: number | null): string | null {
-  if (minutes == null || minutes <= 0) return null;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h === 0) return `${m}min`;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${m}m`;
+/** Muestra horas redondeadas (billable). Si no hay billable, aplica redondeo local ≥30min→+1h, min 1h. */
+function formatPrintHours(billableHours?: number | null, rawMinutes?: number | null): string | null {
+  if (billableHours != null && billableHours > 0) return `${billableHours}h`;
+  if (rawMinutes == null || rawMinutes <= 0) return null;
+  const full = Math.floor(rawMinutes / 60);
+  const rem = rawMinutes % 60;
+  const h = Math.max(1, full + (rem >= 30 ? 1 : 0));
+  return `${h}h`;
 }
 
 function orderProgress(status?: string | null) {
@@ -263,9 +265,9 @@ function OrderCard({
               {safeText(order.client_name, "")}
               {order.delivery_method ? ` - ${formatDeliveryMethod(order.delivery_method)}` : ""}
             </span>
-            {order.print_time_min ? (
+            {(order.print_hours_billable || order.print_time_min) ? (
               <span className="font-[Montserrat] text-xs font-bold text-[var(--c3d-text-strong)]">
-                {formatPrintHours(order.print_time_min)}
+                {formatPrintHours(order.print_hours_billable, order.print_time_min)}
               </span>
             ) : null}
           </div>
@@ -501,19 +503,27 @@ function ReadyToShipComposer({
           />
         </div>
         {files.length ? (
-          <div className="flex flex-wrap gap-2">
-            {files.map((file, index) => (
-              <button
-                key={`${file.name}-${file.size}-${file.lastModified}`}
-                type="button"
-                className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs"
-                onClick={() => onRemoveFile(index)}
-                disabled={isSubmitting}
-              >
-                <span className="max-w-[120px] truncate">{file.name}</span>
-                <span className="text-muted-foreground">x</span>
-              </button>
-            ))}
+          <div className="max-h-[240px] overflow-y-auto rounded-lg border bg-background/30 p-2">
+            <div className="grid grid-cols-3 gap-2">
+              {files.map((file, index) => (
+                <div key={`${file.name}-${file.size}-${file.lastModified}`} className="group relative overflow-hidden rounded-lg border">
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={file.name}
+                    className="h-24 w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    onClick={() => onRemoveFile(index)}
+                    disabled={isSubmitting}
+                  >
+                    ✕
+                  </button>
+                  <p className="truncate px-1.5 py-1 text-[10px] text-muted-foreground">{file.name}</p>
+                </div>
+              ))}
+            </div>
           </div>
         ) : null}
         <DialogFooter>
@@ -605,12 +615,14 @@ function OrderDetailPanel({
   onClose,
   onAction,
   isActioning,
+  onEditPhotos,
 }: {
   providerId: number;
   orderId: number;
   onClose: () => void;
   onAction: (action: "printing" | "ready" | "dispatch" | "cancel") => void;
   isActioning: boolean;
+  onEditPhotos?: () => void;
 }) {
   const detailQuery = useQuery({
     queryKey: ["provider-dashboard", "order-detail", providerId, orderId],
@@ -665,9 +677,9 @@ function OrderDetailPanel({
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <p className="font-[Montserrat] text-[11px] font-semibold uppercase tracking-wider text-[var(--c3d-text-faint)]">
+          <h2 className="font-[Montserrat] text-xl font-extrabold tracking-tight text-[var(--c3d-text-strong)]">
             Detalle del Pedido
-          </p>
+          </h2>
           <p className="mt-0.5 text-xs text-[var(--c3d-text-muted)]">
             Datos operativos confirmados para producir y entregar.
           </p>
@@ -677,17 +689,11 @@ function OrderDetailPanel({
         </button>
       </div>
 
-      {/* Order ID + Status */}
-      <div className="flex items-center justify-between rounded-xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-4 py-3">
+      {/* Order ID */}
+      <div className="rounded-xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-4 py-3">
         <span className="font-[Montserrat] text-sm font-bold text-[var(--c3d-text-strong)]">
           {order.public_order_id || `#${order.id}`}
         </span>
-        <div
-          className="rounded-lg px-3 py-1 font-[Montserrat] text-[11px] font-semibold"
-          style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.color}28` }}
-        >
-          {meta.label}
-        </div>
       </div>
 
       {/* Timeline */}
@@ -696,6 +702,7 @@ function OrderDetailPanel({
           {TIMELINE_STEPS.map((step, i) => {
             const done = currentIdx >= i;
             const isCurrent = currentIdx === i;
+            const showEditPhotos = step.key === "ready_to_ship" && done && onEditPhotos;
             return (
               <div key={step.key} className="flex items-center gap-3">
                 <div
@@ -707,12 +714,22 @@ function OrderDetailPanel({
                   {step.icon}
                 </div>
                 <span className={cn(
-                  "font-[Montserrat] text-xs font-medium",
+                  "flex-1 font-[Montserrat] text-xs font-medium",
                   done ? "text-[var(--c3d-text-strong)]" : "text-[var(--c3d-text-faint)]",
                   isCurrent && "font-bold"
                 )}>
                   {step.label}
                 </span>
+                {showEditPhotos && (
+                  <button
+                    type="button"
+                    onClick={onEditPhotos}
+                    className="inline-flex items-center gap-1 rounded-md bg-white/10 px-2 py-0.5 font-[Montserrat] text-[10px] font-semibold text-[#3b82f6] hover:bg-white/20 transition-colors"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    Editar
+                  </button>
+                )}
               </div>
             );
           })}
@@ -771,8 +788,8 @@ function OrderDetailPanel({
           value={addr?.raw || addr?.direccion || safeText(null, "Sin dirección")}
           className="col-span-2"
         />
-        {order.print_time_min ? (
-          <DetailField icon={<Clock className="h-3.5 w-3.5" />} label="Tiempo de Impresión" value={formatPrintHours(order.print_time_min) || "—"} />
+        {(order.print_hours_billable || order.print_time_min) ? (
+          <DetailField icon={<Clock className="h-3.5 w-3.5" />} label="Tiempo de Impresión" value={formatPrintHours(order.print_hours_billable, order.print_time_min) || "—"} />
         ) : null}
         {order.cantidad ? (
           <DetailField icon={<Hash className="h-3.5 w-3.5" />} label="Cantidad" value={`${order.cantidad} ${order.cantidad === 1 ? "unidad" : "unidades"}`} />
@@ -801,10 +818,10 @@ function OrderDetailPanel({
                   <img
                     src={file.thumbnail_url}
                     alt={file.label || file.file_type || "Archivo"}
-                    className="h-28 w-full object-contain bg-white/5 p-2"
+                    className="h-32 w-full object-contain bg-gradient-to-b from-slate-800 to-slate-900 p-3"
                   />
                 ) : (
-                  <div className="flex h-28 items-center justify-center bg-white/5">
+                  <div className="flex h-32 items-center justify-center bg-gradient-to-b from-slate-800 to-slate-900">
                     <FileText className="h-8 w-8 text-[var(--c3d-text-faint)]" />
                   </div>
                 )}
@@ -1148,6 +1165,10 @@ export function ProviderOrdersView() {
                   readyToShipMutation.isPending ||
                   dispatchMutation.isPending)
               }
+              onEditPhotos={() => {
+                setActionOrderId(selectedId);
+                setShowReadyToShipComposer(true);
+              }}
             />
           </aside>
         )}
