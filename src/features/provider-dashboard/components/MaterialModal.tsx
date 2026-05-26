@@ -5,11 +5,15 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { updateProviderMaterials } from "@/features/provider-dashboard/api";
-import { MATERIAL_TYPES } from "@/features/provider-dashboard/data/catalogPresets";
+import {
+  MATERIAL_TYPES,
+  QUOTE_COLOR_OPTIONS,
+  colorOptionByName,
+} from "@/features/provider-dashboard/data/catalogPresets";
 import { MaterialColorPicker } from "./MaterialColorPicker";
-import { StockSwitch } from "./StockSwitch";
 import type {
   DashboardMaterial,
+  DashboardMaterialColorFormPayload,
   DashboardMaterialFormPayload,
   MarketplacePriceAverage,
 } from "@/features/provider-dashboard/types";
@@ -20,9 +24,6 @@ export type ModalMode =
       kind: "preset";
       data: {
         name: string;
-        type: string;
-        color_hex: string;
-        color_name: string;
         avg_price: number;
       };
     }
@@ -39,26 +40,54 @@ export interface MaterialModalProps {
 
 interface FormState {
   material_code: string;
-  color_name: string;
-  color_hex: string;
-  in_stock: boolean;
-  precio_kg: string;
+  selectedColors: string[];
+  precio_hora: string;
 }
 
-function materialToPayload(m: DashboardMaterial): DashboardMaterialFormPayload {
+function normalizeMaterialCode(value: string): string {
+  const upper = value.trim().toUpperCase();
+  if (upper.startsWith("TPU")) return "TPU";
+  return upper;
+}
+
+function isAllowedMaterial(value: string): boolean {
+  const normalized = normalizeMaterialCode(value);
+  return MATERIAL_TYPES.some((type) => type.toUpperCase() === normalized);
+}
+
+function displayMaterialCode(value: string): string {
+  const normalized = normalizeMaterialCode(value);
+  return MATERIAL_TYPES.find((type) => type.toUpperCase() === normalized) ?? normalized;
+}
+
+function buildColorPayload(selectedColors: string[]): DashboardMaterialColorFormPayload[] {
+  const selected = new Set(selectedColors.map((name) => name.toLowerCase()));
+  return QUOTE_COLOR_OPTIONS.map((color) => ({
+    color_name: color.value,
+    color_hex: color.hex,
+    activo: true,
+    in_stock: selected.has(color.value.toLowerCase()),
+  }));
+}
+
+function materialToPayload(m: DashboardMaterial): DashboardMaterialFormPayload | null {
+  if (!isAllowedMaterial(m.material_code)) return null;
   return {
-    material_code: m.material_code,
+    material_code: displayMaterialCode(m.material_code),
     activo: Boolean(m.activo),
     precio_hora: Number(m.precio_hora) || 0,
     in_stock: Boolean(m.in_stock),
-    allow_custom_color: Boolean(m.allow_custom_color),
+    allow_custom_color: false,
     trabajo_minimo_override: m.trabajo_minimo_override ?? null,
-    colores: (m.colores || []).map((c) => ({
-      color_name: c.color_name || "",
-      color_hex: c.color_hex || "#78716c",
-      activo: Boolean(c.activo),
-      in_stock: Boolean(c.in_stock),
-    })),
+    colores: QUOTE_COLOR_OPTIONS.map((color) => {
+      const existing = (m.colores || []).find((c) => c.color_name?.toLowerCase() === color.value.toLowerCase());
+      return {
+        color_name: color.value,
+        color_hex: color.hex,
+        activo: true,
+        in_stock: Boolean(m.in_stock) && Boolean(existing?.activo) && Boolean(existing?.in_stock),
+      };
+    }),
   };
 }
 
@@ -75,30 +104,31 @@ export function MaterialModal({
   const initial = useMemo<FormState>(() => {
     if (mode.kind === "edit") {
       const m = materials.find((x) => x.id === mode.id);
-      const c = m?.colores?.[0];
       return {
-        material_code: m?.material_code || "PLA",
-        color_name: c?.color_name || "",
-        color_hex: c?.color_hex || "#78716c",
-        in_stock: Boolean(m?.in_stock),
-        precio_kg: m ? String(m.precio_hora || "") : "",
+        material_code: displayMaterialCode(m?.material_code || "PLA"),
+        selectedColors: Boolean(m?.in_stock)
+          ? (m?.colores || [])
+              .filter((c) => Boolean(c.activo) && Boolean(c.in_stock))
+              .map((c) => c.color_name)
+              .filter(Boolean)
+          : [],
+        precio_hora: m ? String(m.precio_hora || "") : "",
       };
     }
     if (mode.kind === "preset") {
       return {
-        material_code: mode.data.name,
-        color_name: mode.data.color_name,
-        color_hex: mode.data.color_hex,
-        in_stock: true,
-        precio_kg: String(mode.data.avg_price || ""),
+        material_code: displayMaterialCode(mode.data.name),
+        selectedColors: [],
+        precio_hora: String(mode.data.avg_price || ""),
       };
     }
+    const firstMissing = MATERIAL_TYPES.find(
+      (type) => !materials.some((m) => normalizeMaterialCode(m.material_code) === type.toUpperCase())
+    );
     return {
-      material_code: "PLA",
-      color_name: "",
-      color_hex: "#f5f5f4",
-      in_stock: true,
-      precio_kg: "",
+      material_code: firstMissing || "PLA",
+      selectedColors: [],
+      precio_hora: "",
     };
   }, [mode, materials]);
 
@@ -106,64 +136,62 @@ export function MaterialModal({
   useEffect(() => setForm(initial), [initial]);
 
   const headerLabel = mode.kind === "edit" ? "EDITAR MATERIAL" : "NUEVO MATERIAL";
-  const avgEntry = marketAverages?.[form.material_code];
+  const avgEntry = marketAverages?.[displayMaterialCode(form.material_code)];
   const marketAvg = avgEntry?.avg_price_kg;
-  const priceNum = Number(form.precio_kg) || 0;
+  const priceNum = Number(form.precio_hora) || 0;
   const diffPct = marketAvg && priceNum > 0 ? ((priceNum - marketAvg) / marketAvg) * 100 : null;
   let priceHint: { text: string; color: string } | null = null;
   if (diffPct != null && marketAvg) {
-    if (diffPct < -5) priceHint = { text: `Buen precio: ${diffPct.toFixed(0)}% vs red ($${marketAvg.toLocaleString("es-AR")}/kg)`, color: "#10b981" };
-    else if (diffPct > 15) priceHint = { text: `Caro: +${diffPct.toFixed(0)}% vs red ($${marketAvg.toLocaleString("es-AR")}/kg)`, color: "#ef4444" };
-    else if (diffPct > 5) priceHint = { text: `Algo caro: +${diffPct.toFixed(0)}% vs red ($${marketAvg.toLocaleString("es-AR")}/kg)`, color: "#f59e0b" };
-    else priceHint = { text: `En línea con red ($${marketAvg.toLocaleString("es-AR")}/kg)`, color: "#10b981" };
+    if (diffPct < -5) priceHint = { text: `Buen precio: ${diffPct.toFixed(0)}% vs promedio (${marketAvg.toLocaleString("es-AR")}/hora)`, color: "#10b981" };
+    else if (diffPct > 15) priceHint = { text: `Alto: +${diffPct.toFixed(0)}% vs promedio (${marketAvg.toLocaleString("es-AR")}/hora)`, color: "#ef4444" };
+    else priceHint = { text: `En línea con el promedio (${marketAvg.toLocaleString("es-AR")}/hora)`, color: "#10b981" };
   }
+
+  const toggleColor = (colorName: string) => {
+    setForm((current) => {
+      const exists = current.selectedColors.some((name) => name.toLowerCase() === colorName.toLowerCase());
+      return {
+        ...current,
+        selectedColors: exists
+          ? current.selectedColors.filter((name) => name.toLowerCase() !== colorName.toLowerCase())
+          : [...current.selectedColors, colorName],
+      };
+    });
+  };
 
   const saveMut = useMutation({
     mutationFn: async () => {
       if (!form.material_code.trim()) throw new Error("Material requerido");
-      if (priceNum <= 0) throw new Error("Precio/kg debe ser mayor a 0");
+      if (!isAllowedMaterial(form.material_code)) throw new Error("Ese material no está disponible para clientes");
+      if (form.selectedColors.length === 0) throw new Error("Seleccioná al menos un color disponible");
+      if (priceNum <= 0) throw new Error("Precio / hora debe ser mayor a 0");
 
-      // Reconstruir array completo
-      const allPayloads = materials.map(materialToPayload);
+      const allPayloads = materials
+        .map(materialToPayload)
+        .filter((payload): payload is DashboardMaterialFormPayload => payload != null);
+
+      const selectedPayload = {
+        material_code: displayMaterialCode(form.material_code),
+        activo: true,
+        precio_hora: priceNum,
+        in_stock: true,
+        allow_custom_color: false,
+        trabajo_minimo_override: null,
+        colores: buildColorPayload(form.selectedColors),
+      };
 
       if (mode.kind === "edit") {
         const idx = materials.findIndex((m) => m.id === mode.id);
-        if (idx >= 0) {
-          const existing = allPayloads[idx];
-          // Mantener resto de colores; si había uno, actualizarlo (primero); si no, agregarlo
-          const newColor = form.color_name.trim() || form.color_hex
-            ? [{
-                color_name: form.color_name.trim(),
-                color_hex: form.color_hex,
-                activo: true,
-                in_stock: form.in_stock,
-              }]
-            : [];
-          allPayloads[idx] = {
-            ...existing,
-            material_code: form.material_code.trim().toUpperCase(),
-            precio_hora: priceNum,
-            in_stock: form.in_stock,
-            colores: newColor.length ? newColor : existing.colores,
-          };
-        }
+        const payloadIdx = allPayloads.findIndex(
+          (payload) => normalizeMaterialCode(payload.material_code) === normalizeMaterialCode(materials[idx]?.material_code || "")
+        );
+        if (payloadIdx >= 0) allPayloads[payloadIdx] = selectedPayload;
       } else {
-        allPayloads.push({
-          material_code: form.material_code.trim().toUpperCase(),
-          activo: true,
-          precio_hora: priceNum,
-          in_stock: form.in_stock,
-          allow_custom_color: false,
-          trabajo_minimo_override: null,
-          colores: form.color_name.trim() || form.color_hex
-            ? [{
-                color_name: form.color_name.trim(),
-                color_hex: form.color_hex,
-                activo: true,
-                in_stock: form.in_stock,
-              }]
-            : [],
-        });
+        const existingIdx = allPayloads.findIndex(
+          (payload) => normalizeMaterialCode(payload.material_code) === normalizeMaterialCode(selectedPayload.material_code)
+        );
+        if (existingIdx >= 0) allPayloads[existingIdx] = selectedPayload;
+        else allPayloads.push(selectedPayload);
       }
 
       return updateProviderMaterials(providerId, { materiales: allPayloads });
@@ -185,7 +213,7 @@ export function MaterialModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,.5)",
+        background: "rgba(0,0,0,.74)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -197,13 +225,14 @@ export function MaterialModal({
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
-          maxWidth: 520,
+          maxWidth: 580,
           maxHeight: "90vh",
           overflowY: "auto",
-          background: "var(--c3d-card-bg, #fff)",
+          background: "var(--c3d-card-bg, #141922)",
+          border: "1px solid var(--c3d-card-border, rgba(255,255,255,.12))",
           borderRadius: 16,
           padding: 24,
-          boxShadow: "0 20px 50px rgba(0,0,0,.30)",
+          boxShadow: "0 24px 70px rgba(0,0,0,.55)",
           display: "flex",
           flexDirection: "column",
           gap: 18,
@@ -211,116 +240,85 @@ export function MaterialModal({
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
           <div>
-            <div style={{ font: "700 10px/1 Montserrat,sans-serif", textTransform: "uppercase", letterSpacing: ".18em", color: "hsl(220,80%,55%)" }}>
+            <div style={{ font: "700 10px/1 Montserrat,sans-serif", textTransform: "uppercase", letterSpacing: ".18em", color: "hsl(220,80%,65%)" }}>
               {headerLabel}
             </div>
-            <h2 style={{ font: "800 20px/1.2 Montserrat,sans-serif", margin: "6px 0 0", color: "var(--c3d-text-strong, hsl(220,30%,12%))" }}>
-              {mode.kind === "edit" ? "Modificar material" : "Agregar material al catálogo"}
+            <h2 style={{ font: "800 20px/1.2 Montserrat,sans-serif", margin: "6px 0 0", color: "var(--c3d-text-strong, #fff)" }}>
+              {mode.kind === "edit" ? "Modificar material" : `Agregar ${displayMaterialCode(form.material_code)} al catálogo`}
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
-            style={{ border: "none", background: "transparent", cursor: "pointer", padding: 4, color: "hsl(220,10%,46%)" }}
+            style={{ border: "none", background: "transparent", cursor: "pointer", padding: 4, color: "var(--c3d-text-muted, rgba(255,255,255,.65))" }}
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Preview strip */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, padding: 12, borderRadius: 12, background: "var(--c3d-card-bg-alt, hsl(220,20%,98%))", border: "1px solid var(--c3d-card-border-soft, hsl(220,15%,90%))" }}>
-          <div style={{ width: 60, height: 60, borderRadius: 12, background: form.color_hex, border: "1.5px solid rgba(0,0,0,.18)", boxShadow: "0 2px 6px rgba(0,0,0,.20)", flexShrink: 0 }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 14, padding: 12, borderRadius: 12, background: "var(--c3d-card-bg-alt, rgba(255,255,255,.035))", border: "1px solid var(--c3d-card-border-soft, rgba(255,255,255,.08))" }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ font: "800 16px/1.2 Montserrat,sans-serif", color: "var(--c3d-text-strong, hsl(220,30%,12%))" }}>
-              {form.material_code || "—"}
+            <div style={{ font: "800 18px/1.2 Montserrat,sans-serif", color: "var(--c3d-text-strong, #fff)" }}>
+              {displayMaterialCode(form.material_code)}
             </div>
-            <div style={{ font: "500 13px/1.2 Montserrat,sans-serif", color: "var(--c3d-text-muted, hsl(220,10%,46%))", marginTop: 3 }}>
-              {form.color_name || "Sin nombre de color"}
+            <div style={{ font: "500 12px/1.4 Montserrat,sans-serif", color: "var(--c3d-text-muted, rgba(255,255,255,.62))", marginTop: 4 }}>
+              {form.selectedColors.length ? `${form.selectedColors.length} colores disponibles` : "Elegí los colores disponibles"}
             </div>
-            <span style={{ display: "inline-block", marginTop: 6, font: "700 10px/1 Montserrat,sans-serif", padding: "4px 8px", borderRadius: 999, background: form.in_stock ? "rgba(16,185,129,.15)" : "rgba(239,68,68,.15)", color: form.in_stock ? "#10b981" : "#ef4444" }}>
-              {form.in_stock ? "Disponible" : "Sin stock"}
-            </span>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 5, maxWidth: 220 }}>
+            {form.selectedColors.slice(0, 8).map((name) => {
+              const color = colorOptionByName(name);
+              return (
+                <span
+                  key={name}
+                  title={name}
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 999,
+                    background: color?.hex || "#78716c",
+                    border: `1px solid ${color?.border || "rgba(255,255,255,.25)"}`,
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
 
-        {/* material_code */}
+        <MaterialColorPicker selected={form.selectedColors} onToggle={toggleColor} />
+
         <div>
-          <label style={{ font: "700 11px/1 Montserrat,sans-serif", textTransform: "uppercase", letterSpacing: ".14em", color: "var(--c3d-text-faint, hsl(220,10%,46%))", display: "block", marginBottom: 6 }}>
-            Tipo de material
-          </label>
-          <select
-            value={form.material_code}
-            onChange={(e) => setForm((f) => ({ ...f, material_code: e.target.value }))}
-            style={{ width: "100%", height: 40, borderRadius: 10, border: "1px solid var(--c3d-card-border, hsl(220,15%,84%))", padding: "0 10px", font: "500 14px Montserrat,sans-serif", background: "#fff" }}
-          >
-            {MATERIAL_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* color_name */}
-        <div>
-          <label style={{ font: "700 11px/1 Montserrat,sans-serif", textTransform: "uppercase", letterSpacing: ".14em", color: "var(--c3d-text-faint, hsl(220,10%,46%))", display: "block", marginBottom: 6 }}>
-            Nombre del color (opcional)
-          </label>
-          <input
-            type="text"
-            value={form.color_name}
-            onChange={(e) => setForm((f) => ({ ...f, color_name: e.target.value }))}
-            placeholder="Negro, Rojo, Natural…"
-            style={{ width: "100%", height: 40, borderRadius: 10, border: "1px solid var(--c3d-card-border, hsl(220,15%,84%))", padding: "0 12px", font: "500 14px Montserrat,sans-serif", background: "#fff" }}
-          />
-        </div>
-
-        {/* Color picker */}
-        <MaterialColorPicker
-          selected={form.color_hex}
-          onSelect={(hex) => setForm((f) => ({ ...f, color_hex: hex }))}
-        />
-
-        {/* Stock switch */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: 12, background: "var(--c3d-card-bg-alt, hsl(220,20%,98%))", border: "1px solid var(--c3d-card-border-soft, hsl(220,15%,90%))" }}>
-          <div>
-            <div style={{ font: "700 13px/1.2 Montserrat,sans-serif", color: "var(--c3d-text-strong, hsl(220,30%,12%))" }}>
-              Stock
-            </div>
-            <div style={{ font: "500 12px/1.3 Montserrat,sans-serif", color: "var(--c3d-text-muted, hsl(220,10%,46%))", marginTop: 2 }}>
-              {form.in_stock ? "En stock — entra a cotizaciones" : "Sin stock — pausado"}
-            </div>
-          </div>
-          <StockSwitch value={form.in_stock} onChange={(v) => setForm((f) => ({ ...f, in_stock: v }))} ariaLabel="Stock del material" />
-        </div>
-
-        {/* precio_kg */}
-        <div>
-          <label style={{ font: "700 11px/1 Montserrat,sans-serif", textTransform: "uppercase", letterSpacing: ".14em", color: "var(--c3d-text-faint, hsl(220,10%,46%))", display: "block", marginBottom: 6 }}>
-            Precio/kg (ARS)
+          <label style={{ font: "700 11px/1 Montserrat,sans-serif", textTransform: "uppercase", letterSpacing: ".14em", color: "var(--c3d-text-faint, rgba(255,255,255,.45))", display: "block", marginBottom: 6 }}>
+            Precio / hora
           </label>
           <input
             type="number"
             min="0"
             step="100"
-            value={form.precio_kg}
-            onChange={(e) => setForm((f) => ({ ...f, precio_kg: e.target.value }))}
+            value={form.precio_hora}
+            onChange={(e) => setForm((f) => ({ ...f, precio_hora: e.target.value }))}
             placeholder="5000"
-            style={{ width: "100%", height: 40, borderRadius: 10, border: "1px solid var(--c3d-card-border, hsl(220,15%,84%))", padding: "0 12px", font: "600 14px Montserrat,sans-serif", background: "#fff" }}
+            style={{ width: "100%", height: 42, borderRadius: 10, border: "1px solid var(--c3d-card-border, rgba(255,255,255,.14))", padding: "0 12px", font: "700 14px Montserrat,sans-serif", background: "rgba(255,255,255,.95)", color: "#111827" }}
           />
-          {priceHint && (
-            <div style={{ marginTop: 6, font: "600 11px/1.3 Montserrat,sans-serif", color: priceHint.color }}>
+          {priceHint ? (
+            <div style={{ marginTop: 7, font: "700 11px/1.3 Montserrat,sans-serif", color: priceHint.color }}>
               {priceHint.text}
             </div>
-          )}
+          ) : null}
         </div>
 
-        {/* Footer */}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, paddingTop: 6, borderTop: "1px solid var(--c3d-card-border-soft, hsl(220,15%,90%))" }}>
-          <Button type="button" variant="outline" onClick={onClose} disabled={saveMut.isPending}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, paddingTop: 6, borderTop: "1px solid var(--c3d-card-border-soft, rgba(255,255,255,.08))" }}>
+          <Button
+            type="button"
+            onClick={onClose}
+            disabled={saveMut.isPending}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
             Cancelar
           </Button>
           <Button type="button" onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
-            {saveMut.isPending ? "Guardando…" : "Guardar"}
+            {saveMut.isPending ? "Guardando..." : "Guardar"}
           </Button>
         </div>
       </div>

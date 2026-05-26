@@ -26,6 +26,7 @@ export function DashboardPageHeader({
   className,
 }: DashboardPageHeaderProps) {
   if (variant === "dark") {
+    const hasLowBand = Boolean(metaPills ?? meta ?? lastSync);
     return (
       <header
         className={cn(
@@ -33,12 +34,9 @@ export function DashboardPageHeader({
           className
         )}
       >
-        {/* topband — dark gradient con glow */}
         <div className="dash-hero-band px-6 py-5 flex justify-between items-center gap-[22px]">
           <div style={{ position: "relative" }}>
-            {eyebrow ? (
-              <p className="dash-eyebrow">{eyebrow}</p>
-            ) : null}
+            {eyebrow ? <p className="dash-eyebrow">{eyebrow}</p> : null}
             <h1 className="mt-2 font-[Montserrat] text-[26px] font-extrabold tracking-[-0.015em] leading-[1.15] text-white">
               {title}
             </h1>
@@ -55,17 +53,18 @@ export function DashboardPageHeader({
           ) : null}
         </div>
 
-        {/* lowband — light gray bg with pills + última sync */}
-        <div className="bg-[hsl(220,10%,92%)] border-t border-[hsl(220,15%,88%,0.6)] px-6 py-[14px] flex flex-wrap items-center justify-between gap-[14px]">
-          <div className="flex flex-wrap items-center gap-[6px]">
-            {metaPills ?? meta}
+        {hasLowBand ? (
+          <div className="bg-[hsl(220,10%,92%)] border-t border-[hsl(220,15%,88%,0.6)] px-6 py-[14px] flex flex-wrap items-center justify-between gap-[14px]">
+            <div className="flex flex-wrap items-center gap-[6px]">
+              {metaPills ?? meta}
+            </div>
+            {lastSync ? (
+              <p className="text-xs font-[Montserrat] font-medium text-[hsl(220,10%,46%)] whitespace-nowrap">
+                Última sync {lastSync}
+              </p>
+            ) : null}
           </div>
-          {lastSync ? (
-            <p className="text-xs font-[Montserrat] font-medium text-[hsl(220,10%,46%)] whitespace-nowrap">
-              Última sync {lastSync}
-            </p>
-          ) : null}
-        </div>
+        ) : null}
       </header>
     );
   }

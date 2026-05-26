@@ -1,20 +1,37 @@
 export interface CatalogPreset {
   name: string;
-  type: string;
-  color_hex: string;
-  color_name: string;
   avg_price_fallback: number;
 }
 
 export const CATALOG_PRESETS: CatalogPreset[] = [
-  { name: "PLA",     type: "FDM", color_hex: "#f5f5f4", color_name: "Blanco",   avg_price_fallback: 5100 },
-  { name: "PETG",    type: "FDM", color_hex: "#1c1917", color_name: "Negro",    avg_price_fallback: 5200 },
-  { name: "ABS",     type: "FDM", color_hex: "#78716c", color_name: "Gris",     avg_price_fallback: 6400 },
-  { name: "TPU 95A", type: "FDM", color_hex: "#facc15", color_name: "Amarillo", avg_price_fallback: 7400 },
-  { name: "ASA",     type: "FDM", color_hex: "#1c1917", color_name: "Negro",    avg_price_fallback: 7800 },
-  { name: "PLA-CF",  type: "FDM", color_hex: "#292524", color_name: "Negro CF", avg_price_fallback: 9200 },
+  { name: "PLA", avg_price_fallback: 5100 },
+  { name: "ABS", avg_price_fallback: 6400 },
+  { name: "PETG", avg_price_fallback: 5200 },
+  { name: "Nylon", avg_price_fallback: 7600 },
+  { name: "TPU", avg_price_fallback: 7400 },
+  { name: "PC", avg_price_fallback: 8800 },
 ];
 
-export const MATERIAL_TYPES = [
-  "PLA","PETG","ABS","TPU","ASA","Nylon","PC","HIPS","Nylon CF","PETG CF","PLA-CF",
+export const MATERIAL_TYPES = CATALOG_PRESETS.map((preset) => preset.name);
+
+export interface QuoteColorOption {
+  label: string;
+  value: string;
+  hex: string;
+  border: string;
+}
+
+export const QUOTE_COLOR_OPTIONS: QuoteColorOption[] = [
+  { label: "BLANCO", value: "Blanco", hex: "#FFFFFF", border: "#D1D5DB" },
+  { label: "NEGRO", value: "Negro", hex: "#1F1F1F", border: "#1F1F1F" },
+  { label: "AZUL", value: "Azul", hex: "#2563EB", border: "#2563EB" },
+  { label: "ROJO", value: "Rojo", hex: "#DC2626", border: "#DC2626" },
+  { label: "GRIS", value: "Gris", hex: "#6B7280", border: "#6B7280" },
+  { label: "AMARILLO", value: "Amarillo", hex: "#F59E0B", border: "#F59E0B" },
+  { label: "VERDE", value: "Verde", hex: "#16A34A", border: "#16A34A" },
+  { label: "NARANJA", value: "Naranja", hex: "#EA580C", border: "#EA580C" },
 ];
+
+export function colorOptionByName(name: string) {
+  return QUOTE_COLOR_OPTIONS.find((color) => color.value.toLowerCase() === name.toLowerCase());
+}

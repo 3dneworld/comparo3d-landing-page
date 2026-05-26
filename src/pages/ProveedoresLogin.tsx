@@ -31,10 +31,18 @@ const valueSignals = [
   },
 ];
 
+function safeProviderNext(value: string | null): string | null {
+  if (!value) return null;
+  if (!value.startsWith("/") || value.startsWith("//") || value.includes("\n") || value.includes("\r")) return null;
+  const allowedPrefixes = ["/dashboard/proveedores", "/proveedores-v2"];
+  return allowedPrefixes.some((prefix) => value === prefix || value.startsWith(`${prefix}/`)) ? value : null;
+}
+
 const ProveedoresLogin = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const authError = searchParams.get("error");
+  const nextTarget = safeProviderNext(searchParams.get("next"));
 
   const errorMessage =
     authError === "auth_unavailable"
@@ -49,7 +57,7 @@ const ProveedoresLogin = () => {
         const response = await fetch("/api/auth/me", { credentials: "include" });
         if (!response.ok) return;
         const user = await response.json();
-        if (!cancelled && user) navigate("/dashboard/proveedores", { replace: true });
+        if (!cancelled && user) navigate(nextTarget || "/dashboard/proveedores", { replace: true });
       } catch {
         // Keep the user on the login page if the session check fails.
       }
@@ -60,10 +68,11 @@ const ProveedoresLogin = () => {
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [navigate, nextTarget]);
 
   const handleGoogleLogin = () => {
-    window.location.href = "/api/auth/login?redirect=dashboard-proveedores";
+    const redirect = nextTarget || "dashboard-proveedores";
+    window.location.href = `/api/auth/login?redirect=${encodeURIComponent(redirect)}`;
   };
 
   return (

@@ -1,16 +1,20 @@
-import { COLOR_PALETTE, LIGHT_COLORS } from "../data/colorPalette";
+import { Check } from "lucide-react";
+
+import { QUOTE_COLOR_OPTIONS } from "../data/catalogPresets";
 
 export interface MaterialColorPickerProps {
-  selected: string;
-  onSelect: (hex: string) => void;
+  selected: string[];
+  onToggle: (colorName: string) => void;
   label?: string;
 }
 
 export function MaterialColorPicker({
   selected,
-  onSelect,
-  label = "Color del filamento",
+  onToggle,
+  label = "Colores disponibles",
 }: MaterialColorPickerProps) {
+  const selectedSet = new Set(selected.map((name) => name.toLowerCase()));
+
   return (
     <div>
       <div
@@ -24,36 +28,50 @@ export function MaterialColorPicker({
       >
         {label}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(9,1fr)", gap: 5 }}>
-        {COLOR_PALETTE.map((c) => {
-          const sel = selected === c;
-          const isLight = LIGHT_COLORS.has(c);
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(58px,1fr))", gap: "24px 8px" }}>
+        {QUOTE_COLOR_OPTIONS.map((c) => {
+          const sel = selectedSet.has(c.value.toLowerCase());
+          const isLight = c.value === "Blanco" || c.value === "Amarillo";
           return (
             <button
-              key={c}
+              key={c.value}
               type="button"
-              title={c}
-              onClick={() => onSelect(c)}
+              aria-pressed={sel}
+              aria-label={`${c.value} ${sel ? "seleccionado" : "no seleccionado"}`}
+              title={c.value}
+              onClick={() => onToggle(c.value)}
               style={{
                 width: "100%",
                 aspectRatio: "1",
-                borderRadius: 7,
-                background: c,
+                borderRadius: 10,
+                background: c.hex,
                 cursor: "pointer",
-                border: sel ? "2px solid hsl(220,70%,55%)" : "1px solid rgba(0,0,0,.11)",
-                boxShadow: sel ? "0 0 0 3px hsl(220,70%,55%,.25)" : "none",
+                border: sel ? "2px solid hsl(220,70%,55%)" : `1.5px solid ${c.border}`,
+                boxShadow: sel ? "0 0 0 3px hsl(220,70%,55%,.25)" : "0 1px 5px rgba(0,0,0,.18)",
                 position: "relative",
                 transition: "transform .1s",
-                transform: sel ? "scale(1.1)" : "scale(1)",
+                transform: sel ? "translateY(-1px)" : "none",
               }}
             >
               {sel && (
                 <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <svg viewBox="0 0 12 12" style={{ width: 11, height: 11 }}>
-                    <path d="M2 6l3 3 5-5" stroke={isLight ? "#292524" : "#fff"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                  </svg>
+                  <Check size={20} color={isLight ? "#111827" : "#fff"} strokeWidth={3} />
                 </span>
               )}
+              <span
+                style={{
+                  position: "absolute",
+                  left: 3,
+                  right: 3,
+                  bottom: -17,
+                  font: "700 8.5px/1 Montserrat,sans-serif",
+                  color: "var(--c3d-text-muted, hsl(220,10%,56%))",
+                  textTransform: "uppercase",
+                  textAlign: "center",
+                }}
+              >
+                {c.label}
+              </span>
             </button>
           );
         })}

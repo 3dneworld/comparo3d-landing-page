@@ -1,11 +1,9 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, PackageCheck, Plus } from "lucide-react";
+import { AlertTriangle, PackageCheck } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import {
-  confirmAllStock,
   fetchMarketplacePromedios,
   fetchProviderMaterials,
   updateProviderMaterials,
@@ -13,7 +11,6 @@ import {
 import { AntiBypassBanner } from "@/features/provider-dashboard/components/AntiBypassBanner";
 import { CatalogoComunPanel } from "@/features/provider-dashboard/components/CatalogoComunPanel";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
-import { DashboardStatePill } from "@/features/provider-dashboard/components/DashboardStatePill";
 import {
   DashboardEmptyState,
   DashboardErrorState,
@@ -22,47 +19,76 @@ import {
 import { MaterialCard } from "@/features/provider-dashboard/components/MaterialCard";
 import { MaterialModal, type ModalMode } from "@/features/provider-dashboard/components/MaterialModal";
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
+import {
+  MATERIAL_TYPES,
+  QUOTE_COLOR_OPTIONS,
+} from "@/features/provider-dashboard/data/catalogPresets";
 import type {
   DashboardMaterial,
+  DashboardMaterialColor,
   DashboardMaterialFormPayload,
 } from "@/features/provider-dashboard/types";
 
-const STALE_THRESHOLD_DAYS = 14;
-
-interface FlatRow {
-  key: string;
-  materialId: number;
-  material_code: string;
-  color_hex: string;
-  color_name: string;
-  in_stock: boolean;
-  activo: boolean;
-  last_confirmed_at: string | null;
-  precio_kg: number;
+function normalizeMaterialCode(value: string): string {
+  const upper = value.trim().toUpperCase();
+  if (upper.startsWith("TPU")) return "TPU";
+  return upper;
 }
 
-function daysSince(iso: string | null): number {
-  if (!iso) return 999;
-  const ts = new Date(iso).getTime();
-  if (Number.isNaN(ts)) return 999;
-  return Math.floor((Date.now() - ts) / (24 * 3600 * 1000));
+function displayMaterialCode(value: string): string {
+  const normalized = normalizeMaterialCode(value);
+  return MATERIAL_TYPES.find((type) => type.toUpperCase() === normalized) ?? normalized;
 }
 
-function materialToPayload(m: DashboardMaterial): DashboardMaterialFormPayload {
+function isAllowedMaterial(value: string): boolean {
+  const normalized = normalizeMaterialCode(value);
+  return MATERIAL_TYPES.some((type) => type.toUpperCase() === normalized);
+}
+
+function ensureDashboardColors(m: DashboardMaterial): DashboardMaterialColor[] {
+  return QUOTE_COLOR_OPTIONS.map((color, index) => {
+    const existing = (m.colores || []).find((c) => c.color_name?.toLowerCase() === color.value.toLowerCase());
+    return {
+      id: existing?.id ?? -1 * (index + 1),
+      color_name: color.value,
+      color_hex: color.hex,
+      activo: 1,
+      in_stock: Boolean(m.in_stock) && Boolean(existing?.activo) && Boolean(existing?.in_stock) ? 1 : 0,
+      last_confirmed_at: existing?.last_confirmed_at ?? m.last_confirmed_at ?? null,
+    };
+  });
+}
+
+function materialToPayload(m: DashboardMaterial): DashboardMaterialFormPayload | null {
+  if (!isAllowedMaterial(m.material_code)) return null;
   return {
-    material_code: m.material_code,
+    material_code: displayMaterialCode(m.material_code),
     activo: Boolean(m.activo),
     precio_hora: Number(m.precio_hora) || 0,
     in_stock: Boolean(m.in_stock),
-    allow_custom_color: Boolean(m.allow_custom_color),
+    allow_custom_color: false,
     trabajo_minimo_override: m.trabajo_minimo_override ?? null,
-    colores: (m.colores || []).map((c) => ({
+    colores: ensureDashboardColors(m).map((c) => ({
       color_name: c.color_name || "",
       color_hex: c.color_hex || "#78716c",
-      activo: Boolean(c.activo),
+      activo: true,
       in_stock: Boolean(c.in_stock),
     })),
   };
+}
+
+function replaceMaterialPayload(
+  materials: DashboardMaterial[],
+  targetId: number,
+  updater: (payload: DashboardMaterialFormPayload) => DashboardMaterialFormPayload
+): DashboardMaterialFormPayload[] {
+  return materials
+    .map((m) => {
+      const payload = materialToPayload(m);
+      if (!payload) return null;
+      return m.id === targetId ? updater(payload) : payload;
+    })
+    .filter((payload): payload is DashboardMaterialFormPayload => payload != null);
 }
 
 export function ProviderMaterialsView() {
@@ -92,96 +118,67 @@ export function ProviderMaterialsView() {
   const marketAveragesSimple = useMemo<Record<string, number | undefined>>(() => {
     const out: Record<string, number | undefined> = {};
     for (const [k, v] of Object.entries(marketAverages)) {
-      out[k] = v?.avg_price_kg;
+      out[displayMaterialCode(k)] = v?.avg_price_kg;
     }
     return out;
   }, [marketAverages]);
 
-  const flat = useMemo<FlatRow[]>(() => {
-    const rows: FlatRow[] = [];
-    for (const m of materials) {
-      const precio = Number(m.precio_hora) || 0;
-      if (!m.colores || m.colores.length === 0) {
-        rows.push({
-          key: `m-${m.id}`,
-          materialId: m.id,
-          material_code: m.material_code,
-          color_hex: "#78716c",
-          color_name: "",
-          in_stock: Boolean(m.in_stock),
-          activo: Boolean(m.activo),
-          last_confirmed_at: m.last_confirmed_at ?? null,
-          precio_kg: precio,
+  const visibleMaterials = useMemo<DashboardMaterial[]>(() => {
+    const byCode = new Map<string, DashboardMaterial>();
+    for (const material of materials) {
+      if (!isAllowedMaterial(material.material_code)) continue;
+      const code = displayMaterialCode(material.material_code);
+      if (!byCode.has(code)) {
+        byCode.set(code, {
+          ...material,
+          material_code: code,
+          colores: ensureDashboardColors({ ...material, material_code: code }),
         });
-      } else {
-        for (const c of m.colores) {
-          rows.push({
-            key: `m-${m.id}-c-${c.id}`,
-            materialId: m.id,
-            material_code: m.material_code,
-            color_hex: c.color_hex || "#78716c",
-            color_name: c.color_name || "",
-            in_stock: Boolean(c.in_stock),
-            activo: Boolean(m.activo) && Boolean(c.activo),
-            last_confirmed_at: c.last_confirmed_at ?? m.last_confirmed_at ?? null,
-            precio_kg: precio,
-          });
-        }
       }
     }
-    return rows;
+    return MATERIAL_TYPES.map((type) => byCode.get(type)).filter((m): m is DashboardMaterial => Boolean(m));
   }, [materials]);
 
-  const counts = useMemo(() => {
-    let available = 0;
-    let stale = 0;
-    let overpriced = 0;
-    for (const r of flat) {
-      if (r.activo && r.in_stock) {
-        available += 1;
-        if (daysSince(r.last_confirmed_at) >= STALE_THRESHOLD_DAYS) stale += 1;
-      }
-      const avg = marketAveragesSimple[r.material_code];
-      if (avg && r.precio_kg > 0 && (r.precio_kg - avg) / avg > 0.1) overpriced += 1;
-    }
-    return { available, stale, overpriced };
-  }, [flat, marketAveragesSimple]);
-
   const existingNames = useMemo(
-    () => Array.from(new Set(materials.map((m) => m.material_code))),
-    [materials]
+    () => visibleMaterials.map((m) => displayMaterialCode(m.material_code)),
+    [visibleMaterials]
   );
 
-  const confirmStockMut = useMutation({
-    mutationFn: async () => {
-      if (!providerId) throw new Error("Sesión inválida");
-      return confirmAllStock(providerId);
-    },
-    onSuccess: (res) => {
-      toast.success(`Stock confirmado (${res.materials_updated} mat., ${res.colors_updated} colores)`);
-      void qc.invalidateQueries({ queryKey: ["provider-dashboard", "materials", providerId] });
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "No se pudo confirmar el stock"),
-  });
-
-  const toggleStockMut = useMutation({
+  const toggleMaterialMut = useMutation({
     mutationFn: async ({ materialId, next }: { materialId: number; next: boolean }) => {
       if (!providerId) throw new Error("Sesión inválida");
-      const payloads = materials.map((m) => {
-        const base = materialToPayload(m);
-        if (m.id === materialId) {
-          return {
-            ...base,
-            in_stock: next,
-            colores: base.colores.map((c) => ({ ...c, in_stock: next })),
-          };
-        }
-        return base;
+      const payloads = replaceMaterialPayload(materials, materialId, (base) => ({
+        ...base,
+        in_stock: next,
+        colores: base.colores.map((c) => ({ ...c, in_stock: next })),
+      }));
+      return updateProviderMaterials(providerId, { materiales: payloads });
+    },
+    onSuccess: () => {
+      toast.success("Disponibilidad actualizada");
+      void qc.invalidateQueries({ queryKey: ["provider-dashboard", "materials", providerId] });
+      void qc.invalidateQueries({ queryKey: ["provider-dashboard", "summary", providerId] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "No se pudo actualizar"),
+  });
+
+  const toggleColorMut = useMutation({
+    mutationFn: async ({ materialId, colorName, next }: { materialId: number; colorName: string; next: boolean }) => {
+      if (!providerId) throw new Error("Sesión inválida");
+      const payloads = replaceMaterialPayload(materials, materialId, (base) => {
+        const colores = base.colores.map((c) =>
+          c.color_name.toLowerCase() === colorName.toLowerCase() ? { ...c, in_stock: next } : c
+        );
+        return {
+          ...base,
+          in_stock: colores.some((c) => c.in_stock),
+          colores,
+        };
       });
       return updateProviderMaterials(providerId, { materiales: payloads });
     },
     onSuccess: () => {
-      toast.success("Stock actualizado");
+      toast.success("Color actualizado");
       void qc.invalidateQueries({ queryKey: ["provider-dashboard", "materials", providerId] });
       void qc.invalidateQueries({ queryKey: ["provider-dashboard", "summary", providerId] });
     },
@@ -219,41 +216,10 @@ export function ProviderMaterialsView() {
   return (
     <div className="space-y-6">
       <DashboardPageHeader
+        variant="dark"
         eyebrow="Catálogo operativo"
-        title="Materiales y stock"
-        description="Cada (material, color) es una tarjeta. Confirmá stock cada 14 días para mantenerte cotizable."
-        metaPills={
-          <>
-            <DashboardStatePill tone={counts.available ? "success" : "warning"}>
-              {counts.available} disponibles
-            </DashboardStatePill>
-            <DashboardStatePill tone={counts.stale ? "warning" : "muted"}>
-              {counts.stale} desactualizados
-            </DashboardStatePill>
-            <DashboardStatePill tone={counts.overpriced ? "danger" : "muted"}>
-              {counts.overpriced} caros vs red
-            </DashboardStatePill>
-          </>
-        }
-        actions={
-          <>
-            {counts.stale > 0 && providerId != null ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => confirmStockMut.mutate()}
-                disabled={confirmStockMut.isPending}
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                {confirmStockMut.isPending ? "Confirmando…" : "Confirmar todo el stock"}
-              </Button>
-            ) : null}
-            <Button type="button" onClick={() => setModalMode({ kind: "new" })}>
-              <Plus className="h-4 w-4" />
-              Agregar material
-            </Button>
-          </>
-        }
+        title="Materiales y precios"
+        description="Confirma el stock de materiales y su costo por hora de impresión"
       />
 
       <AntiBypassBanner />
@@ -266,68 +232,41 @@ export function ProviderMaterialsView() {
             kind: "preset",
             data: {
               name: preset.name,
-              type: preset.type,
-              color_hex: preset.color_hex,
-              color_name: preset.color_name,
               avg_price: avg,
             },
           })
         }
       />
 
-      {flat.length === 0 ? (
+      {visibleMaterials.length === 0 ? (
         <DashboardEmptyState
           title="Todavía no cargaste materiales"
-          description="Sumá uno desde el catálogo común o creá uno custom."
+          description="Sumá los filamentos faltantes desde el bloque de stock full."
           icon={<PackageCheck className="h-6 w-6" />}
-          actionLabel="Agregar material"
-          onAction={() => setModalMode({ kind: "new" })}
         />
       ) : (
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 520px), 1fr))",
             gap: 16,
           }}
         >
-          {flat.map((row) => (
+          {visibleMaterials.map((material) => (
             <MaterialCard
-              key={row.key}
-              id={row.materialId}
-              material_code={row.material_code}
-              color_hex={row.color_hex}
-              color_name={row.color_name}
-              in_stock={row.in_stock}
-              last_confirmed_at={row.last_confirmed_at}
-              precio_kg={row.precio_kg}
-              activo={row.activo}
-              market_avg={marketAveragesSimple[row.material_code]}
-              onEdit={() => setModalMode({ kind: "edit", id: row.materialId })}
-              onToggleStock={(next) => toggleStockMut.mutate({ materialId: row.materialId, next })}
+              key={material.id}
+              id={material.id}
+              material_code={displayMaterialCode(material.material_code)}
+              in_stock={Boolean(material.in_stock)}
+              precio_hora={Number(material.precio_hora) || 0}
+              activo={Boolean(material.activo)}
+              colores={ensureDashboardColors(material)}
+              market_avg={marketAveragesSimple[displayMaterialCode(material.material_code)]}
+              onEdit={() => setModalMode({ kind: "edit", id: material.id })}
+              onToggleMaterial={(next) => toggleMaterialMut.mutate({ materialId: material.id, next })}
+              onToggleColor={(colorName, next) => toggleColorMut.mutate({ materialId: material.id, colorName, next })}
             />
           ))}
-          <button
-            type="button"
-            onClick={() => setModalMode({ kind: "new" })}
-            style={{
-              minHeight: 220,
-              borderRadius: 16,
-              border: "2px dashed var(--c3d-card-border, hsl(220,15%,80%))",
-              background: "transparent",
-              cursor: "pointer",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              color: "var(--c3d-text-muted, hsl(220,10%,46%))",
-              font: "700 13px/1 Montserrat,sans-serif",
-            }}
-          >
-            <Plus size={28} />
-            Agregar material
-          </button>
         </div>
       )}
 

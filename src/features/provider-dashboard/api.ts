@@ -73,7 +73,11 @@ async function dashboardFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const errorPayload = (payload || {}) as DashboardApiErrorShape;
-    throw new DashboardApiError(errorPayload.error || "No pudimos completar la solicitud.", {
+    const message =
+      response.status === 401
+        ? "DEBES REFRESCAR LA PÁGINA Y AUTENTICARTE NUEVAMENTE"
+        : errorPayload.error || "No pudimos completar la solicitud.";
+    throw new DashboardApiError(message, {
       status: response.status,
       code: errorPayload.code,
       loginUrl: errorPayload.login_url,
