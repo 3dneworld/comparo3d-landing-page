@@ -447,6 +447,7 @@ function PipelineCard({
 
 function ReadyToShipComposer({
   files,
+  existingPhotos,
   onAppendFiles,
   onRemoveFile,
   onCancel,
@@ -454,6 +455,7 @@ function ReadyToShipComposer({
   isSubmitting,
 }: {
   files: File[];
+  existingPhotos?: { url: string; filename: string }[];
   onAppendFiles: (files: File[]) => void;
   onRemoveFile: (index: number) => void;
   onCancel: () => void;
@@ -462,6 +464,7 @@ function ReadyToShipComposer({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const hasExisting = (existingPhotos?.length ?? 0) > 0;
 
   const handleFiles = (list: FileList | null) => {
     const nextFiles = Array.from(list || []).filter((file) => file.type.startsWith("image/"));
@@ -473,11 +476,36 @@ function ReadyToShipComposer({
     <Dialog open onOpenChange={(open) => { if (!open) onCancel(); }}>
       <DialogContent className="max-w-lg rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Subir fotos del pedido</DialogTitle>
+          <DialogTitle>{hasExisting ? "Editar fotos del pedido" : "Subir fotos del pedido"}</DialogTitle>
           <DialogDescription>
-            Subi fotos del producto terminado antes de marcar listo para despachar.
+            {hasExisting
+              ? "Fotos ya subidas. Podés agregar más fotos si lo necesitás."
+              : "Subí fotos del producto terminado antes de marcar listo para despachar."}
           </DialogDescription>
         </DialogHeader>
+
+        {/* Existing photos from backend */}
+        {hasExisting && (
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-muted-foreground">Fotos subidas anteriormente</p>
+            <div className="max-h-[180px] overflow-y-auto rounded-lg border bg-background/30 p-2">
+              <div className="grid grid-cols-3 gap-2">
+                {existingPhotos!.map((photo, i) => (
+                  <div key={photo.url + i} className="overflow-hidden rounded-lg border">
+                    <img
+                      src={photo.url}
+                      alt={photo.filename}
+                      className="h-24 w-full object-cover"
+                    />
+                    <p className="truncate px-1.5 py-1 text-[10px] text-muted-foreground">{photo.filename}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Upload new photos */}
         <div
           onDragOver={(event) => { event.preventDefault(); setIsDragging(true); }}
           onDragLeave={() => setIsDragging(false)}
@@ -491,7 +519,7 @@ function ReadyToShipComposer({
           )}
         >
           <Upload className="mx-auto mb-3 h-8 w-8 text-primary/60" />
-          <p className="text-sm font-medium">Arrastra las fotos o hace clic</p>
+          <p className="text-sm font-medium">{hasExisting ? "Agregar más fotos" : "Arrastra las fotos o hacé clic"}</p>
           <p className="mt-1 text-xs text-muted-foreground">JPG, PNG o WEBP</p>
           <input
             ref={inputRef}
@@ -502,37 +530,43 @@ function ReadyToShipComposer({
             onChange={(event) => { handleFiles(event.target.files); event.currentTarget.value = ""; }}
           />
         </div>
+
+        {/* New files preview */}
         {files.length ? (
-          <div className="max-h-[240px] overflow-y-auto rounded-lg border bg-background/30 p-2">
-            <div className="grid grid-cols-3 gap-2">
-              {files.map((file, index) => (
-                <div key={`${file.name}-${file.size}-${file.lastModified}`} className="group relative overflow-hidden rounded-lg border">
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt={file.name}
-                    className="h-24 w-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100"
-                    onClick={() => onRemoveFile(index)}
-                    disabled={isSubmitting}
-                  >
-                    ✕
-                  </button>
-                  <p className="truncate px-1.5 py-1 text-[10px] text-muted-foreground">{file.name}</p>
-                </div>
-              ))}
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-muted-foreground">Nuevas fotos</p>
+            <div className="max-h-[180px] overflow-y-auto rounded-lg border bg-background/30 p-2">
+              <div className="grid grid-cols-3 gap-2">
+                {files.map((file, index) => (
+                  <div key={`${file.name}-${file.size}-${file.lastModified}`} className="group relative overflow-hidden rounded-lg border">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={file.name}
+                      className="h-24 w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100"
+                      onClick={() => onRemoveFile(index)}
+                      disabled={isSubmitting}
+                    >
+                      ✕
+                    </button>
+                    <p className="truncate px-1.5 py-1 text-[10px] text-muted-foreground">{file.name}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         ) : null}
+
         <DialogFooter>
           <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button onClick={onConfirm} disabled={isSubmitting}>
+          <Button onClick={onConfirm} disabled={isSubmitting || (!files.length && !hasExisting)}>
             {isSubmitting ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Confirmar
+            {hasExisting && !files.length ? "Cerrar" : "Confirmar"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -622,7 +656,7 @@ function OrderDetailPanel({
   onClose: () => void;
   onAction: (action: "printing" | "ready" | "dispatch" | "cancel") => void;
   isActioning: boolean;
-  onEditPhotos?: () => void;
+  onEditPhotos?: (existingPhotos: { url: string; filename: string }[]) => void;
 }) {
   const detailQuery = useQuery({
     queryKey: ["provider-dashboard", "order-detail", providerId, orderId],
@@ -723,7 +757,7 @@ function OrderDetailPanel({
                 {showEditPhotos && (
                   <button
                     type="button"
-                    onClick={onEditPhotos}
+                    onClick={() => onEditPhotos!(order.dispatch_photos || [])}
                     className="inline-flex items-center gap-1 rounded-md bg-white/10 px-2 py-0.5 font-[Montserrat] text-[10px] font-semibold text-[#3b82f6] hover:bg-white/20 transition-colors"
                   >
                     <Pencil className="h-3 w-3" />
@@ -889,6 +923,7 @@ export function ProviderOrdersView() {
   });
   const [showReadyToShipComposer, setShowReadyToShipComposer] = useState(false);
   const [readyToShipFiles, setReadyToShipFiles] = useState<File[]>([]);
+  const [existingDispatchPhotos, setExistingDispatchPhotos] = useState<{ url: string; filename: string }[]>([]);
   const [cancellingOrder, setCancellingOrder] = useState<DashboardOrder | null>(null);
   const [cancellationReason, setCancellationReason] = useState("");
   const [showPrintingConfirm, setShowPrintingConfirm] = useState(false);
@@ -969,6 +1004,7 @@ export function ProviderOrdersView() {
     onSuccess: (payload) => {
       setShowReadyToShipComposer(false);
       setReadyToShipFiles([]);
+      setExistingDispatchPhotos([]);
       toast.success(payload.email_sent ? "Listo para despachar. Email enviado." : "Listo para despachar.");
       invalidateAll();
     },
@@ -1165,8 +1201,9 @@ export function ProviderOrdersView() {
                   readyToShipMutation.isPending ||
                   dispatchMutation.isPending)
               }
-              onEditPhotos={() => {
+              onEditPhotos={(photos) => {
                 setActionOrderId(selectedId);
+                setExistingDispatchPhotos(photos);
                 setShowReadyToShipComposer(true);
               }}
             />
@@ -1197,6 +1234,7 @@ export function ProviderOrdersView() {
       {showReadyToShipComposer && (
         <ReadyToShipComposer
           files={readyToShipFiles}
+          existingPhotos={existingDispatchPhotos}
           onAppendFiles={(files) =>
             setReadyToShipFiles((current) => dedupeFiles(current, files))
           }
@@ -1208,6 +1246,7 @@ export function ProviderOrdersView() {
           onCancel={() => {
             setShowReadyToShipComposer(false);
             setReadyToShipFiles([]);
+            setExistingDispatchPhotos([]);
           }}
           onConfirm={() => void readyToShipMutation.mutateAsync()}
           isSubmitting={readyToShipMutation.isPending}

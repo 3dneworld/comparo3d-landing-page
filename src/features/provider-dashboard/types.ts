@@ -375,6 +375,7 @@ export interface DashboardOrder {
   updated_at?: string | null;
   files_count?: number | null;
   files?: DashboardOrderFile[];
+  dispatch_photos?: { url: string; filename: string }[];
   shipment_tracking_code?: string | null;
   review_reminder_status?: string | null;
   fecha_entrega_estimada?: string | null;
