@@ -1,5 +1,6 @@
 import type {
   DashboardApiErrorShape,
+  AgendaResponse,
   DashboardMaterialsFormPayload,
   DashboardPortfolioFormPayload,
   DashboardUser,
@@ -107,6 +108,13 @@ export function updateProviderProfile(providerId: number, payload: ProviderProfi
 
 export function fetchProviderProduction(providerId: number) {
   return dashboardFetch<ProviderProductionResponse>(`/api/provider-dashboard/proveedores/${providerId}/impresoras`);
+}
+
+export function fetchProviderAgenda(providerId: number, days = 14) {
+  const params = new URLSearchParams({ days: String(days) });
+  return dashboardFetch<AgendaResponse>(
+    `/api/provider-dashboard/proveedores/${providerId}/agenda?${params.toString()}`
+  );
 }
 
 export function updateProviderProduction(providerId: number, payload: DashboardPrintersFormPayload) {

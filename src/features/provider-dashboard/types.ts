@@ -135,6 +135,7 @@ export interface ProviderSummaryResponse {
   profile_score: number;
   metrics: DashboardMetrics;
   onboarding: DashboardOnboarding;
+  proxima_disponibilidad_iso?: string | null;
 }
 
 export interface DashboardPrinter {
@@ -148,6 +149,9 @@ export interface DashboardPrinter {
   activa: number;
   es_principal: number;
   materiales_permitidos: string[];
+  marcas?: string[];
+  marcas_json?: string | null;
+  is_planning_printer?: boolean;
   notas?: string | null;
 }
 
@@ -158,6 +162,7 @@ export interface DashboardPrinterFormPayload {
   activa: boolean;
   es_principal: boolean;
   materiales_permitidos: string[];
+  marcas?: string[];
   notas: string;
 }
 
@@ -290,6 +295,32 @@ export interface ProviderMiCorreoAgencyResponse {
 export type ProviderProductionResponse = ProviderProfileResponse;
 
 export type ProviderMaterialsResponse = ProviderProfileResponse;
+
+export interface AgendaJob {
+  id: string;
+  client: string;
+  start_day: number;
+  duration_days: number;
+  color: string;
+}
+
+export interface AgendaPrinter {
+  id: number;
+  name: string;
+  tech: string;
+  bed: string;
+  is_planning_printer: boolean;
+  dedicated: boolean;
+  jobs: AgendaJob[];
+}
+
+export interface AgendaResponse {
+  success?: true;
+  today: string;
+  schedule_days: number;
+  printers: AgendaPrinter[];
+  proxima_disponibilidad_iso: string | null;
+}
 
 export type DashboardQuoteStatus =
   | "quoted"
