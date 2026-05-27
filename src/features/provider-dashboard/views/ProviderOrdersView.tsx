@@ -50,6 +50,7 @@ import {
   markProviderOrderPrinting,
   markProviderOrderReadyToShip,
   requestProviderOrderReview,
+  updateProviderShipmentTracking,
 } from "@/features/provider-dashboard/api";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
 import { DashboardStatePill } from "@/features/provider-dashboard/components/DashboardStatePill";
@@ -649,6 +650,9 @@ function OrderDetailPanel({
   onClose,
   onAction,
   isActioning,
+  onSaveTracking,
+  isSavingTracking,
+  isTrackingDisabled,
   onEditPhotos,
 }: {
   providerId: number;
@@ -656,6 +660,9 @@ function OrderDetailPanel({
   onClose: () => void;
   onAction: (action: "printing" | "ready" | "dispatch" | "cancel") => void;
   isActioning: boolean;
+  onSaveTracking: (shipmentId: number, trackingCode: string) => void;
+  isSavingTracking: boolean;
+  isTrackingDisabled: boolean;
   onEditPhotos?: (existingPhotos: { url: string; filename: string }[]) => void;
 }) {
   const detailQuery = useQuery({
@@ -666,6 +673,11 @@ function OrderDetailPanel({
   });
 
   const order = detailQuery.data?.item;
+  const [trackingDraft, setTrackingDraft] = useState("");
+
+  useEffect(() => {
+    setTrackingDraft(order?.shipment_tracking_code || "");
+  }, [order?.id, order?.shipment_tracking_code]);
 
   if (detailQuery.isLoading) {
     return (
@@ -686,6 +698,7 @@ function OrderDetailPanel({
   const status = order.order_status || "paid_confirmed";
   const meta = ST[status] || ST.paid_confirmed;
   const files = order.files || [];
+  const shipmentId = order.shipment_id || null;
   const addr = (() => {
     if (!order.delivery_address_json) return null;
     if (typeof order.delivery_address_json === "string") {
@@ -829,6 +842,17 @@ function OrderDetailPanel({
           <DetailField icon={<Hash className="h-3.5 w-3.5" />} label="Cantidad" value={`${order.cantidad} ${order.cantidad === 1 ? "unidad" : "unidades"}`} />
         ) : null}
         <DetailField icon={<Clock className="h-3.5 w-3.5" />} label="Recibido" value={formatDateTime(order.created_at)} />
+        {shipmentId ? (
+          <TrackingDetailField
+            shipmentId={shipmentId}
+            value={trackingDraft}
+            isSaving={isSavingTracking}
+            isDisabled={isTrackingDisabled}
+            isHighlighted={!order.shipment_tracking_code && !isTrackingDisabled}
+            onChange={setTrackingDraft}
+            onSave={onSaveTracking}
+          />
+        ) : null}
       </div>
 
       {/* Files */}
@@ -910,6 +934,76 @@ function DetailField({
   );
 }
 
+function TrackingDetailField({
+  shipmentId,
+  value,
+  isSaving,
+  isDisabled,
+  isHighlighted,
+  onChange,
+  onSave,
+}: {
+  shipmentId?: number | null;
+  value: string;
+  isSaving: boolean;
+  isDisabled: boolean;
+  isHighlighted: boolean;
+  onChange: (value: string) => void;
+  onSave: (shipmentId: number, trackingCode: string) => void;
+}) {
+  const cleanValue = value.trim();
+  const canSave = Boolean(shipmentId) && cleanValue.length > 0 && !isSaving && !isDisabled;
+
+  return (
+    <form
+      className={cn(
+        "rounded-xl border px-3 py-2.5 transition-colors",
+        isDisabled
+          ? "border-slate-200 bg-slate-100 opacity-75"
+          : isHighlighted
+            ? "border-amber-200 bg-amber-50"
+            : "border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)]"
+      )}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (shipmentId && cleanValue && !isDisabled) onSave(shipmentId, cleanValue);
+      }}
+    >
+      <label
+        htmlFor={`order-tracking-${shipmentId || "pending"}`}
+        className="mb-1 flex items-center gap-1.5 font-[Montserrat] text-[10px] font-semibold uppercase tracking-wider text-[var(--c3d-text-faint)]"
+      >
+        <Truck className="h-3.5 w-3.5" />
+        Tracking Correo Argentino
+      </label>
+      <div className="flex gap-2">
+        <input
+          id={`order-tracking-${shipmentId || "pending"}`}
+          type="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="LC123456789AR"
+          disabled={!shipmentId || isSaving || isDisabled}
+          className={cn(
+            "min-w-0 flex-1 rounded-lg border px-2.5 py-2 font-[Montserrat] text-xs font-semibold outline-none transition focus:border-[#3b82f6]",
+            isDisabled
+              ? "cursor-not-allowed border-slate-200 bg-slate-200 text-slate-500"
+              : "border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg)] text-[var(--c3d-text-strong)]"
+          )}
+        />
+        <Button
+          type="submit"
+          disabled={!canSave}
+          className="h-[34px] rounded-[9px] bg-gradient-to-r from-primary to-cyan-500 px-2.5 font-[Montserrat] text-[11px] font-bold text-white"
+        >
+          {isSaving ? <LoaderCircle className="h-3 w-3 animate-spin" /> : null}
+          Guardar tracking
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 /* ---------- Main export ---------- */
 
 export function ProviderOrdersView() {
@@ -928,6 +1022,7 @@ export function ProviderOrdersView() {
   const [cancellationReason, setCancellationReason] = useState("");
   const [showPrintingConfirm, setShowPrintingConfirm] = useState(false);
   const [showDispatchModal, setShowDispatchModal] = useState(false);
+  const [dispatchBypassesTracking, setDispatchBypassesTracking] = useState(false);
   const [actionOrderId, setActionOrderId] = useState<number | null>(null);
 
   const ordersQuery = useQuery({
@@ -1031,6 +1126,20 @@ export function ProviderOrdersView() {
     },
   });
 
+  const trackingMutation = useMutation({
+    mutationFn: async ({ shipmentId, trackingCode }: { shipmentId: number; trackingCode: string }) => {
+      if (providerId == null) throw new Error("No encontramos el proveedor.");
+      return updateProviderShipmentTracking(providerId, shipmentId, trackingCode);
+    },
+    onSuccess: () => {
+      toast.success("Tracking guardado.");
+      invalidateAll();
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "No pudimos guardar el tracking.");
+    },
+  });
+
   const cancelMutation = useMutation({
     mutationFn: async () => {
       if (!cancellingOrder || providerId == null) throw new Error("Elegi un pedido.");
@@ -1056,6 +1165,7 @@ export function ProviderOrdersView() {
     } else if (action === "ready") {
       setShowReadyToShipComposer(true);
     } else if (action === "dispatch") {
+      setDispatchBypassesTracking(false);
       setShowDispatchModal(true);
     } else if (action === "cancel") {
       const order = items.find((o) => o.id === orderId);
@@ -1199,8 +1309,14 @@ export function ProviderOrdersView() {
                 actionOrderId === selectedId &&
                 (printingMutation.isPending ||
                   readyToShipMutation.isPending ||
-                  dispatchMutation.isPending)
+                  dispatchMutation.isPending ||
+                  trackingMutation.isPending)
               }
+              onSaveTracking={(shipmentId, trackingCode) => {
+                void trackingMutation.mutateAsync({ shipmentId, trackingCode });
+              }}
+              isSavingTracking={trackingMutation.isPending}
+              isTrackingDisabled={showDispatchModal && actionOrderId === selectedId && dispatchBypassesTracking}
               onEditPhotos={(photos) => {
                 setActionOrderId(selectedId);
                 setExistingDispatchPhotos(photos);
@@ -1255,13 +1371,20 @@ export function ProviderOrdersView() {
 
       <DispatchConfirmDialog
         open={showDispatchModal}
-        onOpenChange={setShowDispatchModal}
+        onOpenChange={(open) => {
+          setShowDispatchModal(open);
+          if (!open) setDispatchBypassesTracking(false);
+        }}
         orderId={actionOrder?.id}
         isPickup={actionOrder?.delivery_method === "retiro_taller"}
         hasTracking={!!actionOrder?.shipment_tracking_code}
+        paymentPayerEmail={actionOrder?.payment_payer_email}
+        shippingRefundAmount={actionOrder?.shipping_refund_amount_ars}
         isSubmitting={dispatchMutation.isPending}
+        onBypassTrackingChange={setDispatchBypassesTracking}
         onConfirm={(params) => {
           setShowDispatchModal(false);
+          setDispatchBypassesTracking(false);
           void dispatchMutation.mutateAsync(params);
         }}
       />

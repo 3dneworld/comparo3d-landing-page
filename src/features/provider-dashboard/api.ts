@@ -208,6 +208,7 @@ export function markProviderOrderReadyToShip(
 export interface DispatchParams {
   estimatedDeliveryDate?: string;
   useMotorcycle?: boolean;
+  useLaboratoryPickup?: boolean;
   pickupTimeFrom?: string;
   pickupTimeTo?: string;
 }
@@ -219,6 +220,7 @@ export function dispatchProviderOrder(orderId: number, params?: DispatchParams) 
     body: JSON.stringify({
       estimated_delivery_date: params?.estimatedDeliveryDate,
       use_motorcycle: params?.useMotorcycle ?? false,
+      use_laboratory_pickup: params?.useLaboratoryPickup ?? false,
       pickup_time_from: params?.pickupTimeFrom,
       pickup_time_to: params?.pickupTimeTo,
     }),

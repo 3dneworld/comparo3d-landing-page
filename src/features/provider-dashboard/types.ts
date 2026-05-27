@@ -407,7 +407,11 @@ export interface DashboardOrder {
   files_count?: number | null;
   files?: DashboardOrderFile[];
   dispatch_photos?: { url: string; filename: string }[];
+  shipment_id?: number | null;
   shipment_tracking_code?: string | null;
+  payment_payer_email?: string | null;
+  payment_amount?: number | null;
+  shipping_refund_amount_ars?: number | null;
   review_reminder_status?: string | null;
   fecha_entrega_estimada?: string | null;
   cantidad?: number | null;
