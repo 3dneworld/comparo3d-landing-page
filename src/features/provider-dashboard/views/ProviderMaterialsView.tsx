@@ -59,13 +59,22 @@ function ensureDashboardColors(m: DashboardMaterial): DashboardMaterialColor[] {
   });
 }
 
+function hasAvailableColor(m: DashboardMaterial): boolean {
+  return ensureDashboardColors(m).some((color) => Boolean(color.activo) && Boolean(color.in_stock));
+}
+
+function effectiveMaterialStock(m: DashboardMaterial): boolean {
+  return Boolean(m.in_stock) && hasAvailableColor(m);
+}
+
 function materialToPayload(m: DashboardMaterial): DashboardMaterialFormPayload | null {
   if (!isAllowedMaterial(m.material_code)) return null;
+  const effectiveStock = effectiveMaterialStock(m);
   return {
     material_code: displayMaterialCode(m.material_code),
     activo: Boolean(m.activo),
     precio_hora: Number(m.precio_hora) || 0,
-    in_stock: Boolean(m.in_stock),
+    in_stock: effectiveStock,
     allow_custom_color: false,
     trabajo_minimo_override: m.trabajo_minimo_override ?? null,
     colores: ensureDashboardColors(m).map((c) => ({
@@ -132,6 +141,7 @@ export function ProviderMaterialsView() {
         byCode.set(code, {
           ...material,
           material_code: code,
+          in_stock: effectiveMaterialStock(material) ? 1 : 0,
           colores: ensureDashboardColors({ ...material, material_code: code }),
         });
       }
@@ -257,7 +267,7 @@ export function ProviderMaterialsView() {
               key={material.id}
               id={material.id}
               material_code={displayMaterialCode(material.material_code)}
-              in_stock={Boolean(material.in_stock)}
+              in_stock={effectiveMaterialStock(material)}
               precio_hora={Number(material.precio_hora) || 0}
               activo={Boolean(material.activo)}
               colores={ensureDashboardColors(material)}
