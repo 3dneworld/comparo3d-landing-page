@@ -94,14 +94,20 @@ describe("ProviderOrdersView", () => {
     renderView();
 
     const input = await screen.findByLabelText("Tracking Correo Argentino");
+    const trackingCard = input.closest("form");
     expect(screen.getByText("Cantidad")).toBeInTheDocument();
     expect(screen.getByText("Recibido")).toBeInTheDocument();
+    expect(trackingCard?.className).toContain("animate-tracking-attention");
+    expect(trackingCard?.className).not.toContain("bg-amber-50");
 
     fireEvent.change(input, { target: { value: "LC123456789AR" } });
     fireEvent.click(screen.getByRole("button", { name: "Guardar tracking" }));
 
     await waitFor(() => {
       expect(updateProviderShipmentTracking).toHaveBeenCalledWith(17, 700, "LC123456789AR");
+    });
+    await waitFor(() => {
+      expect(trackingCard?.className).not.toContain("animate-tracking-attention");
     });
   });
 
@@ -111,7 +117,8 @@ describe("ProviderOrdersView", () => {
     const trackingInput = await screen.findByLabelText("Tracking Correo Argentino");
     const trackingCard = trackingInput.closest("form");
 
-    expect(trackingCard?.className).toContain("bg-amber-50");
+    expect(trackingCard?.className).toContain("animate-tracking-attention");
+    expect(trackingCard?.className).not.toContain("bg-amber-50");
 
     fireEvent.click(screen.getAllByRole("button", { name: "Despachar" })[0]);
 

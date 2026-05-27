@@ -653,6 +653,7 @@ function OrderDetailPanel({
   onSaveTracking,
   isSavingTracking,
   isTrackingDisabled,
+  savedTrackingIds,
   onEditPhotos,
 }: {
   providerId: number;
@@ -663,6 +664,7 @@ function OrderDetailPanel({
   onSaveTracking: (shipmentId: number, trackingCode: string) => void;
   isSavingTracking: boolean;
   isTrackingDisabled: boolean;
+  savedTrackingIds: Set<number>;
   onEditPhotos?: (existingPhotos: { url: string; filename: string }[]) => void;
 }) {
   const detailQuery = useQuery({
@@ -848,7 +850,7 @@ function OrderDetailPanel({
             value={trackingDraft}
             isSaving={isSavingTracking}
             isDisabled={isTrackingDisabled}
-            isHighlighted={!order.shipment_tracking_code && !isTrackingDisabled}
+            isHighlighted={!order.shipment_tracking_code && !savedTrackingIds.has(shipmentId) && !isTrackingDisabled}
             onChange={setTrackingDraft}
             onSave={onSaveTracking}
           />
@@ -951,17 +953,34 @@ function TrackingDetailField({
   onChange: (value: string) => void;
   onSave: (shipmentId: number, trackingCode: string) => void;
 }) {
+  const [pulseDark, setPulseDark] = useState(false);
   const cleanValue = value.trim();
   const canSave = Boolean(shipmentId) && cleanValue.length > 0 && !isSaving && !isDisabled;
+
+  useEffect(() => {
+    if (!isHighlighted) {
+      setPulseDark(false);
+      return;
+    }
+    const timer = window.setInterval(() => {
+      setPulseDark((current) => !current);
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, [isHighlighted]);
 
   return (
     <form
       className={cn(
-        "rounded-xl border px-3 py-2.5 transition-colors",
+        "rounded-xl border px-3 py-2.5 transition-colors [transition-duration:2000ms] ease-in-out",
         isDisabled
           ? "border-slate-200 bg-slate-100 opacity-75"
           : isHighlighted
-            ? "border-amber-200 bg-amber-50"
+            ? cn(
+                "animate-tracking-attention",
+                pulseDark
+                  ? "border-slate-500 bg-slate-800/90 shadow-[0_0_0_1px_rgba(148,163,184,0.12)]"
+                  : "border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)]"
+              )
             : "border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)]"
       )}
       onSubmit={(event) => {
@@ -1018,6 +1037,7 @@ export function ProviderOrdersView() {
   const [showReadyToShipComposer, setShowReadyToShipComposer] = useState(false);
   const [readyToShipFiles, setReadyToShipFiles] = useState<File[]>([]);
   const [existingDispatchPhotos, setExistingDispatchPhotos] = useState<{ url: string; filename: string }[]>([]);
+  const [savedTrackingIds, setSavedTrackingIds] = useState<Set<number>>(() => new Set());
   const [cancellingOrder, setCancellingOrder] = useState<DashboardOrder | null>(null);
   const [cancellationReason, setCancellationReason] = useState("");
   const [showPrintingConfirm, setShowPrintingConfirm] = useState(false);
@@ -1131,7 +1151,12 @@ export function ProviderOrdersView() {
       if (providerId == null) throw new Error("No encontramos el proveedor.");
       return updateProviderShipmentTracking(providerId, shipmentId, trackingCode);
     },
-    onSuccess: () => {
+    onSuccess: (_payload, variables) => {
+      setSavedTrackingIds((current) => {
+        const next = new Set(current);
+        next.add(variables.shipmentId);
+        return next;
+      });
       toast.success("Tracking guardado.");
       invalidateAll();
     },
@@ -1317,6 +1342,7 @@ export function ProviderOrdersView() {
               }}
               isSavingTracking={trackingMutation.isPending}
               isTrackingDisabled={showDispatchModal && actionOrderId === selectedId && dispatchBypassesTracking}
+              savedTrackingIds={savedTrackingIds}
               onEditPhotos={(photos) => {
                 setActionOrderId(selectedId);
                 setExistingDispatchPhotos(photos);
