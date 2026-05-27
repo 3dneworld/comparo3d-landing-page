@@ -97,6 +97,8 @@ describe("ProviderOrdersView", () => {
     const trackingCard = input.closest("form");
     expect(screen.getByText("Cantidad")).toBeInTheDocument();
     expect(screen.getByText("Recibido")).toBeInTheDocument();
+    expect(screen.queryByText("Tracking Correo Argentino")).not.toBeInTheDocument();
+    expect(input.className).toContain("w-full");
     expect(trackingCard?.className).toContain("animate-tracking-attention");
     expect(trackingCard?.className).not.toContain("bg-amber-50");
 

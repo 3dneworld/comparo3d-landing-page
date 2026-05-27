@@ -988,23 +988,17 @@ function TrackingDetailField({
         if (shipmentId && cleanValue && !isDisabled) onSave(shipmentId, cleanValue);
       }}
     >
-      <label
-        htmlFor={`order-tracking-${shipmentId || "pending"}`}
-        className="mb-1 flex items-center gap-1.5 font-[Montserrat] text-[10px] font-semibold uppercase tracking-wider text-[var(--c3d-text-faint)]"
-      >
-        <Truck className="h-3.5 w-3.5" />
-        Tracking Correo Argentino
-      </label>
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2">
         <input
           id={`order-tracking-${shipmentId || "pending"}`}
+          aria-label="Tracking Correo Argentino"
           type="text"
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="LC123456789AR"
           disabled={!shipmentId || isSaving || isDisabled}
           className={cn(
-            "min-w-0 flex-1 rounded-lg border px-2.5 py-2 font-[Montserrat] text-xs font-semibold outline-none transition focus:border-[#3b82f6]",
+            "min-w-0 w-full rounded-lg border px-2.5 py-2 font-[Montserrat] text-xs font-semibold outline-none transition focus:border-[#3b82f6]",
             isDisabled
               ? "cursor-not-allowed border-slate-200 bg-slate-200 text-slate-500"
               : "border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg)] text-[var(--c3d-text-strong)]"
@@ -1013,7 +1007,7 @@ function TrackingDetailField({
         <Button
           type="submit"
           disabled={!canSave}
-          className="h-[34px] rounded-[9px] bg-gradient-to-r from-primary to-cyan-500 px-2.5 font-[Montserrat] text-[11px] font-bold text-white"
+          className="h-[34px] w-full rounded-[9px] bg-gradient-to-r from-primary to-cyan-500 px-2.5 font-[Montserrat] text-[11px] font-bold text-white"
         >
           {isSaving ? <LoaderCircle className="h-3 w-3 animate-spin" /> : null}
           Guardar tracking
