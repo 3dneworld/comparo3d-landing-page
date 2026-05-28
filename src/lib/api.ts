@@ -733,6 +733,48 @@ export async function getQuoteOptions(
   }
 }
 
+/** Recovery desde LOST: el cliente abre el link del mail desde otro browser.
+ *  Backend lee temp/LOST/<sid>/payload.json y regenera la cotizacion con
+ *  precios del momento. Devuelve client_data_prefill para auto-llenar.
+ *  Si LOST expiro (>7d) o no existe: success=false con expired=true. */
+export interface LostRecoveryResponse {
+  success: boolean;
+  session_id?: string;
+  slicing_status?: string;
+  message?: string;
+  expired?: boolean;
+  error?: string;
+  client_data_prefill?: {
+    client_name?: string;
+    client_email?: string;
+    client_phone?: string;
+    client_location?: string;
+    material?: string;
+    cantidad?: string;
+    color_acabado?: string;
+    layer_height?: string;
+    infill?: string;
+  };
+}
+
+export async function recoverQuoteFromLost(sessionId: string): Promise<LostRecoveryResponse> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/quotes/from-lost/${sessionId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    let data: LostRecoveryResponse = { success: false };
+    try { data = await res.json(); } catch { /* ignore */ }
+    if (!res.ok) {
+      return { success: false, expired: res.status === 404, error: data.error || `HTTP ${res.status}` };
+    }
+    return data;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Error de red";
+    return { success: false, error: `No se pudo conectar al servidor: ${message}` };
+  }
+}
+
 /** Reinicia el slicing cuando quedo en error. Llamar desde el boton
  *  "Reintentar". Devuelve 202 con success=true si arranco el BG thread. */
 export async function retryQuoteSlicing(sessionId: string): Promise<{ success: boolean; error?: string }> {

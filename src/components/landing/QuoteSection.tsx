@@ -138,6 +138,61 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
   const [selectedQuote, setSelectedQuote] = useState<QuoteOption | null>(() => data.selectedQuote ?? null);
   /** Banner de retorno desde MercadoPago */
   const [mpBanner, setMpBanner] = useState<{ type: "success" | "failure" | "pending"; orderId: string } | null>(null);
+  /** Banner cuando un deep link de cotizacion ya no esta disponible (LOST expiro) */
+  const [lostUnavailable, setLostUnavailable] = useState(false);
+
+  // ── Deep link recovery: ?session=XXX desde mail follow-up ──
+  // Si el cliente abre el link del mail desde otro browser (mobile/desktop
+  // distinto) sin sessionStorage, llamamos /from-lost/<sid> al backend, que
+  // lee el snapshot LOST y crea una cotizacion nueva con precios del momento.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionFromUrl = params.get("session");
+    if (!sessionFromUrl) return;
+
+    // Limpiar URL para no re-disparar en HMR / navegacion interna
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, "", cleanUrl);
+
+    const saved = loadSaved();
+    // Si ya tenemos la misma sesion guardada localmente, no necesitamos LOST recovery
+    if (saved?.sessionId && saved.sessionId === sessionFromUrl) return;
+
+    void (async () => {
+      const { recoverQuoteFromLost } = await import("@/lib/api");
+      const result = await recoverQuoteFromLost(sessionFromUrl);
+      if (!result.success) {
+        // 404 o error → mostrar mensaje exacto que pidio Chris (sin email contacto)
+        setLostUnavailable(true);
+        return;
+      }
+      // OK: restaurar state minimo y saltar directo al paso 3 (cotizaciones)
+      const pf = result.client_data_prefill || {};
+      setDataRaw((prev) => {
+        const next = {
+          ...prev,
+          sessionId: sessionFromUrl,
+          tempName: sessionFromUrl,
+          step: 3,
+          nombre: pf.client_name || prev.nombre,
+          email: pf.client_email || prev.email,
+          telefono: pf.client_phone || prev.telefono,
+          ubicacion: pf.client_location || prev.ubicacion,
+          material: pf.material || prev.material,
+          cantidad: pf.cantidad || prev.cantidad,
+          colorAcabado: pf.color_acabado || prev.colorAcabado,
+          alturaCapa: pf.layer_height || prev.alturaCapa,
+          infill: pf.infill || prev.infill,
+        };
+        saveData(next);
+        return next;
+      });
+      setHasSaved(true);
+      requestAnimationFrame(() => {
+        document.getElementById("cotizar")?.scrollIntoView({ block: "start" });
+      });
+    })();
+  }, []);
 
   // ── Detectar retorno desde MercadoPago (?payment=success|failure|pending&order_id=XXX) ──
   useEffect(() => {
@@ -585,6 +640,30 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
             </div>
             <button
               onClick={() => setMpBanner(null)}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+              aria-label="Cerrar"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* Banner: deep link a cotizacion ya no disponible (LOST expiro) */}
+        {lostUnavailable && (
+          <div className="mb-5 flex items-start justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-xl leading-none">⚠️</span>
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  Esta cotización ya no está disponible.
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Subí tu archivo de nuevo y te generamos una cotización actualizada con los precios del momento.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setLostUnavailable(false)}
               className="shrink-0 text-muted-foreground hover:text-foreground"
               aria-label="Cerrar"
             >
