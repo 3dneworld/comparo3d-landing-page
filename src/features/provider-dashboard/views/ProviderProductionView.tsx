@@ -248,11 +248,16 @@ export function ProviderProductionView() {
   const planningPrinterId = agendaQuery.data?.printers.find((printer) => printer.is_planning_printer)?.id;
   const planningCount =
     agendaQuery.data?.printers.filter((printer) => printer.is_planning_printer).length ?? 0;
+  const freeNowCount =
+    agendaQuery.data?.printers.filter(
+      (printer) =>
+        (printer.dedicated || printer.is_planning_printer) &&
+        !printer.jobs.some((job) => Number(job.start_day || 0) <= 0 && Number(job.duration_days || 0) > 0)
+    ).length ?? 0;
   const busyNowCount =
     agendaQuery.data?.printers.filter((printer) =>
       printer.jobs.some((job) => Number(job.start_day || 0) <= 0 && Number(job.duration_days || 0) > 0)
     ).length ?? 0;
-  const nextAvailability = agendaQuery.data?.proxima_disponibilidad_iso ?? null;
 
   const updatePrintersMutation = useMutation({
     mutationFn: async (payload: { impresoras: DashboardPrinterFormPayload[] }) => {
@@ -335,18 +340,18 @@ export function ProviderProductionView() {
         variant="dark"
         eyebrow="CAPACIDAD"
         title="Produccion"
-        description={`Solo 1 impresora cuenta para planning. Tenes ${planningCount || 1} dedicada ahora.`}
+        description="Apaga una impresora cuando la necesites para trabajos por fuera. Los pedidos en curso bloquean dias automaticamente."
         metaPills={
           <>
             <DashboardStatePill tone={activeCount > 0 ? "success" : "danger"}>
-              {activeCount} activa
+              {planningCount || activeCount} dedicadas
             </DashboardStatePill>
-            <DashboardStatePill tone="info">
-              {busyNowCount} ocupadas ahora
-            </DashboardStatePill>
-            <DashboardStatePill tone="muted">
-              Proxima disp.: {formatDate(nextAvailability) ?? "sin jobs"}
-            </DashboardStatePill>
+            {busyNowCount > 0 ? (
+              <DashboardStatePill tone="info">
+                {busyNowCount} ocupadas ahora
+              </DashboardStatePill>
+            ) : null}
+            <DashboardStatePill tone="success">{freeNowCount} libres</DashboardStatePill>
           </>
         }
         actions={
@@ -363,13 +368,12 @@ export function ProviderProductionView() {
         </WarningInlineBanner>
       ) : null}
 
-      <section className="rounded-[1.25rem] border border-blue-200/70 bg-gradient-to-br from-blue-50 to-white px-5 py-5 shadow-card" aria-label="Regla de agenda">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-700">AGENDA</p>
-        <h2 className="mt-2 font-[Montserrat] text-lg font-extrabold tracking-tight text-foreground">
-          La agenda es la fuente de verdad
-        </h2>
-        <p className="mt-1 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-          Cuando aceptas pedidos, Comparo3D bloquea dias de produccion y calcula tu proxima disponibilidad.
+      <section
+        className="rounded-[12px] border border-blue-500/20 bg-blue-500/[0.045] px-5 py-3.5 text-[12px] leading-relaxed text-[var(--c3d-text-muted)] shadow-[var(--c3d-card-shadow)]"
+        aria-label="Regla de agenda"
+      >
+        <p>
+          La agenda es la fuente de verdad: los pedidos aceptados bloquean dias y no recibis nuevas cotizaciones para esas fechas. Si una impresora se te libero de un trabajo externo, prende el switch - vuelve al marketplace al instante.
         </p>
       </section>
 
@@ -403,6 +407,9 @@ export function ProviderProductionView() {
                 activa: Boolean(printer.activa),
                 es_principal: Boolean(printer.es_principal),
                 marcas: getPrinterMarcas(printer),
+                materiales: Array.isArray(printer.materiales_permitidos)
+                  ? printer.materiales_permitidos
+                  : [],
                 cantidad_unidades: Number(printer.cantidad_unidades) || 1,
                 status: buildPrinterStatus(printer.id),
               }}
@@ -414,16 +421,19 @@ export function ProviderProductionView() {
         </section>
       )}
 
-      <section className="flex flex-col gap-4 rounded-[1.25rem] border border-dashed border-border/80 bg-white px-5 py-5 shadow-card md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="font-[Montserrat] text-lg font-extrabold tracking-tight text-foreground">
+      <section className="rounded-[17px] border border-dashed border-[var(--c3d-card-border-soft)] bg-[var(--c3d-card-bg)] px-5 py-8 text-center shadow-[var(--c3d-card-shadow)]">
+        <div className="mx-auto flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-primary/10 text-primary">
+          <Plus className="h-[18px] w-[18px]" />
+        </div>
+        <div className="mx-auto mt-3 max-w-sm">
+          <h2 className="font-[Montserrat] text-[16px] font-extrabold tracking-[-0.005em] text-[var(--c3d-text-strong)]">
             Agrega mas impresoras
           </h2>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Declara capacidad adicional para mostrarla en tu perfil y preparar futuras reglas de planning.
+          <p className="mt-1 text-[12px] leading-relaxed text-[var(--c3d-text-muted)]">
+            Cada equipo declarado puede prenderse y apagarse segun tu disponibilidad real. Mas impresoras dedicadas = mas cotizaciones.
           </p>
         </div>
-        <Button type="button" onClick={() => openEditor({ kind: "new" })}>
+        <Button type="button" onClick={() => openEditor({ kind: "new" })} className="mt-4">
           <Plus className="h-4 w-4" />
           Agregar impresora
         </Button>

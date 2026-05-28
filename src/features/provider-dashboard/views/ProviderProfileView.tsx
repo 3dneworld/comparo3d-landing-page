@@ -4,9 +4,12 @@ import {
   AlertTriangle,
   ArrowUpRight,
   BadgeCheck,
+  Building2,
+  Clock3,
+  CreditCard,
+  FileText,
   LoaderCircle,
   LocateFixed,
-  MapPinned,
   RefreshCcw,
   Save,
   ShieldCheck,
@@ -66,6 +69,7 @@ type ProfileFormState = {
   logo_url: string;
   public_description: string;
   horario_operativo_json: string;
+  horario_operativo_text: string;
   lat: string;
   lng: string;
   geo_source: string;
@@ -127,6 +131,15 @@ function parseScheduleValue(value: unknown) {
   return typeof current === "object" && current !== null ? current : {};
 }
 
+function scheduleToText(value: unknown) {
+  const parsed = parseScheduleValue(value);
+  if (!parsed || typeof parsed !== "object") return safeString(value);
+  return Object.entries(parsed as Record<string, unknown>)
+    .filter(([, entryValue]) => Boolean(entryValue))
+    .map(([key, entryValue]) => `${key} ${String(entryValue)}`)
+    .join(" - ");
+}
+
 function providerToFormState(provider: DashboardProviderProfile): ProfileFormState {
   return {
     nombre: safeString(provider.nombre),
@@ -150,6 +163,7 @@ function providerToFormState(provider: DashboardProviderProfile): ProfileFormSta
       "{}",
       ""
     ),
+    horario_operativo_text: scheduleToText(provider.horario_operativo_json),
     lat: formatNumberInput(provider.lat),
     lng: formatNumberInput(provider.lng),
     geo_source: safeString(provider.geo_source),
@@ -166,19 +180,8 @@ function parseNullableNumber(value: string) {
 }
 
 function buildProfilePayload(formState: ProfileFormState): ProviderProfileFormPayload {
-  let horario_operativo: Record<string, string> = {};
-
-  if (formState.horario_operativo_json.trim()) {
-    try {
-      const parsed = JSON.parse(formState.horario_operativo_json);
-      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-        throw new Error();
-      }
-      horario_operativo = parsed as Record<string, string>;
-    } catch {
-      throw new Error("El horario operativo no tiene JSON valido.");
-    }
-  }
+  const scheduleText = formState.horario_operativo_text.trim();
+  const horario_operativo: Record<string, string> = scheduleText ? { general: scheduleText } : {};
 
   const tiempo_entrega_dias = parseNullableNumber(formState.tiempo_entrega_dias);
   const min_trabajo = parseNullableNumber(formState.min_trabajo);
@@ -271,7 +274,7 @@ function FeedbackBanner({ feedback }: { feedback: SaveFeedback }) {
   );
 }
 
-function ProfileContent({
+function ProfileContentLegacy({
   profile,
   formState,
   initialFormState,
@@ -572,6 +575,204 @@ function ProfileContent({
             )}
           </DashboardPanel>
         </div>
+      </section>
+    </div>
+  );
+}
+
+const darkInputClass =
+  "h-9 rounded-[9px] border-white/10 bg-white/[0.045] text-[var(--c3d-text-strong)] placeholder:text-[var(--c3d-text-faint)] focus-visible:ring-blue-500/40";
+const darkTextareaClass =
+  "min-h-[92px] rounded-[9px] border-white/10 bg-white/[0.045] text-[var(--c3d-text-strong)] placeholder:text-[var(--c3d-text-faint)] focus-visible:ring-blue-500/40";
+
+function ProfileContent({
+  profile,
+  formState,
+  initialFormState,
+  onFieldChange,
+  onSave,
+  onCaptureGeo,
+  isSaving,
+  isCapturingGeo,
+  marketplacePreview,
+  isMarketplacePreviewLoading,
+  saveFeedback,
+}: {
+  profile: ProviderProfileResponse;
+  formState: ProfileFormState;
+  initialFormState: ProfileFormState;
+  onFieldChange: (field: keyof ProfileFormState, value: string) => void;
+  onSave: () => void;
+  onCaptureGeo: () => void;
+  onValidatePostal: () => void;
+  isSaving: boolean;
+  isCapturingGeo: boolean;
+  isValidatingPostal: boolean;
+  marketplacePreview?: ProviderMarketplacePreviewResponse;
+  isMarketplacePreviewLoading: boolean;
+  saveFeedback: SaveFeedback | null;
+}) {
+  const provider = profile.provider;
+  const isDirty = JSON.stringify(formState) !== JSON.stringify(initialFormState);
+  const activeMaterials = profile.materials
+    .filter((item) => Boolean(item.activo))
+    .map((item) => item.material_code)
+    .filter(Boolean);
+  const publicPreviewData = {
+    nombre: formState.nombre || provider.nombre || "",
+    descripcion: formState.public_description || "",
+    localidad: formState.localidad || "",
+    provincia: formState.provincia || "",
+    logoUrl: formState.logo_url || provider.logo_url || null,
+    rating: provider.rating ?? null,
+    reviewsCount: provider.reviews_count ?? null,
+    deliveryDays: Number(formState.tiempo_entrega_dias) || null,
+    minJob: Number(formState.min_trabajo) || null,
+    materials: activeMaterials,
+  };
+  const checklistItems = [
+    { key: "nombre", label: "Nombre comercial", complete: Boolean(formState.nombre.trim()) },
+    { key: "descripcion", label: "Descripcion publica", complete: Boolean(formState.public_description.trim()) },
+    { key: "ubicacion", label: "Ubicacion validada", complete: Boolean(formState.localidad.trim() && formState.provincia.trim()) },
+    { key: "horario", label: "Horario operativo", complete: Boolean(formState.horario_operativo_text.trim()) },
+    { key: "cuit", label: "CUIT / Datos fiscales", complete: Boolean(formState.cuit.trim()) },
+    { key: "mercadopago", label: "MercadoPago vinculado", complete: Boolean(provider.mp_user_id || provider.mp_linked_at) },
+  ];
+  const missingFiscal = !formState.cuit.trim();
+
+  return (
+    <div className="space-y-5">
+      <DashboardPageHeader
+        variant="dark"
+        eyebrow="MI CUENTA"
+        title="Perfil del proveedor"
+        description="Tu vitrina en Comparo3D. Editas a la izquierda, ves como te ven los clientes a la derecha."
+        metaPills={
+          <DashboardStatePill tone={profile.profile_score >= 80 ? "success" : "warning"}>
+            {profile.profile_score}% completado
+          </DashboardStatePill>
+        }
+        actions={
+          <Button
+            type="button"
+            className="h-10 rounded-[10px] bg-gradient-primary px-5 text-primary-foreground shadow-cta hover:opacity-95"
+            onClick={onSave}
+            disabled={!isDirty || isSaving}
+          >
+            {isSaving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Guardar cambios
+          </Button>
+        }
+      />
+
+      {saveFeedback ? <FeedbackBanner feedback={saveFeedback} /> : null}
+
+      <section className="grid gap-5 xl:grid-cols-[1.15fr_0.82fr]">
+        <div className="space-y-5">
+          <DashboardPanel
+            eyebrow="DATOS BASICOS"
+            title="Informacion comercial"
+            icon={<Store className="h-[18px] w-[18px]" />}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <DashboardField label="Nombre comercial" htmlFor="nombre">
+                <Input id="nombre" value={formState.nombre} onChange={(e) => onFieldChange("nombre", e.target.value)} className={darkInputClass} />
+              </DashboardField>
+              <DashboardField label="Email operativo" htmlFor="email_operativo">
+                <Input id="email_operativo" type="email" value={formState.email_operativo} onChange={(e) => onFieldChange("email_operativo", e.target.value)} className={darkInputClass} />
+              </DashboardField>
+              <DashboardField label="Telefono" htmlFor="telefono_operativo">
+                <Input id="telefono_operativo" value={formState.telefono_operativo} onChange={(e) => onFieldChange("telefono_operativo", e.target.value)} className={darkInputClass} placeholder="+54 11 4xxx-xxxx" />
+              </DashboardField>
+              <DashboardField label="WhatsApp" htmlFor="whatsapp">
+                <Input id="whatsapp" value={formState.whatsapp} onChange={(e) => onFieldChange("whatsapp", e.target.value)} className={darkInputClass} placeholder="+54 9 11 xxxx-xxxx" />
+              </DashboardField>
+              <DashboardField label="Descripcion publica" htmlFor="public_description" className="md:col-span-2">
+                <Textarea id="public_description" value={formState.public_description} onChange={(e) => onFieldChange("public_description", e.target.value)} className={darkTextareaClass} />
+              </DashboardField>
+            </div>
+          </DashboardPanel>
+
+          <DashboardPanel
+            eyebrow="UBICACION"
+            title="Direccion operativa"
+            icon={<LocateFixed className="h-[18px] w-[18px]" />}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <DashboardField label="Direccion" htmlFor="direccion_linea1" className="md:col-span-2">
+                <Input id="direccion_linea1" value={formState.direccion_linea1} onChange={(e) => onFieldChange("direccion_linea1", e.target.value)} className={darkInputClass} placeholder="Av. Rivadavia 5000" />
+              </DashboardField>
+              <DashboardField label="Localidad" htmlFor="localidad">
+                <Input id="localidad" value={formState.localidad} onChange={(e) => onFieldChange("localidad", e.target.value)} className={darkInputClass} />
+              </DashboardField>
+              <DashboardField label="Provincia" htmlFor="provincia">
+                <Input id="provincia" value={formState.provincia} onChange={(e) => onFieldChange("provincia", e.target.value)} className={darkInputClass} />
+              </DashboardField>
+              <DashboardField label="Codigo postal" htmlFor="codigo_postal">
+                <Input id="codigo_postal" value={formState.codigo_postal} onChange={(e) => onFieldChange("codigo_postal", e.target.value)} className={darkInputClass} />
+              </DashboardField>
+              <DashboardField label="Dias de entrega" htmlFor="tiempo_entrega_dias">
+                <Input id="tiempo_entrega_dias" type="number" min="0" step="1" value={formState.tiempo_entrega_dias} onChange={(e) => onFieldChange("tiempo_entrega_dias", e.target.value)} className={darkInputClass} />
+              </DashboardField>
+              <div className="md:col-span-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 rounded-[9px] border-white/10 bg-white/[0.045] px-3 text-[var(--c3d-text-strong)] hover:bg-white/[0.08]"
+                  onClick={onCaptureGeo}
+                  disabled={isCapturingGeo || isSaving}
+                >
+                  {isCapturingGeo ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+                  Capturar ubicacion actual
+                </Button>
+              </div>
+            </div>
+          </DashboardPanel>
+
+          <DashboardPanel
+            eyebrow="DATOS FISCALES"
+            title="CUIT y facturacion"
+            icon={<CreditCard className="h-[18px] w-[18px]" />}
+          >
+            {missingFiscal ? (
+              <div className="mb-4 rounded-[10px] border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-[12px] font-semibold text-amber-300">
+                Sin CUIT no podes aceptar pedidos directos ni recibir pagos via MercadoPago.
+              </div>
+            ) : null}
+            <div className="grid gap-4 md:grid-cols-2">
+              <DashboardField label="Razon social" htmlFor="nombre_legal" className="md:col-span-2">
+                <Input id="nombre_legal" value={formState.nombre_legal} onChange={(e) => onFieldChange("nombre_legal", e.target.value)} className={darkInputClass} />
+              </DashboardField>
+              <DashboardField label="CUIT" htmlFor="cuit">
+                <Input id="cuit" value={formState.cuit} onChange={(e) => onFieldChange("cuit", e.target.value)} className={darkInputClass} />
+              </DashboardField>
+              <DashboardField label="Trabajo minimo ($)" htmlFor="min_trabajo">
+                <Input id="min_trabajo" type="number" min="0" step="100" value={formState.min_trabajo} onChange={(e) => onFieldChange("min_trabajo", e.target.value)} className={darkInputClass} />
+              </DashboardField>
+            </div>
+          </DashboardPanel>
+
+          <DashboardPanel
+            eyebrow="DISPONIBILIDAD"
+            title="Horario operativo"
+            icon={<Clock3 className="h-[18px] w-[18px]" />}
+          >
+            <div className="grid gap-4">
+              <DashboardField label="Horario (texto libre)" htmlFor="horario_operativo_text">
+                <Input id="horario_operativo_text" value={formState.horario_operativo_text} onChange={(e) => onFieldChange("horario_operativo_text", e.target.value)} className={darkInputClass} placeholder="Lun-Vie 9-18 hs" />
+              </DashboardField>
+              <DashboardField label="Notas para el cliente" htmlFor="direccion_linea2">
+                <Textarea id="direccion_linea2" value={formState.direccion_linea2} onChange={(e) => onFieldChange("direccion_linea2", e.target.value)} className={darkTextareaClass} placeholder="ej: Consultar disponibilidad por WhatsApp antes de pasar." />
+              </DashboardField>
+            </div>
+          </DashboardPanel>
+        </div>
+
+        <aside className="space-y-5">
+          <PublicProfilePreview data={publicPreviewData} />
+          <MarketplacePreviewPanel preview={marketplacePreview} isLoading={isMarketplacePreviewLoading} />
+          <CompletitudChecklist score={profile.profile_score} items={checklistItems} />
+        </aside>
       </section>
     </div>
   );

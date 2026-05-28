@@ -54,12 +54,12 @@ export function DashboardPageHeader({
         </div>
 
         {hasLowBand ? (
-          <div className="bg-[hsl(220,10%,92%)] border-t border-[hsl(220,15%,88%,0.6)] px-6 py-[14px] flex flex-wrap items-center justify-between gap-[14px]">
+          <div className="border-t border-white/[0.06] bg-white/[0.025] px-6 py-[14px] flex flex-wrap items-center justify-between gap-[14px]">
             <div className="flex flex-wrap items-center gap-[6px]">
               {metaPills ?? meta}
             </div>
             {lastSync ? (
-              <p className="text-xs font-[Montserrat] font-medium text-[hsl(220,10%,46%)] whitespace-nowrap">
+              <p className="text-xs font-[Montserrat] font-medium text-[var(--c3d-text-faint)] whitespace-nowrap">
                 Última sync {lastSync}
               </p>
             ) : null}
