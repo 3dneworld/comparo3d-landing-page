@@ -1,6 +1,7 @@
 import type {
   DashboardApiErrorShape,
   AgendaResponse,
+  BedStandardsResponse,
   DashboardMaterialsFormPayload,
   DashboardPortfolioFormPayload,
   DashboardUser,
@@ -134,6 +135,10 @@ export function fetchProviderAgenda(providerId: number, days = 14) {
   return dashboardFetch<AgendaResponse>(
     `/api/provider-dashboard/proveedores/${providerId}/agenda?${params.toString()}`
   );
+}
+
+export function fetchBedStandards() {
+  return dashboardFetch<BedStandardsResponse>("/api/bed-standards");
 }
 
 export function updateProviderProduction(providerId: number, payload: DashboardPrintersFormPayload) {

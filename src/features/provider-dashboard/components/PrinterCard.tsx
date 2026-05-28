@@ -54,7 +54,7 @@ export function PrinterCard({ data, onToggleActiva, onEdit, disabled = false }: 
               {data.name}
             </h3>
             <p className="mt-0.5 truncate text-[12px] leading-[1.5] text-[var(--c3d-text-muted)]">
-              {data.tech} - {data.bed} - {data.cantidad_unidades} unidad{data.cantidad_unidades === 1 ? "" : "es"}
+              {data.tech} - {data.bed}
             </p>
           </div>
         </div>
@@ -108,26 +108,8 @@ export function PrinterCard({ data, onToggleActiva, onEdit, disabled = false }: 
         <dl className="mb-3.5 grid grid-cols-2 gap-3.5">
           <Fact label="Tecnología" value={data.tech} />
           <Fact label="Volumen" value={data.bed} />
-          <Fact label="Unidades" value={String(data.cantidad_unidades)} />
           <Fact label="Materiales" value={(data.materiales?.length ? data.materiales : ["PLA", "PETG", "ABS", "Nylon"]).join(" - ")} />
         </dl>
-
-        <section>
-          <p className="mb-2 font-[Montserrat] text-[10px] font-extrabold uppercase leading-none tracking-[0.14em] text-[var(--c3d-text-faint)]">
-            Marcas de filamento
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {data.marcas.length ? (
-              data.marcas.map((brand) => (
-                <span key={brand} className="rounded-full bg-blue-500/15 px-2.5 py-1 text-[11px] font-semibold leading-none text-blue-300">
-                  {brand}
-                </span>
-              ))
-            ) : (
-              <span className="text-[11px] font-medium text-[var(--c3d-text-muted)]">Sin declarar</span>
-            )}
-          </div>
-        </section>
       </div>
     </article>
   );

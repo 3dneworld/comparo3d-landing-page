@@ -168,6 +168,18 @@ export interface DashboardPrinterFormPayload {
   notas: string;
 }
 
+export interface BedStandardsResponse {
+  success: true;
+  items: {
+    sku: string;
+    x: number;
+    y: number;
+    z: number;
+    label: string;
+    hint?: string | null;
+  }[];
+}
+
 export interface DashboardPrintersFormPayload {
   impresoras: DashboardPrinterFormPayload[];
 }

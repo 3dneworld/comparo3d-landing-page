@@ -1,5 +1,4 @@
-// Fuente unica de verdad de camas estandarizadas en el dashboard de proveedores.
-// Mirror exacto de modules/bed_standards.py del backend.
+// Fallback local. La fuente operativa para onboarding y dashboard es /api/bed-standards.
 
 export interface BedStandardEntry {
   sku: string;
@@ -18,26 +17,32 @@ export const BED_STANDARDS: BedStandardEntry[] = [
   { sku: "500x500", x: 500, y: 500, z: 500, label: "500 x 500 x 500 mm" },
 ];
 
-const BY_SKU = new Map(BED_STANDARDS.map((entry) => [entry.sku, entry]));
+function bySku(entries: BedStandardEntry[] = BED_STANDARDS) {
+  return new Map(entries.map((entry) => [entry.sku, entry]));
+}
 
 export function normalizeBedSku(value: unknown): string {
   if (value == null) return "";
   return String(value).trim().toLowerCase().replace(/\s+/g, "");
 }
 
-export function getBedStandard(sku: unknown): BedStandardEntry | undefined {
-  return BY_SKU.get(normalizeBedSku(sku));
+export function getBedStandard(sku: unknown, entries: BedStandardEntry[] = BED_STANDARDS): BedStandardEntry | undefined {
+  return bySku(entries).get(normalizeBedSku(sku));
 }
 
-export function isValidBedSku(sku: unknown): boolean {
-  return BY_SKU.has(normalizeBedSku(sku));
+export function isValidBedSku(sku: unknown, entries: BedStandardEntry[] = BED_STANDARDS): boolean {
+  return bySku(entries).has(normalizeBedSku(sku));
 }
 
-export function findBedSkuForDimensions(bw: number, bh: number): string | undefined {
+export function findBedSkuForDimensions(
+  bw: number,
+  bh: number,
+  entries: BedStandardEntry[] = BED_STANDARDS
+): string | undefined {
   if (!Number.isFinite(bw) || !Number.isFinite(bh) || bw <= 0 || bh <= 0) {
     return undefined;
   }
-  const candidates = BED_STANDARDS.filter((entry) => {
+  const candidates = entries.filter((entry) => {
     const fitsDirect = bw <= entry.x && bh <= entry.y;
     const fitsRotated = bw <= entry.y && bh <= entry.x;
     return fitsDirect || fitsRotated;
