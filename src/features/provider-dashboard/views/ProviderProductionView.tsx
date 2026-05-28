@@ -34,7 +34,7 @@ import {
   DashboardErrorState,
   DashboardLoadingState,
 } from "@/features/provider-dashboard/components/DashboardStates";
-import { PrinterCard } from "@/features/provider-dashboard/components/PrinterCard";
+import { PrinterCard, type PrinterCardStatus } from "@/features/provider-dashboard/components/PrinterCard";
 import { WarningInlineBanner } from "@/features/provider-dashboard/components/WarningInlineBanner";
 import { WeeklySchedule } from "@/features/provider-dashboard/components/WeeklySchedule";
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
@@ -246,7 +246,13 @@ export function ProviderProductionView() {
   );
 
   const planningPrinterId = agendaQuery.data?.printers.find((printer) => printer.is_planning_printer)?.id;
-  const busyNow = agendaQuery.data?.printers.reduce((count, printer) => count + printer.jobs.filter((job) => job.start_day === 0).length, 0) ?? 0;
+  const planningCount =
+    agendaQuery.data?.printers.filter((printer) => printer.is_planning_printer).length ?? 0;
+  const busyNowCount =
+    agendaQuery.data?.printers.filter((printer) =>
+      printer.jobs.some((job) => Number(job.start_day || 0) <= 0 && Number(job.duration_days || 0) > 0)
+    ).length ?? 0;
+  const nextAvailability = agendaQuery.data?.proxima_disponibilidad_iso ?? null;
 
   const updatePrintersMutation = useMutation({
     mutationFn: async (payload: { impresoras: DashboardPrinterFormPayload[] }) => {
@@ -275,6 +281,24 @@ export function ProviderProductionView() {
 
   function openEditor(mode: EditorMode) {
     setEditorMode(mode);
+  }
+
+  function buildPrinterStatus(printerId: number): PrinterCardStatus {
+    const agendaPrinter = agendaQuery.data?.printers.find((item) => Number(item.id) === Number(printerId));
+    if (!agendaPrinter?.dedicated && !agendaPrinter?.is_planning_printer) {
+      return { tone: "off", label: "No dedicada", detail: "Visible en perfil, no afecta planning" };
+    }
+    const currentJob = agendaPrinter.jobs.find(
+      (job) => Number(job.start_day || 0) <= 0 && Number(job.duration_days || 0) > 0
+    );
+    if (currentJob) {
+      return {
+        tone: "busy",
+        label: "Ocupada ahora",
+        detail: `${currentJob.id} - ${currentJob.client || "Pedido activo"}`,
+      };
+    }
+    return { tone: "idle", label: "Libre ahora", detail: "Sin jobs activos" };
   }
 
   if (productionQuery.error || agendaQuery.error) {
@@ -308,19 +332,20 @@ export function ProviderProductionView() {
   return (
     <div data-screen-label="Produccion" className="space-y-6">
       <DashboardPageHeader
-        eyebrow="Planning"
+        variant="dark"
+        eyebrow="CAPACIDAD"
         title="Produccion"
-        description={`Solo 1 impresora cuenta para planning. Tenes ${activeCount} dedicada${activeCount === 1 ? "" : "s"} ahora.`}
+        description={`Solo 1 impresora cuenta para planning. Tenes ${planningCount || 1} dedicada ahora.`}
         metaPills={
           <>
             <DashboardStatePill tone={activeCount > 0 ? "success" : "danger"}>
-              {activeCount} {activeCount === 1 ? "activa" : "activas"}
+              {activeCount} activa
             </DashboardStatePill>
-            <DashboardStatePill tone={busyNow > 0 ? "info" : "muted"}>
-              {busyNow} ocupadas ahora
+            <DashboardStatePill tone="info">
+              {busyNowCount} ocupadas ahora
             </DashboardStatePill>
-            <DashboardStatePill tone={agendaQuery.data?.proxima_disponibilidad_iso ? "info" : "muted"}>
-              Proxima disp.: {formatDate(agendaQuery.data?.proxima_disponibilidad_iso) ?? "sin jobs"}
+            <DashboardStatePill tone="muted">
+              Proxima disp.: {formatDate(nextAvailability) ?? "sin jobs"}
             </DashboardStatePill>
           </>
         }
@@ -337,6 +362,16 @@ export function ProviderProductionView() {
           Tenes 0 impresoras dedicadas - no apareces en cotizaciones de Comparo3D. Activa al menos 1 para volver a recibir pedidos.
         </WarningInlineBanner>
       ) : null}
+
+      <section className="rounded-[1.25rem] border border-blue-200/70 bg-gradient-to-br from-blue-50 to-white px-5 py-5 shadow-card" aria-label="Regla de agenda">
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-700">AGENDA</p>
+        <h2 className="mt-2 font-[Montserrat] text-lg font-extrabold tracking-tight text-foreground">
+          La agenda es la fuente de verdad
+        </h2>
+        <p className="mt-1 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+          Cuando aceptas pedidos, Comparo3D bloquea dias de produccion y calcula tu proxima disponibilidad.
+        </p>
+      </section>
 
       {agendaQuery.data ? (
         <WeeklySchedule
@@ -369,6 +404,7 @@ export function ProviderProductionView() {
                 es_principal: Boolean(printer.es_principal),
                 marcas: getPrinterMarcas(printer),
                 cantidad_unidades: Number(printer.cantidad_unidades) || 1,
+                status: buildPrinterStatus(printer.id),
               }}
               disabled={updatePrintersMutation.isPending}
               onToggleActiva={(next) => requestToggle(printer, next)}
@@ -377,6 +413,21 @@ export function ProviderProductionView() {
           ))}
         </section>
       )}
+
+      <section className="flex flex-col gap-4 rounded-[1.25rem] border border-dashed border-border/80 bg-white px-5 py-5 shadow-card md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="font-[Montserrat] text-lg font-extrabold tracking-tight text-foreground">
+            Agrega mas impresoras
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            Declara capacidad adicional para mostrarla en tu perfil y preparar futuras reglas de planning.
+          </p>
+        </div>
+        <Button type="button" onClick={() => openEditor({ kind: "new" })}>
+          <Plus className="h-4 w-4" />
+          Agregar impresora
+        </Button>
+      </section>
 
       {confirmTurnOffId !== null ? (
         <ConfirmTurnOffModal
