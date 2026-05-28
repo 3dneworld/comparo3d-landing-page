@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
+  AlertCircle,
   Bell,
   Boxes,
   Building2,
@@ -41,7 +42,26 @@ type NavGroup = {
   items: NavItem[];
 };
 
-const navigationGroups: NavGroup[] = [
+/* ── Coming-soon: menus deshabilitados para proveedores normales ─────── */
+const COMING_SOON_KEYS = new Set([
+  "cotizaciones",
+  "envios",
+  "portfolio",
+  "competitividad",
+  "certificacion",
+  "logistica",
+]);
+const WHITELIST_PREFIXES = ["3dneworld", "3dclowbot", "christianmella"];
+
+function isWhitelistedUser(user: DashboardUser): boolean {
+  const email = (user.email ?? "").toLowerCase();
+  return (
+    user.role === "admin" ||
+    WHITELIST_PREFIXES.some((prefix) => email.startsWith(prefix))
+  );
+}
+
+const baseNavigationGroups: NavGroup[] = [
   {
     id: "operacion",
     label: "Operacion",
@@ -73,7 +93,18 @@ const navigationGroups: NavGroup[] = [
   },
 ];
 
-const allNavigationItems: NavItem[] = navigationGroups.flatMap((g) => g.items);
+function buildNavigationGroups(user: DashboardUser): NavGroup[] {
+  const whitelisted = isWhitelistedUser(user);
+  if (whitelisted) return baseNavigationGroups;
+  return baseNavigationGroups.map((group) => ({
+    ...group,
+    items: group.items.map((item) =>
+      COMING_SOON_KEYS.has(item.key) ? { ...item, available: false } : item
+    ),
+  }));
+}
+
+const allBaseNavigationItems: NavItem[] = baseNavigationGroups.flatMap((g) => g.items);
 
 function formatProviderLocation(provider?: DashboardProvider | null) {
   const parts = [provider?.localidad, provider?.provincia].filter(Boolean);
@@ -97,6 +128,9 @@ export function ProviderDashboardShell({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const session = useProviderDashboardSession();
   const providerId = session.providerId ?? user.provider_id;
+
+  const navigationGroups = useMemo(() => buildNavigationGroups(user), [user]);
+  const allNavigationItems = useMemo(() => navigationGroups.flatMap((g) => g.items), [navigationGroups]);
 
   const summaryQuery = useQuery({
     queryKey: ["provider-dashboard", "resumen", providerId],
@@ -143,7 +177,7 @@ export function ProviderDashboardShell({
         .join("") || providerName[0]?.toUpperCase()
     : "";
   const sectionLabel =
-    allNavigationItems.find((item) => item.key === currentSection)?.label ?? "Dashboard";
+    allBaseNavigationItems.find((item) => item.key === currentSection)?.label ?? "Dashboard";
   const routeSuffix = location.search || "";
 
   const handleLogout = async () => {
@@ -219,18 +253,19 @@ export function ProviderDashboardShell({
                     return (
                       <div
                         key={item.key}
-                        className="flex items-center justify-between rounded-2xl border border-white/8 px-4 py-3 text-sm text-hero-muted/80"
+                        className="flex items-center justify-between rounded-2xl border border-white/8 px-4 py-3 text-sm text-hero-muted/50 cursor-not-allowed"
+                        title="PRÓXIMAMENTE"
                       >
                         <div className="flex items-center gap-3">
                           <Icon className="h-4 w-4" />
                           <span>{item.label}</span>
                         </div>
-                        <DashboardStatePill
-                          tone="muted"
-                          className="border-white/8 bg-white/5 text-hero-muted"
-                        >
-                          Luego
-                        </DashboardStatePill>
+                        <div className="flex items-center gap-1.5">
+                          <AlertCircle className="h-3.5 w-3.5 text-hero-muted/40" />
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-hero-muted/40">
+                            Próximamente
+                          </span>
+                        </div>
                       </div>
                     );
                   }
@@ -345,9 +380,11 @@ export function ProviderDashboardShell({
                   return (
                     <span
                       key={item.key}
-                      className="inline-flex whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-[hsl(var(--hero-muted))]"
+                      className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-[hsl(var(--hero-muted))]/50 cursor-not-allowed"
+                      title="PRÓXIMAMENTE"
                     >
                       {item.label}
+                      <AlertCircle className="h-3 w-3" />
                     </span>
                   );
                 }
