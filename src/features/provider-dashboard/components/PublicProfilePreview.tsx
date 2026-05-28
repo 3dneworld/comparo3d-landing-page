@@ -36,13 +36,13 @@ export function PublicProfilePreview({ data }: { data: PublicProfilePreviewData 
           </div>
           <div>
             <p className="font-[Montserrat] text-[10px] font-extrabold uppercase leading-none tracking-[0.18em] text-[hsl(220,80%,65%)]">
-              VISTA PUBLICA - EN VIVO
+              VISTA PÚBLICA - EN VIVO
             </p>
             <h2 className="mt-1.5 font-[Montserrat] text-[16px] font-bold leading-[1.2] text-[var(--c3d-text-strong)]">
-              Asi te ven los clientes
+              Así te ven los clientes
             </h2>
             <p className="mt-0.5 text-[12px] leading-[1.5] text-[var(--c3d-text-muted)]">
-              Cualquier cambio a la izquierda se refleja aca inmediatamente.
+              Cualquier cambio a la izquierda se refleja acá inmediatamente.
             </p>
           </div>
         </div>
@@ -73,7 +73,7 @@ export function PublicProfilePreview({ data }: { data: PublicProfilePreviewData 
                 </h3>
                 <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-slate-500">
                   <MapPin className="h-3 w-3 text-rose-500" />
-                  {location || "Ubicacion sin declarar"} - entrega {data.deliveryDays || 1} dias
+                  {location || "Ubicación sin declarar"} - entrega {data.deliveryDays || 1} días
                 </p>
               </div>
               <div className="shrink-0 text-right text-[10px] font-bold text-slate-500">

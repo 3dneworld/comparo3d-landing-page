@@ -78,13 +78,13 @@ export function PrinterCard({ data, onToggleActiva, onEdit, disabled = false }: 
         >
           <div className="min-w-0">
             <p className={cn("font-[Montserrat] text-[10px] font-extrabold uppercase leading-none tracking-[0.14em]", dedicated ? "text-emerald-400" : "text-[var(--c3d-text-faint)]")}>
-              DEDICACION A COMPARO3D
+              DEDICACIÓN A COMPARO3D
             </p>
             <h4 className="mt-1.5 font-[Montserrat] text-[15px] font-extrabold leading-[1.2] text-[var(--c3d-text-strong)]">
               {dedicated ? "Disponible para el marketplace" : "En uso por fuera"}
             </h4>
             <p className="mt-1 text-[11.5px] leading-[1.45] text-[var(--c3d-text-muted)]">
-              {dedicated ? "Recibe pedidos del marketplace cuando este libre." : "No recibe pedidos. Reactivala cuando vuelva a estar libre para Comparo3D."}
+              {dedicated ? "Recibe pedidos del marketplace cuando esté libre." : "No recibe pedidos. Reactivala cuando vuelva a estar libre para Comparo3D."}
             </p>
           </div>
           <DedicatedSwitch value={dedicated} onChange={onToggleActiva} ariaLabel={`Activar ${data.name}`} disabled={disabled} />
@@ -106,7 +106,7 @@ export function PrinterCard({ data, onToggleActiva, onEdit, disabled = false }: 
         ) : null}
 
         <dl className="mb-3.5 grid grid-cols-2 gap-3.5">
-          <Fact label="Tecnologia" value={data.tech} />
+          <Fact label="Tecnología" value={data.tech} />
           <Fact label="Volumen" value={data.bed} />
           <Fact label="Unidades" value={String(data.cantidad_unidades)} />
           <Fact label="Materiales" value={(data.materiales?.length ? data.materiales : ["PLA", "PETG", "ABS", "Nylon"]).join(" - ")} />

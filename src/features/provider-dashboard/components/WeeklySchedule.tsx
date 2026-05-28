@@ -60,22 +60,22 @@ export function WeeklySchedule({ todayIso, days, printers }: WeeklyScheduleProps
           </div>
           <div>
             <p className="font-[Montserrat] text-[10px] font-extrabold uppercase leading-none tracking-[0.18em] text-[hsl(200,85%,65%)]">
-              PROXIMAS 2 SEMANAS
+              PRÓXIMAS 2 SEMANAS
             </p>
             <h2 className="mt-1.5 font-[Montserrat] text-[16px] font-bold leading-[1.2] tracking-[-0.005em] text-[var(--c3d-text-strong)]">
               Agenda real por impresora
             </h2>
             <p className="mt-0.5 text-[12px] leading-[1.5] text-[var(--c3d-text-muted)]">
-              Los pedidos en curso bloquean dias automaticamente. Apaga una impresora para sacarla del marketplace.
+              Los pedidos en curso bloquean días automáticamente. Apagá una impresora para sacarla del marketplace.
             </p>
           </div>
         </div>
         <div className="flex flex-wrap justify-end gap-1.5">
           <span className="rounded-full border border-cyan-400/30 bg-cyan-500/15 px-2 py-1 text-[10px] font-bold text-cyan-200">
-            {occupiedDays} dias con pedidos
+            {occupiedDays} días con pedidos
           </span>
           <span className="rounded-full border border-emerald-400/30 bg-emerald-500/15 px-2 py-1 text-[10px] font-bold text-emerald-200">
-            {freeDays} dias libres
+            {freeDays} días libres
           </span>
         </div>
       </div>
@@ -120,7 +120,7 @@ export function WeeklySchedule({ todayIso, days, printers }: WeeklyScheduleProps
                     {printer.name}
                   </p>
                   <p className="mt-0.5 text-[9.5px] font-semibold uppercase leading-none tracking-[0.08em] text-[var(--c3d-text-faint)]">
-                    {printer.dedicated || printer.is_planning_printer ? "Dedicada" : "OFF - sin uso aqui"}
+                    {printer.dedicated || printer.is_planning_printer ? "Dedicada" : "OFF - sin uso acá"}
                   </p>
                 </div>
               </div>

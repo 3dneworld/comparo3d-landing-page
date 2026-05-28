@@ -339,8 +339,8 @@ export function ProviderProductionView() {
       <DashboardPageHeader
         variant="dark"
         eyebrow="CAPACIDAD"
-        title="Produccion"
-        description="Apaga una impresora cuando la necesites para trabajos por fuera. Los pedidos en curso bloquean dias automaticamente."
+        title="Producción"
+        description="Apagá una impresora cuando la necesites para trabajos por fuera. Los pedidos en curso bloquean días automáticamente."
         metaPills={
           <>
             <DashboardStatePill tone={activeCount > 0 ? "success" : "danger"}>
@@ -373,7 +373,7 @@ export function ProviderProductionView() {
         aria-label="Regla de agenda"
       >
         <p>
-          La agenda es la fuente de verdad: los pedidos aceptados bloquean dias y no recibis nuevas cotizaciones para esas fechas. Si una impresora se te libero de un trabajo externo, prende el switch - vuelve al marketplace al instante.
+          La agenda es la fuente de verdad: los pedidos aceptados bloquean días y no recibís nuevas cotizaciones para esas fechas. Si una impresora se te liberó de un trabajo externo, prendé el switch - vuelve al marketplace al instante.
         </p>
       </section>
 
@@ -430,7 +430,7 @@ export function ProviderProductionView() {
             Agrega mas impresoras
           </h2>
           <p className="mt-1 text-[12px] leading-relaxed text-[var(--c3d-text-muted)]">
-            Cada equipo declarado puede prenderse y apagarse segun tu disponibilidad real. Mas impresoras dedicadas = mas cotizaciones.
+            Cada equipo declarado puede prenderse y apagarse según tu disponibilidad real. Más impresoras dedicadas = más cotizaciones.
           </p>
         </div>
         <Button type="button" onClick={() => openEditor({ kind: "new" })} className="mt-4">

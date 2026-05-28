@@ -632,8 +632,8 @@ function ProfileContent({
   };
   const checklistItems = [
     { key: "nombre", label: "Nombre comercial", complete: Boolean(formState.nombre.trim()) },
-    { key: "descripcion", label: "Descripcion publica", complete: Boolean(formState.public_description.trim()) },
-    { key: "ubicacion", label: "Ubicacion validada", complete: Boolean(formState.localidad.trim() && formState.provincia.trim()) },
+    { key: "descripcion", label: "Descripción pública", complete: Boolean(formState.public_description.trim()) },
+    { key: "ubicacion", label: "Ubicación validada", complete: Boolean(formState.localidad.trim() && formState.provincia.trim()) },
     { key: "horario", label: "Horario operativo", complete: Boolean(formState.horario_operativo_text.trim()) },
     { key: "cuit", label: "CUIT / Datos fiscales", complete: Boolean(formState.cuit.trim()) },
     { key: "mercadopago", label: "MercadoPago vinculado", complete: Boolean(provider.mp_user_id || provider.mp_linked_at) },
@@ -646,7 +646,7 @@ function ProfileContent({
         variant="dark"
         eyebrow="MI CUENTA"
         title="Perfil del proveedor"
-        description="Tu vitrina en Comparo3D. Editas a la izquierda, ves como te ven los clientes a la derecha."
+        description="Tu vitrina en Comparo3D. Editás a la izquierda, ves cómo te ven los clientes a la derecha."
         metaPills={
           <DashboardStatePill tone={profile.profile_score >= 80 ? "success" : "warning"}>
             {profile.profile_score}% completado
@@ -671,7 +671,7 @@ function ProfileContent({
         <div className="space-y-5">
           <DashboardPanel
             eyebrow="DATOS BASICOS"
-            title="Informacion comercial"
+            title="Información comercial"
             icon={<Store className="h-[18px] w-[18px]" />}
           >
             <div className="grid gap-4 md:grid-cols-2">
@@ -687,7 +687,7 @@ function ProfileContent({
               <DashboardField label="WhatsApp" htmlFor="whatsapp">
                 <Input id="whatsapp" value={formState.whatsapp} onChange={(e) => onFieldChange("whatsapp", e.target.value)} className={darkInputClass} placeholder="+54 9 11 xxxx-xxxx" />
               </DashboardField>
-              <DashboardField label="Descripcion publica" htmlFor="public_description" className="md:col-span-2">
+              <DashboardField label="Descripción pública" htmlFor="public_description" className="md:col-span-2">
                 <Textarea id="public_description" value={formState.public_description} onChange={(e) => onFieldChange("public_description", e.target.value)} className={darkTextareaClass} />
               </DashboardField>
             </div>
@@ -695,11 +695,11 @@ function ProfileContent({
 
           <DashboardPanel
             eyebrow="UBICACION"
-            title="Direccion operativa"
+            title="Dirección operativa"
             icon={<LocateFixed className="h-[18px] w-[18px]" />}
           >
             <div className="grid gap-4 md:grid-cols-2">
-              <DashboardField label="Direccion" htmlFor="direccion_linea1" className="md:col-span-2">
+              <DashboardField label="Dirección" htmlFor="direccion_linea1" className="md:col-span-2">
                 <Input id="direccion_linea1" value={formState.direccion_linea1} onChange={(e) => onFieldChange("direccion_linea1", e.target.value)} className={darkInputClass} placeholder="Av. Rivadavia 5000" />
               </DashboardField>
               <DashboardField label="Localidad" htmlFor="localidad">
@@ -708,10 +708,10 @@ function ProfileContent({
               <DashboardField label="Provincia" htmlFor="provincia">
                 <Input id="provincia" value={formState.provincia} onChange={(e) => onFieldChange("provincia", e.target.value)} className={darkInputClass} />
               </DashboardField>
-              <DashboardField label="Codigo postal" htmlFor="codigo_postal">
+              <DashboardField label="Código postal" htmlFor="codigo_postal">
                 <Input id="codigo_postal" value={formState.codigo_postal} onChange={(e) => onFieldChange("codigo_postal", e.target.value)} className={darkInputClass} />
               </DashboardField>
-              <DashboardField label="Dias de entrega" htmlFor="tiempo_entrega_dias">
+              <DashboardField label="Días de entrega" htmlFor="tiempo_entrega_dias">
                 <Input id="tiempo_entrega_dias" type="number" min="0" step="1" value={formState.tiempo_entrega_dias} onChange={(e) => onFieldChange("tiempo_entrega_dias", e.target.value)} className={darkInputClass} />
               </DashboardField>
               <div className="md:col-span-2">
@@ -723,7 +723,7 @@ function ProfileContent({
                   disabled={isCapturingGeo || isSaving}
                 >
                   {isCapturingGeo ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
-                  Capturar ubicacion actual
+                  Capturar ubicación actual
                 </Button>
               </div>
             </div>
@@ -731,16 +731,16 @@ function ProfileContent({
 
           <DashboardPanel
             eyebrow="DATOS FISCALES"
-            title="CUIT y facturacion"
+            title="CUIT y facturación"
             icon={<CreditCard className="h-[18px] w-[18px]" />}
           >
             {missingFiscal ? (
               <div className="mb-4 rounded-[10px] border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-[12px] font-semibold text-amber-300">
-                Sin CUIT no podes aceptar pedidos directos ni recibir pagos via MercadoPago.
+                Sin CUIT no podés aceptar pedidos directos ni recibir pagos vía MercadoPago.
               </div>
             ) : null}
             <div className="grid gap-4 md:grid-cols-2">
-              <DashboardField label="Razon social" htmlFor="nombre_legal" className="md:col-span-2">
+              <DashboardField label="Razón social" htmlFor="nombre_legal" className="md:col-span-2">
                 <Input id="nombre_legal" value={formState.nombre_legal} onChange={(e) => onFieldChange("nombre_legal", e.target.value)} className={darkInputClass} />
               </DashboardField>
               <DashboardField label="CUIT" htmlFor="cuit">

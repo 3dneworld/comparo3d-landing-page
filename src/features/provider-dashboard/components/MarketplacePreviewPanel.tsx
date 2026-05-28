@@ -27,7 +27,7 @@ export function MarketplacePreviewPanel({
               RESULTADOS DEL MARKETPLACE
             </p>
             <h2 className="mt-1.5 font-[Montserrat] text-[16px] font-bold leading-[1.2] text-[var(--c3d-text-strong)]">
-              Como apareces en busquedas
+              Cómo aparecés en búsquedas
             </h2>
             <p className="mt-0.5 text-[12px] leading-[1.5] text-[var(--c3d-text-muted)]">
               Vista que ven los clientes cuando comparan proveedores.
@@ -91,7 +91,7 @@ export function MarketplacePreviewPanel({
         </ol>
 
         <div className="mt-3 rounded-[10px] border border-blue-400/20 bg-blue-500/[0.08] px-3 py-2 text-[12px] font-semibold leading-relaxed text-blue-100">
-          {preview?.suggestions?.[0] ?? "Apareces #2 de 4 - completa CUIT + MercadoPago para subir al #1."}
+          {preview?.suggestions?.[0] ?? "Aparecés #2 de 4 - completá CUIT + MercadoPago para subir al #1."}
         </div>
       </div>
     </section>
