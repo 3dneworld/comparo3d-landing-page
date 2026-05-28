@@ -43,6 +43,7 @@ interface AddressForm {
 interface PersistedCheckoutState {
   address?: Partial<AddressForm>;
   selectedMethodId?: string;
+  discountCode?: string;
 }
 
 export interface StepCheckoutProps {
@@ -284,6 +285,9 @@ export function StepCheckout({
       skipNextCheckoutSaveRef.current = true;
       setAddress({ ...defaultAddress, ...(parsed.address ?? {}) });
       setSelectedMethodId(parsed.selectedMethodId ?? "retiro");
+      if (parsed.discountCode) {
+        setDiscountCode(parsed.discountCode);
+      }
     } catch {
       setSelectedMethodId("retiro");
     }
@@ -303,9 +307,9 @@ export function StepCheckout({
     }
     localStorage.setItem(
       checkoutStorageKey(sessionId),
-      JSON.stringify({ address, selectedMethodId })
+      JSON.stringify({ address, selectedMethodId, discountCode: discountCode || undefined })
     );
-  }, [address, selectedMethodId, sessionId]);
+  }, [address, selectedMethodId, sessionId, discountCode]);
 
   useEffect(() => {
     const load = async () => {
@@ -502,8 +506,26 @@ export function StepCheckout({
     }, 600);
   }, [address.postal_code, address.province, isRetiro, postalDigits.length, selectedMethodId]);
 
+  // Re-validate discount when shipping changes so the breakdown amounts update,
+  // but keep the discount applied (don't clear it — the user shouldn't re-enter it).
   useEffect(() => {
-    setDiscountResult(null);
+    if (!discountResult || !discountResult.code) return;
+    // Re-validate to recalculate discount_amount with new shipping price
+    void (async () => {
+      const result = await validateCheckoutDiscountCode(sessionId, {
+        code: discountResult.code,
+        shipping: { price: estimatePrice ?? 0 },
+      });
+      if (!isMountedRef.current) return;
+      if (!isApiError(result)) {
+        setDiscountResult(result);
+      }
+      // If re-validation fails (expired, used, etc), clear
+      else {
+        setDiscountResult(null);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMethodId, estimatePrice]);
 
   const isFormValid = useMemo(() => {
@@ -715,9 +737,59 @@ export function StepCheckout({
   const handlePay = async () => {
     if (!isFormValid || creatingCheckout) return;
 
-    setCreatingCheckout(true);
     setCheckoutWarning(null);
     setCheckoutError(null);
+
+    // ── Validar dirección antes de proceder al pago (si es envío) ──
+    if (!isRetiro && !addressValidation) {
+      // Run address normalization first
+      if (!address.street.trim() || !address.number.trim() || !address.city.trim() || !address.postal_code.trim() || !address.province.trim()) {
+        setCheckoutError("Completa todos los campos de direccion antes de pagar.");
+        return;
+      }
+
+      setNormalizingAddress(true);
+
+      const outcome = await runNormalizeAddress({
+        street: address.street,
+        number: address.number,
+        floor: address.floor,
+        city: address.city,
+        locality_id: address.locality_id,
+        province: address.province,
+        province_id: address.province_id,
+        postal_code: address.postal_code,
+      });
+
+      if (!isMountedRef.current) return;
+
+      if (!outcome.ok) {
+        setCheckoutError(outcome.errorMessage);
+        setNormalizingAddress(false);
+        return;
+      }
+
+      const normalizeResult = outcome.result;
+      setAddress({
+        street: normalizeResult.normalized.street_name,
+        number: normalizeResult.normalized.street_number,
+        floor: address.floor,
+        city: normalizeResult.normalized.locality_name,
+        locality_id: normalizeResult.normalized.locality_id,
+        postal_code: normalizeResult.normalized.postal_code,
+        province: normalizeResult.normalized.province_name,
+        province_id: normalizeResult.normalized.province_id,
+      });
+      setAddressValidation({
+        validated: normalizeResult.validated,
+        normalized: normalizeResult.normalized,
+        validation: normalizeResult.validation,
+      });
+      toast.success("Dirección validada. Procediendo al pago...");
+      setNormalizingAddress(false);
+    }
+
+    setCreatingCheckout(true);
 
     const result = await createCheckout(sessionId, {
       discount: discountResult?.code ? { code: discountResult.code } : undefined,

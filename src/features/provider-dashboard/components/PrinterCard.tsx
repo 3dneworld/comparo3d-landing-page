@@ -109,6 +109,7 @@ export function PrinterCard({ data, onToggleActiva, onEdit, disabled = false }: 
           <Fact label="Tecnología" value={data.tech} />
           <Fact label="Volumen" value={data.bed} />
           <Fact label="Materiales" value={(data.materiales?.length ? data.materiales : ["PLA", "PETG", "ABS", "Nylon"]).join(" - ")} />
+          {data.cantidad_unidades > 1 ? <Fact label="Unidades" value={`x${data.cantidad_unidades}`} /> : null}
         </dl>
       </div>
     </article>

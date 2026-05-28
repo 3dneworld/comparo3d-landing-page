@@ -42,6 +42,7 @@ export function CatalogoComunPanel({ existingNames, marketAverages, onPick }: Ca
               }}
             >
               <div style={{ textAlign: "center" }}>
+                <img src="/filament-icon.png" alt="" style={{ width: 22, height: 22, objectFit: "contain", margin: "0 auto 4px" }} />
                 <div style={{ font: "700 12px/1 Montserrat,sans-serif", color: "var(--c3d-text-strong, hsl(220,30%,12%))" }}>{p.name}</div>
                 <div style={{ font: "600 10px/1.2 Montserrat,sans-serif", color: "var(--c3d-text-muted, hsl(220,10%,56%))", marginTop: 3 }}>
                   ≈ ${avg.toLocaleString("es-AR")}/hora

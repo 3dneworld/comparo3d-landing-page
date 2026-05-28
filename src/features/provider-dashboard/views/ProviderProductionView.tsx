@@ -19,6 +19,7 @@ import {
   fetchProviderProduction,
   updateProviderProduction,
 } from "@/features/provider-dashboard/api";
+import { MATERIAL_TYPES } from "@/features/provider-dashboard/data/catalogPresets";
 import {
   BED_STANDARDS,
   BED_STANDARDS_CONTACT_HINT,
@@ -274,11 +275,7 @@ export function ProviderProductionView() {
   );
 
   const displayPrinters = useMemo(
-    () =>
-      printers.flatMap((printer) => {
-        const total = Math.max(1, Math.round(Number(printer.cantidad_unidades) || 1));
-        return Array.from({ length: total }, (_, unitIndex) => ({ printer, unitIndex, total }));
-      }),
+    () => printers.map((printer) => ({ printer, units: Math.max(1, Math.round(Number(printer.cantidad_unidades) || 1)) })),
     [printers]
   );
 
@@ -415,12 +412,12 @@ export function ProviderProductionView() {
         />
       ) : (
         <section className="grid gap-5 lg:grid-cols-2">
-          {displayPrinters.map(({ printer, unitIndex, total }) => (
+          {displayPrinters.map(({ printer, units }) => (
             <PrinterCard
-              key={`${printer.id}-${unitIndex}`}
+              key={printer.id}
               data={{
                 id: printer.id,
-                name: `${printer.nombre_impresora || `Impresora ${printer.id}`}${total > 1 ? ` #${unitIndex + 1}` : ""}`,
+                name: printer.nombre_impresora || `Impresora ${printer.id}`,
                 bed: formatBed(printer, bedStandards),
                 tech: "FDM",
                 is_planning_printer: printer.id === planningPrinterId,
@@ -430,7 +427,7 @@ export function ProviderProductionView() {
                 materiales: Array.isArray(printer.materiales_permitidos)
                   ? printer.materiales_permitidos
                   : [],
-                cantidad_unidades: 1,
+                cantidad_unidades: units,
                 status: buildPrinterStatus(printer.id),
               }}
               disabled={updatePrintersMutation.isPending}
@@ -589,9 +586,9 @@ function PrinterEditorDialog({
               <SelectTrigger id="printer-bed" className={darkInputClass}>
                 <SelectValue placeholder="Elegir cama" />
               </SelectTrigger>
-              <SelectContent className="border-white/10 bg-[#0d1117] text-[var(--c3d-text-strong)]">
+              <SelectContent className="border-white/10 bg-[#0d1117]">
                 {bedStandards.map((entry) => (
-                  <SelectItem key={entry.sku} value={entry.sku} className="focus:bg-white/[0.08] focus:text-[var(--c3d-text-strong)]">
+                  <SelectItem key={entry.sku} value={entry.sku} className="text-[hsl(210,20%,85%)] focus:bg-white/[0.10] focus:text-white">
                     {entry.label}
                   </SelectItem>
                 ))}
@@ -599,14 +596,33 @@ function PrinterEditorDialog({
             </Select>
           </DashboardField>
 
-          <DashboardField label="Materiales" htmlFor="printer-materials" className="md:col-span-2">
-            <Input
-              id="printer-materials"
-              value={state.materiales_permitidos_text}
-              onChange={(event) => patchState({ materiales_permitidos_text: event.target.value })}
-              placeholder="PLA, PETG"
-              className={darkInputClass}
-            />
+          <DashboardField label="Materiales que imprime la impresora" htmlFor="printer-materials" className="md:col-span-2">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              {MATERIAL_TYPES.map((mat) => {
+                const selected = normalizeMaterials(state.materiales_permitidos_text).includes(mat.toUpperCase());
+                return (
+                  <button
+                    key={mat}
+                    type="button"
+                    onClick={() => {
+                      const current = normalizeMaterials(state.materiales_permitidos_text);
+                      const next = selected
+                        ? current.filter((m) => m !== mat.toUpperCase())
+                        : [...current, mat.toUpperCase()];
+                      patchState({ materiales_permitidos_text: next.join(", ") });
+                    }}
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 text-[11px] font-bold uppercase tracking-wide transition ${
+                      selected
+                        ? "border-blue-500 bg-blue-500/15 text-white shadow-[0_0_0_3px_rgba(59,130,246,0.2)]"
+                        : "border-white/10 bg-white/[0.04] text-[var(--c3d-text-muted)] opacity-50 hover:opacity-80"
+                    }`}
+                  >
+                    <img src="/filament-icon.png" alt="" className="h-7 w-7 object-contain" />
+                    {mat}
+                  </button>
+                );
+              })}
+            </div>
           </DashboardField>
 
           <DashboardField label="Notas" htmlFor="printer-notes" className="md:col-span-2">

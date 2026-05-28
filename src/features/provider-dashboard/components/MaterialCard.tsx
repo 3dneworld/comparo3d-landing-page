@@ -54,7 +54,8 @@ export function MaterialCard(props: MaterialCardProps) {
 
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
         <div>
-          <div style={{ font: "800 20px/1.1 Montserrat,sans-serif", color: "var(--c3d-text-strong, hsl(220,30%,12%))" }}>
+          <div style={{ font: "800 20px/1.1 Montserrat,sans-serif", color: "var(--c3d-text-strong, hsl(220,30%,12%))", display: "flex", alignItems: "center", gap: 8 }}>
+            <img src="/filament-icon.png" alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
             {props.material_code}
           </div>
           <div style={{ font: "600 12px/1.4 Montserrat,sans-serif", color: "var(--c3d-text-muted, hsl(220,10%,56%))", marginTop: 6 }}>
