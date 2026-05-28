@@ -88,6 +88,22 @@ const FALLBACK_METHODS: ShippingMethod[] = [
   { id: "paq_expreso", name: "PAQ.AR Expreso", eta_days: 2 },
 ];
 
+// Rangos oficiales de transito de Correo Argentino. Confirmado por su
+// equipo dev (mail 2026-05-25): la API /rates devuelve estos valores
+// FIJOS por productType y no varia por CP origen/destino. No existe un
+// endpoint adicional con tiempos exactos por zona. Mostramos rango
+// para no prometer un dia puntual que Correo no se compromete a cumplir.
+const CORREO_TRANSIT_RANGE: Record<string, { min: number; max: number }> = {
+  paq_clasico: { min: 2, max: 5 },
+  paq_expreso: { min: 1, max: 3 },
+};
+
+const formatDeliveryRangeLabel = (methodId: string, fallbackMax: number): string => {
+  const range = CORREO_TRANSIT_RANGE[methodId];
+  if (range) return `${range.min} a ${range.max} dias habiles`;
+  return `${fallbackMax} dias habiles`;
+};
+
 const formatRoundedArs = (value: number) =>
   Math.round(Number(value) || 0).toLocaleString("es-AR");
 
@@ -152,7 +168,7 @@ function ShippingMethodCard({
   const title = isPickup ? "Retiro en oficinas del proveedor" : method.name;
   const subtitle = isPickup
     ? `Fecha estimada: ${pickupReadyLabel}`
-    : `${method.eta_days} dias habiles`;
+    : formatDeliveryRangeLabel(method.id, method.eta_days);
 
   return (
     <label
@@ -1076,7 +1092,9 @@ export function StepCheckout({
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-[12px] text-muted-foreground">Entrega estimada</span>
                   <span className="text-[12px] font-medium text-foreground">
-                    {isRetiro ? pickupReadyLabel : `${deliveryDays} dias habiles`}
+                    {isRetiro
+                      ? pickupReadyLabel
+                      : formatDeliveryRangeLabel(selectedMethodId, deliveryDays ?? 0)}
                   </span>
                 </div>
               </div>
