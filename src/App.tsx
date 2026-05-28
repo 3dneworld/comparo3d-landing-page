@@ -20,7 +20,6 @@ import ClientReviewPage from "./pages/ClientReviewPage.tsx";
 import ProviderDashboardV2 from "./pages/ProviderDashboardV2.tsx";
 import ProveedoresLogin from "./pages/ProveedoresLogin.tsx";
 import ProveedoresOnboardingLogin from "./pages/ProveedoresOnboardingLogin.tsx";
-import ProviderListing from "./pages/ProviderListing.tsx";
 import ProviderProfile from "./pages/ProviderProfile.tsx";
 
 const queryClient = new QueryClient();
@@ -47,8 +46,8 @@ const App = () => (
           <Route path="/portfolio" element={<Navigate to={`${DASHBOARD_BASE_PATH}/portfolio`} replace />} />
           <Route path="/certificacion" element={<Navigate to={`${DASHBOARD_BASE_PATH}/certificacion`} replace />} />
           <Route path="/competitividad" element={<Navigate to={`${DASHBOARD_BASE_PATH}/competitividad`} replace />} />
-          {/* Directorio público de proveedores */}
-          <Route path="/proveedores" element={<ProviderListing />} />
+          {/* Directorio público de proveedores — redirige a landing hasta versión final */}
+          <Route path="/proveedores" element={<Navigate to="/" replace />} />
           <Route path="/proveedores/login" element={<ProveedoresLogin />} />
           <Route path="/proveedores/onboarding/login" element={<ProveedoresOnboardingLogin />} />
           <Route path="/client-review/:token" element={<ClientReviewPage />} />
