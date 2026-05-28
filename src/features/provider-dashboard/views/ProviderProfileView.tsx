@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
 import {
   captureProviderGeoLocation,
+  fetchProviderBadges,
   fetchProviderMarketplacePreview,
   fetchProviderProfile,
   updateProviderProfile,
@@ -48,6 +49,7 @@ import type {
   ProviderProfileFormPayload,
   ProviderProfileResponse,
 } from "@/features/provider-dashboard/types";
+import type { QuoteOptionBadge } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 type ProfileFormState = {
@@ -103,6 +105,9 @@ const addressFieldKeys: (keyof ProfileFormState)[] = [
   "provincia",
   "codigo_postal",
 ];
+
+const SHOW_DEDICATED_PROFILE_PREVIEW = false;
+const SHOW_OPERATIVE_AVAILABILITY_SECTION = false;
 
 function safeString(value: unknown) {
   return value == null ? "" : String(value);
@@ -287,6 +292,7 @@ function ProfileContentLegacy({
   isValidatingPostal,
   marketplacePreview,
   isMarketplacePreviewLoading,
+  marketplaceBadges,
   saveFeedback,
 }: {
   profile: ProviderProfileResponse;
@@ -301,6 +307,7 @@ function ProfileContentLegacy({
   isValidatingPostal: boolean;
   marketplacePreview?: ProviderMarketplacePreviewResponse;
   isMarketplacePreviewLoading: boolean;
+  marketplaceBadges: QuoteOptionBadge[];
   saveFeedback: SaveFeedback | null;
 }) {
   const provider = profile.provider;
@@ -596,6 +603,7 @@ function ProfileContent({
   isCapturingGeo,
   marketplacePreview,
   isMarketplacePreviewLoading,
+  marketplaceBadges,
   saveFeedback,
 }: {
   profile: ProviderProfileResponse;
@@ -610,6 +618,7 @@ function ProfileContent({
   isValidatingPostal: boolean;
   marketplacePreview?: ProviderMarketplacePreviewResponse;
   isMarketplacePreviewLoading: boolean;
+  marketplaceBadges: QuoteOptionBadge[];
   saveFeedback: SaveFeedback | null;
 }) {
   const provider = profile.provider;
@@ -634,7 +643,6 @@ function ProfileContent({
     { key: "nombre", label: "Nombre comercial", complete: Boolean(formState.nombre.trim()) },
     { key: "descripcion", label: "Descripción pública", complete: Boolean(formState.public_description.trim()) },
     { key: "ubicacion", label: "Ubicación validada", complete: Boolean(formState.localidad.trim() && formState.provincia.trim()) },
-    { key: "horario", label: "Horario operativo", complete: Boolean(formState.horario_operativo_text.trim()) },
     { key: "cuit", label: "CUIT / Datos fiscales", complete: Boolean(formState.cuit.trim()) },
     { key: "mercadopago", label: "MercadoPago vinculado", complete: Boolean(provider.mp_user_id || provider.mp_linked_at) },
   ];
@@ -752,25 +760,27 @@ function ProfileContent({
             </div>
           </DashboardPanel>
 
-          <DashboardPanel
-            eyebrow="DISPONIBILIDAD"
-            title="Horario operativo"
-            icon={<Clock3 className="h-[18px] w-[18px]" />}
-          >
-            <div className="grid gap-4">
-              <DashboardField label="Horario (texto libre)" htmlFor="horario_operativo_text">
-                <Input id="horario_operativo_text" value={formState.horario_operativo_text} onChange={(e) => onFieldChange("horario_operativo_text", e.target.value)} className={darkInputClass} placeholder="Lun-Vie 9-18 hs" />
-              </DashboardField>
-              <DashboardField label="Notas para el cliente" htmlFor="direccion_linea2">
-                <Textarea id="direccion_linea2" value={formState.direccion_linea2} onChange={(e) => onFieldChange("direccion_linea2", e.target.value)} className={darkTextareaClass} placeholder="ej: Consultar disponibilidad por WhatsApp antes de pasar." />
-              </DashboardField>
-            </div>
-          </DashboardPanel>
+          {SHOW_OPERATIVE_AVAILABILITY_SECTION ? (
+            <DashboardPanel
+              eyebrow="DISPONIBILIDAD"
+              title="Horario operativo"
+              icon={<Clock3 className="h-[18px] w-[18px]" />}
+            >
+              <div className="grid gap-4">
+                <DashboardField label="Horario (texto libre)" htmlFor="horario_operativo_text">
+                  <Input id="horario_operativo_text" value={formState.horario_operativo_text} onChange={(e) => onFieldChange("horario_operativo_text", e.target.value)} className={darkInputClass} placeholder="Lun-Vie 9-18 hs" />
+                </DashboardField>
+                <DashboardField label="Notas para el cliente" htmlFor="direccion_linea2">
+                  <Textarea id="direccion_linea2" value={formState.direccion_linea2} onChange={(e) => onFieldChange("direccion_linea2", e.target.value)} className={darkTextareaClass} placeholder="ej: Consultar disponibilidad por WhatsApp antes de pasar." />
+                </DashboardField>
+              </div>
+            </DashboardPanel>
+          ) : null}
         </div>
 
         <aside className="space-y-5">
-          <PublicProfilePreview data={publicPreviewData} />
-          <MarketplacePreviewPanel preview={marketplacePreview} isLoading={isMarketplacePreviewLoading} />
+          {SHOW_DEDICATED_PROFILE_PREVIEW ? <PublicProfilePreview data={publicPreviewData} /> : null}
+          <MarketplacePreviewPanel preview={marketplacePreview} isLoading={isMarketplacePreviewLoading} badges={marketplaceBadges} />
           <CompletitudChecklist score={profile.profile_score} items={checklistItems} />
         </aside>
       </section>
@@ -812,6 +822,28 @@ export function ProviderProfileView() {
     enabled: providerId != null && Boolean(profileQuery.data?.provider),
     staleTime: 30_000,
   });
+
+  const badgesQuery = useQuery({
+    queryKey: ["provider-dashboard", "badges", providerId],
+    queryFn: () => fetchProviderBadges(providerId!),
+    enabled: providerId != null,
+    staleTime: 60_000,
+  });
+
+  const marketplaceBadges = useMemo<QuoteOptionBadge[]>(
+    () =>
+      (badgesQuery.data?.items ?? [])
+        .filter((badge) => badge.is_active !== false && badge.is_active !== 0)
+        .map((badge) => ({
+          badge_type: badge.badge_type,
+          badge_tier: badge.badge_tier ?? null,
+          granted_at: badge.granted_at ?? "",
+        }))
+        .filter((badge): badge is QuoteOptionBadge =>
+          badge.badge_type === "seleccion_fundador" || badge.badge_type === "certificado_organico"
+        ),
+    [badgesQuery.data?.items]
+  );
 
   useEffect(() => {
     if (!profileQuery.data?.provider) return;
@@ -942,6 +974,7 @@ export function ProviderProfileView() {
       isValidatingPostal={postalMutation.isPending}
       marketplacePreview={marketplacePreviewQuery.data}
       isMarketplacePreviewLoading={marketplacePreviewQuery.isLoading || marketplacePreviewQuery.isFetching}
+      marketplaceBadges={marketplaceBadges}
       saveFeedback={saveFeedback}
     />
   );

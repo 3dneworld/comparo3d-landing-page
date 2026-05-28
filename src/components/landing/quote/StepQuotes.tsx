@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { geocodeAddress, isApiError, type QuoteOption } from "@/lib/api";
 import { BadgeChip, sortBadges } from "./BadgeChip";
+import { QuoteProviderCard } from "./QuoteProviderCard";
 import { RankingExplainer } from "@/components/shared/RankingExplainer";
 import {
   Accordion,
@@ -928,7 +929,7 @@ export function StepQuotes({
           {!isProcessing && visibleQuotes.length > 0 && (
             <div className="mt-6 space-y-3">
               {visibleQuotes.map((quote) => (
-                <ProviderCard
+                <QuoteProviderCard
                   key={quote.quote_option_uid}
                   option={quote}
                   isRecommended={quote.quote_option_uid === recommendedQuoteUid}

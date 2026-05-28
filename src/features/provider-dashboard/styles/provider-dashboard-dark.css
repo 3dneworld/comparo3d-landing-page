@@ -39,11 +39,15 @@
 }
 
 @media (min-width: 1024px) {
+  .dashboard-dark__bg-grid {
+    inset: 0 0 0 292px;
+  }
+
   .dashboard-dark::before {
     content: "";
     position: fixed;
     inset: 0 auto 0 0;
-    width: 306px;
+    width: 292px;
     background: linear-gradient(180deg, #101827 0%, #17294f 100%);
     pointer-events: none;
     z-index: 0;
