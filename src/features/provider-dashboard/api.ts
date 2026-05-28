@@ -24,6 +24,7 @@ import type {
   ProviderProductionResponse,
   ProviderProfileFormPayload,
   ProviderProfileResponse,
+  ProviderMarketplacePreviewResponse,
   ProviderPortfolioDeleteResponse,
   ProviderPortfolioItemResponse,
   ProviderPortfolioResponse,
@@ -108,6 +109,20 @@ export function updateProviderProfile(providerId: number, payload: ProviderProfi
     },
     body: JSON.stringify(payload),
   });
+}
+
+export function fetchProviderMarketplacePreview(
+  providerId: number,
+  params: { material?: string; zona?: string; limit?: number } = {},
+) {
+  const search = new URLSearchParams();
+  if (params.material) search.set("material", params.material);
+  if (params.zona) search.set("zona", params.zona);
+  if (params.limit) search.set("limit", String(params.limit));
+  const suffix = search.toString() ? `?${search.toString()}` : "";
+  return dashboardFetch<ProviderMarketplacePreviewResponse>(
+    `/api/provider-dashboard/proveedores/${providerId}/marketplace-preview${suffix}`,
+  );
 }
 
 export function fetchProviderProduction(providerId: number) {

@@ -53,6 +53,8 @@ export interface DashboardProvider {
   visibility_ready?: boolean;
   order_ready?: boolean;
   marketplace_visible?: boolean;
+  rating?: number | null;
+  reviews_count?: number | null;
   localidad?: string | null;
   provincia?: string | null;
   ubicacion?: string | null;
@@ -257,6 +259,34 @@ export interface ProviderProfileResponse {
   proximity: DashboardProximity;
   postal_validation: DashboardPostalValidation;
   profile_score: number;
+}
+
+export interface MarketplacePreviewQuery {
+  material: string;
+  zona: string;
+  total_results: number;
+}
+
+export interface MarketplacePreviewResult {
+  position: number;
+  provider_id: number;
+  name: string;
+  rating: number | null;
+  reviews_count: number;
+  price_from: number;
+  delivery_days: number;
+  sr_score: number;
+  ranking_mode: string;
+  is_you: boolean;
+}
+
+export interface ProviderMarketplacePreviewResponse {
+  success: true;
+  provider_id: number;
+  query: MarketplacePreviewQuery;
+  results: MarketplacePreviewResult[];
+  your_position: number | null;
+  suggestions: string[];
 }
 
 export type ProviderLogisticsResponse = ProviderProfileResponse;

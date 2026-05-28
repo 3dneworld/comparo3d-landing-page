@@ -19,10 +19,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
 import {
   captureProviderGeoLocation,
+  fetchProviderMarketplacePreview,
   fetchProviderProfile,
   updateProviderProfile,
   validateProviderPostalAddress,
 } from "@/features/provider-dashboard/api";
+import { CompletitudChecklist } from "@/features/provider-dashboard/components/CompletitudChecklist";
 import { DashboardField } from "@/features/provider-dashboard/components/DashboardField";
 import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
@@ -33,9 +35,12 @@ import {
   DashboardErrorState,
   DashboardLoadingState,
 } from "@/features/provider-dashboard/components/DashboardStates";
+import { MarketplacePreviewPanel } from "@/features/provider-dashboard/components/MarketplacePreviewPanel";
+import { PublicProfilePreview } from "@/features/provider-dashboard/components/PublicProfilePreview";
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
 import type {
   DashboardProviderProfile,
+  ProviderMarketplacePreviewResponse,
   ProviderGeoLocationPayload,
   ProviderProfileFormPayload,
   ProviderProfileResponse,
@@ -277,6 +282,8 @@ function ProfileContent({
   isSaving,
   isCapturingGeo,
   isValidatingPostal,
+  marketplacePreview,
+  isMarketplacePreviewLoading,
   saveFeedback,
 }: {
   profile: ProviderProfileResponse;
@@ -289,6 +296,8 @@ function ProfileContent({
   isSaving: boolean;
   isCapturingGeo: boolean;
   isValidatingPostal: boolean;
+  marketplacePreview?: ProviderMarketplacePreviewResponse;
+  isMarketplacePreviewLoading: boolean;
   saveFeedback: SaveFeedback | null;
 }) {
   const provider = profile.provider;
@@ -309,6 +318,33 @@ function ProfileContent({
       ? "La dirección todavía no quedó validada con Correo Argentino."
       : null,
   ].filter(Boolean) as string[];
+  const activeMaterials = profile.materials
+    .filter((item) => Boolean(item.activo))
+    .map((item) => item.material_code)
+    .filter(Boolean);
+  const schedule = parseScheduleValue(formState.horario_operativo_json);
+  const scheduleComplete =
+    typeof schedule === "object" && schedule !== null && Object.values(schedule as Record<string, unknown>).some(Boolean);
+  const publicPreviewData = {
+    nombre: formState.nombre || provider.nombre || "",
+    descripcion: formState.public_description || "",
+    localidad: formState.localidad || "",
+    provincia: formState.provincia || "",
+    logoUrl: formState.logo_url || provider.logo_url || null,
+    rating: provider.rating ?? null,
+    reviewsCount: provider.reviews_count ?? null,
+    deliveryDays: Number(formState.tiempo_entrega_dias) || null,
+    minJob: Number(formState.min_trabajo) || null,
+    materials: activeMaterials,
+  };
+  const checklistItems = [
+    { key: "nombre", label: "Nombre comercial", complete: Boolean(formState.nombre.trim()) },
+    { key: "descripcion", label: "Descripcion publica", complete: Boolean(formState.public_description.trim()) },
+    { key: "ubicacion", label: "Ubicacion", complete: Boolean(formState.localidad.trim() && formState.provincia.trim()) },
+    { key: "horario", label: "Horario operativo", complete: scheduleComplete },
+    { key: "cuit", label: "CUIT", complete: Boolean(formState.cuit.trim()) },
+    { key: "mercadopago", label: "MercadoPago", complete: Boolean(provider.mp_user_id || provider.mp_linked_at) },
+  ];
 
   return (
     <div className="space-y-6">
@@ -444,6 +480,12 @@ function ProfileContent({
         </div>
 
         <div className="space-y-6">
+          <PublicProfilePreview data={publicPreviewData} />
+
+          <MarketplacePreviewPanel preview={marketplacePreview} isLoading={isMarketplacePreviewLoading} />
+
+          <CompletitudChecklist score={profile.profile_score} items={checklistItems} />
+
           <DashboardPanel title="Estado actual" description="Lectura de apoyo para editar con contexto.">
             <div className="space-y-4">
               <div className="rounded-[1.25rem] border border-border/70 bg-background/70 p-4">
@@ -549,6 +591,27 @@ export function ProviderProfileView() {
     staleTime: 30_000,
   });
 
+  const firstActiveMaterialCode = useMemo(
+    () => profileQuery.data?.materials.find((item) => Boolean(item.activo))?.material_code,
+    [profileQuery.data?.materials]
+  );
+  const marketplaceZona =
+    formState?.localidad ||
+    profileQuery.data?.provider.localidad ||
+    profileQuery.data?.provider.provincia ||
+    undefined;
+  const marketplacePreviewQuery = useQuery({
+    queryKey: ["provider-marketplace-preview", providerId, firstActiveMaterialCode, marketplaceZona],
+    queryFn: () =>
+      fetchProviderMarketplacePreview(providerId!, {
+        material: firstActiveMaterialCode,
+        zona: marketplaceZona,
+        limit: 5,
+      }),
+    enabled: providerId != null && Boolean(profileQuery.data?.provider),
+    staleTime: 30_000,
+  });
+
   useEffect(() => {
     if (!profileQuery.data?.provider) return;
     const currentState = formState ? JSON.stringify(formState) : "";
@@ -580,6 +643,7 @@ export function ProviderProfileView() {
     onSuccess: (payload) => {
       queryClient.setQueryData(["provider-dashboard", "profile", providerId], payload);
       void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "summary", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-marketplace-preview", providerId] });
       applyServerProfile(payload);
       setSaveFeedback({ tone: "success", title: "Perfil guardado", description: "Los cambios ya quedaron persistidos en el backend real del dashboard." });
       toast.success("Perfil guardado");
@@ -675,6 +739,8 @@ export function ProviderProfileView() {
       isSaving={saveMutation.isPending}
       isCapturingGeo={geoMutation.isPending}
       isValidatingPostal={postalMutation.isPending}
+      marketplacePreview={marketplacePreviewQuery.data}
+      isMarketplacePreviewLoading={marketplacePreviewQuery.isLoading || marketplacePreviewQuery.isFetching}
       saveFeedback={saveFeedback}
     />
   );
