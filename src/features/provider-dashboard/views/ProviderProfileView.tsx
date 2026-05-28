@@ -352,7 +352,6 @@ function ProfileContentLegacy({
     { key: "descripcion", label: "Descripcion publica", complete: Boolean(formState.public_description.trim()) },
     { key: "ubicacion", label: "Ubicacion", complete: Boolean(formState.localidad.trim() && formState.provincia.trim()) },
     { key: "horario", label: "Horario operativo", complete: scheduleComplete },
-    { key: "cuit", label: "CUIT", complete: Boolean(formState.cuit.trim()) },
     { key: "mercadopago", label: "MercadoPago", complete: Boolean(provider.mp_user_id || provider.mp_linked_at) },
   ];
 
@@ -643,10 +642,8 @@ function ProfileContent({
     { key: "nombre", label: "Nombre comercial", complete: Boolean(formState.nombre.trim()) },
     { key: "descripcion", label: "Descripción pública", complete: Boolean(formState.public_description.trim()) },
     { key: "ubicacion", label: "Ubicación validada", complete: Boolean(formState.localidad.trim() && formState.provincia.trim()) },
-    { key: "cuit", label: "CUIT / Datos fiscales", complete: Boolean(formState.cuit.trim()) },
     { key: "mercadopago", label: "MercadoPago vinculado", complete: Boolean(provider.mp_user_id || provider.mp_linked_at) },
   ];
-  const missingFiscal = !formState.cuit.trim();
 
   return (
     <div className="space-y-5">
@@ -742,11 +739,6 @@ function ProfileContent({
             title="CUIT y facturación"
             icon={<CreditCard className="h-[18px] w-[18px]" />}
           >
-            {missingFiscal ? (
-              <div className="mb-4 rounded-[10px] border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-[12px] font-semibold text-amber-300">
-                Sin CUIT no podés aceptar pedidos directos ni recibir pagos vía MercadoPago.
-              </div>
-            ) : null}
             <div className="grid gap-4 md:grid-cols-2">
               <DashboardField label="Razón social" htmlFor="nombre_legal" className="md:col-span-2">
                 <Input id="nombre_legal" value={formState.nombre_legal} onChange={(e) => onFieldChange("nombre_legal", e.target.value)} className={darkInputClass} />
