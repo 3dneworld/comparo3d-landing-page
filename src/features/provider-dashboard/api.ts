@@ -151,6 +151,31 @@ export function updateProviderProduction(providerId: number, payload: DashboardP
   });
 }
 
+export function deleteProviderPrinter(providerId: number, printerId: number) {
+  return dashboardFetch<ProviderProductionResponse>(
+    `/api/provider-dashboard/proveedores/${providerId}/impresoras/${printerId}`,
+    { method: "DELETE" },
+  );
+}
+
+export function reorderProviderPrinters(providerId: number, order: number[]) {
+  return dashboardFetch<ProviderProductionResponse>(
+    `/api/provider-dashboard/proveedores/${providerId}/impresoras/reorder`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order }),
+    },
+  );
+}
+
+export function setProviderPrincipalPrinter(providerId: number, printerId: number) {
+  return dashboardFetch<ProviderProductionResponse>(
+    `/api/provider-dashboard/proveedores/${providerId}/impresoras/${printerId}/set-principal`,
+    { method: "PUT" },
+  );
+}
+
 export function fetchProviderMaterials(providerId: number) {
   return dashboardFetch<ProviderMaterialsResponse>(`/api/provider-dashboard/proveedores/${providerId}/materiales`);
 }

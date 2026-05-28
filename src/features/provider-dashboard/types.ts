@@ -150,6 +150,7 @@ export interface DashboardPrinter {
   cantidad_unidades: number;
   activa: number;
   es_principal: number;
+  priority_order?: number;
   materiales_permitidos: string[];
   marcas?: string[];
   marcas_json?: string | null;
