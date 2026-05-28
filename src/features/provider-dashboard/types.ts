@@ -164,6 +164,7 @@ export interface DashboardPrinterFormPayload {
   cantidad_unidades: number;
   activa: boolean;
   es_principal: boolean;
+  priority_order?: number;
   materiales_permitidos: string[];
   marcas?: string[];
   notas: string;

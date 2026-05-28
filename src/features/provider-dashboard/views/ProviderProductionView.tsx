@@ -1,6 +1,20 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, Cpu, LoaderCircle, Plus, X } from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,12 +28,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
 import {
+  deleteProviderPrinter,
   fetchBedStandards,
   fetchProviderAgenda,
   fetchProviderProduction,
+  reorderProviderPrinters,
+  setProviderPrincipalPrinter,
   updateProviderProduction,
 } from "@/features/provider-dashboard/api";
-import { MATERIAL_TYPES } from "@/features/provider-dashboard/data/catalogPresets";
 import {
   BED_STANDARDS,
   BED_STANDARDS_CONTACT_HINT,
@@ -36,7 +52,11 @@ import {
   DashboardErrorState,
   DashboardLoadingState,
 } from "@/features/provider-dashboard/components/DashboardStates";
-import { PrinterCard, type PrinterCardStatus } from "@/features/provider-dashboard/components/PrinterCard";
+import {
+  PrinterCard,
+  type PrinterCardData,
+  type PrinterCardStatus,
+} from "@/features/provider-dashboard/components/PrinterCard";
 import { WarningInlineBanner } from "@/features/provider-dashboard/components/WarningInlineBanner";
 import { WeeklySchedule } from "@/features/provider-dashboard/components/WeeklySchedule";
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
@@ -51,11 +71,6 @@ type EditorMode = { kind: "new" } | { kind: "edit"; id: number };
 interface PrinterEditorState {
   nombre_impresora: string;
   bed_sku: string;
-  cantidad_unidades: string;
-  activa: boolean;
-  es_principal: boolean;
-  materiales_permitidos_text: string;
-  marcas_text: string;
   notas: string;
 }
 
@@ -65,10 +80,10 @@ const darkInputClass =
 const darkTextareaClass =
   "min-h-24 rounded-[9px] border-white/10 bg-white/[0.045] text-[var(--c3d-text-strong)] placeholder:text-[var(--c3d-text-faint)] focus-visible:ring-blue-500/40";
 const productionGuidance = [
-  "Recomendamos que pongas como principal a la impresora con tamaño de cama más grande.",
-  "La que pongas como principal es la que usaremos para tu slicing como proveedor.",
-  "Realizamos un slicing por cama por proveedor (Impresora Principal).",
-  "Los pedidos en curso bloquean días automáticamente.",
+  "Una sola impresora es la principal a la vez — es la que usamos para tu slicing y cotizaciones.",
+  "Arrastrá las cards para fijar la prioridad: cuando se libere la principal, el sistema usa la siguiente por orden.",
+  "El switch principal se cambia automáticamente cuando un pedido ocupa la impresora actual.",
+  "Los pedidos aceptados bloquean días en la agenda hasta que cargues las fotos de despacho.",
 ];
 
 function safeString(value: unknown) {
@@ -96,24 +111,17 @@ function getPrinterMarcas(printer: DashboardPrinter): string[] {
   }
 }
 
-function splitList(value: string) {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function normalizeMaterials(value: string) {
-  return splitList(value).map((item) => item.toUpperCase());
-}
-
-function printerToPayload(printer: DashboardPrinter, bedStandards: BedStandardEntry[] = BED_STANDARDS): DashboardPrinterFormPayload {
+function printerToPayload(
+  printer: DashboardPrinter,
+  bedStandards: BedStandardEntry[] = BED_STANDARDS,
+): DashboardPrinterFormPayload {
   return {
     nombre_impresora: printer.nombre_impresora || `Impresora ${printer.id}`,
     bed_sku: resolveBedSku(printer, bedStandards) || DEFAULT_BED_SKU,
     cantidad_unidades: Math.max(1, Math.round(Number(printer.cantidad_unidades) || 1)),
     activa: Boolean(printer.activa),
     es_principal: Boolean(printer.es_principal),
+    priority_order: Number(printer.priority_order ?? 0),
     materiales_permitidos: Array.isArray(printer.materiales_permitidos)
       ? printer.materiales_permitidos
       : [],
@@ -124,92 +132,57 @@ function printerToPayload(printer: DashboardPrinter, bedStandards: BedStandardEn
 
 function printerToEditorState(
   printer?: DashboardPrinter | null,
-  bedStandards: BedStandardEntry[] = BED_STANDARDS
+  bedStandards: BedStandardEntry[] = BED_STANDARDS,
 ): PrinterEditorState {
   if (!printer) {
     return {
       nombre_impresora: "",
       bed_sku: DEFAULT_BED_SKU,
-      cantidad_unidades: "1",
-      activa: true,
-      es_principal: false,
-      materiales_permitidos_text: "",
-      marcas_text: "",
       notas: "",
     };
   }
   return {
     nombre_impresora: safeString(printer.nombre_impresora),
     bed_sku: resolveBedSku(printer, bedStandards) || DEFAULT_BED_SKU,
-    cantidad_unidades: "1",
-    activa: Boolean(printer.activa),
-    es_principal: Boolean(printer.es_principal),
-    materiales_permitidos_text: Array.isArray(printer.materiales_permitidos)
-      ? printer.materiales_permitidos.join(", ")
-      : "",
-    marcas_text: getPrinterMarcas(printer).join(", "),
     notas: safeString(printer.notas),
   };
 }
 
-function editorToPayload(
+function editorToPayloadPatch(
   state: PrinterEditorState,
   fallbackName: string,
-  bedStandards: BedStandardEntry[] = BED_STANDARDS
-): DashboardPrinterFormPayload {
-  const qty = Number(state.cantidad_unidades);
-  if (!Number.isFinite(qty) || qty <= 0) {
-    throw new Error("Las unidades deben ser mayores a cero.");
-  }
+  bedStandards: BedStandardEntry[] = BED_STANDARDS,
+): Pick<DashboardPrinterFormPayload, "nombre_impresora" | "bed_sku" | "notas"> {
   if (!isValidBedSku(state.bed_sku, bedStandards)) {
     throw new Error(`Elegi una cama estandar. ${BED_STANDARDS_CONTACT_HINT}`);
   }
   return {
     nombre_impresora: state.nombre_impresora.trim() || fallbackName,
     bed_sku: normalizeBedSku(state.bed_sku),
-    cantidad_unidades: 1,
-    activa: state.activa,
-    es_principal: state.es_principal,
-    materiales_permitidos: normalizeMaterials(state.materiales_permitidos_text),
-    marcas: splitList(state.marcas_text),
     notas: state.notas,
   };
 }
 
-function ensureOnePrimary(items: DashboardPrinterFormPayload[]) {
-  if (!items.length) return items;
-  if (items.some((item) => item.es_principal)) return items;
-  const firstActive = items.findIndex((item) => item.activa);
-  const primaryIndex = firstActive >= 0 ? firstActive : 0;
-  return items.map((item, index) => ({ ...item, es_principal: index === primaryIndex }));
-}
-
 function formatBed(printer: DashboardPrinter, bedStandards: BedStandardEntry[] = BED_STANDARDS) {
   const bed = getBedStandard(resolveBedSku(printer, bedStandards), bedStandards);
-  if (bed) return bed.label;
-  return `${Math.round(Number(printer.cama_x) || 0)} x ${Math.round(Number(printer.cama_y) || 0)} x ${Math.round(Number(printer.cama_z) || 0)} mm`;
+  if (bed) return `${bed.x}x${bed.y}x${bed.z}`;
+  const x = Math.round(Number(printer.cama_x) || 0);
+  const y = Math.round(Number(printer.cama_y) || 0);
+  const z = Math.round(Number(printer.cama_z) || 0);
+  return `${x}x${y}x${z}`;
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return null;
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short" }).format(date);
-}
-
-function buildPayloadForToggle(
+function buildPayloadForToggleActiva(
   printers: DashboardPrinter[],
   printerId: number,
-  next: boolean,
-  bedStandards: BedStandardEntry[] = BED_STANDARDS
+  nextActiva: boolean,
+  bedStandards: BedStandardEntry[] = BED_STANDARDS,
 ): { impresoras: DashboardPrinterFormPayload[] } {
   return {
-    impresoras: ensureOnePrimary(
-      printers.map((printer) => ({
-        ...printerToPayload(printer, bedStandards),
-        activa: printer.id === printerId ? next : Boolean(printer.activa),
-      }))
-    ),
+    impresoras: printers.map((printer) => ({
+      ...printerToPayload(printer, bedStandards),
+      activa: printer.id === printerId ? nextActiva : Boolean(printer.activa),
+    })),
   };
 }
 
@@ -217,29 +190,38 @@ function buildPayloadForEditor(
   printers: DashboardPrinter[],
   mode: EditorMode,
   state: PrinterEditorState,
-  bedStandards: BedStandardEntry[] = BED_STANDARDS
+  bedStandards: BedStandardEntry[] = BED_STANDARDS,
 ): { impresoras: DashboardPrinterFormPayload[] } {
-  const edited = editorToPayload(state, `Impresora ${printers.length + 1}`, bedStandards);
+  const patch = editorToPayloadPatch(state, `Impresora ${printers.length + 1}`, bedStandards);
   const base = printers.map((printer) => printerToPayload(printer, bedStandards));
-  const next =
-    mode.kind === "new"
-      ? [...base, edited]
-      : base.map((item, index) => (printers[index]?.id === mode.id ? edited : item));
-  if (edited.es_principal) {
-    const editedIndex = mode.kind === "new"
-      ? next.length - 1
-      : printers.findIndex((printer) => printer.id === mode.id);
+  if (mode.kind === "new") {
     return {
-      impresoras: next.map((item, index) => ({ ...item, es_principal: index === editedIndex })),
+      impresoras: [
+        ...base,
+        {
+          ...patch,
+          cantidad_unidades: 1,
+          activa: true,
+          es_principal: false,
+          priority_order: base.length,
+          materiales_permitidos: [],
+          marcas: [],
+        },
+      ],
     };
   }
-  return { impresoras: ensureOnePrimary(next) };
+  return {
+    impresoras: base.map((item, index) =>
+      printers[index]?.id === mode.id ? { ...item, ...patch } : item,
+    ),
+  };
 }
 
 export function ProviderProductionView() {
   const { providerId } = useProviderDashboardSession();
   const queryClient = useQueryClient();
   const [confirmTurnOffId, setConfirmTurnOffId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [editorMode, setEditorMode] = useState<EditorMode | null>(null);
 
   const productionQuery = useQuery({
@@ -266,17 +248,12 @@ export function ProviderProductionView() {
 
   const printers = useMemo(
     () => productionQuery.data?.printers ?? [],
-    [productionQuery.data?.printers]
+    [productionQuery.data?.printers],
   );
 
   const activeCount = useMemo(
     () => printers.filter((printer) => Boolean(printer.activa)).length,
-    [printers]
-  );
-
-  const displayPrinters = useMemo(
-    () => printers.map((printer) => ({ printer, units: Math.max(1, Math.round(Number(printer.cantidad_unidades) || 1)) })),
-    [printers]
+    [printers],
   );
 
   const planningPrinterId = agendaQuery.data?.printers.find((printer) => printer.is_planning_printer)?.id;
@@ -291,19 +268,92 @@ export function ProviderProductionView() {
       queryClient.setQueryData(["provider-dashboard", "profile", providerId], payload);
       void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "agenda", providerId] });
       void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "summary", providerId] });
-      toast.success("Produccion guardada");
+      toast.success("Producción guardada");
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "No pudimos guardar produccion.");
+      toast.error(error instanceof Error ? error.message : "No pudimos guardar producción.");
     },
   });
 
-  function requestToggle(printer: DashboardPrinter, next: boolean) {
+  const deletePrinterMutation = useMutation({
+    mutationFn: async (printerId: number) => {
+      if (!providerId) throw new Error("No encontramos un proveedor valido.");
+      return deleteProviderPrinter(providerId, printerId);
+    },
+    onSuccess: (payload: ProviderProductionResponse) => {
+      queryClient.setQueryData(["provider-dashboard", "production", providerId], payload);
+      queryClient.setQueryData(["provider-dashboard", "profile", providerId], payload);
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "agenda", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "summary", providerId] });
+      toast.success("Impresora eliminada");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "No pudimos eliminar la impresora.");
+    },
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: async (order: number[]) => {
+      if (!providerId) throw new Error("No encontramos un proveedor valido.");
+      return reorderProviderPrinters(providerId, order);
+    },
+    onSuccess: (payload: ProviderProductionResponse) => {
+      queryClient.setQueryData(["provider-dashboard", "production", providerId], payload);
+      queryClient.setQueryData(["provider-dashboard", "profile", providerId], payload);
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "agenda", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "summary", providerId] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "No pudimos reordenar.");
+    },
+  });
+
+  const setPrincipalMutation = useMutation({
+    mutationFn: async (printerId: number) => {
+      if (!providerId) throw new Error("No encontramos un proveedor valido.");
+      return setProviderPrincipalPrinter(providerId, printerId);
+    },
+    onSuccess: (payload: ProviderProductionResponse) => {
+      queryClient.setQueryData(["provider-dashboard", "production", providerId], payload);
+      queryClient.setQueryData(["provider-dashboard", "profile", providerId], payload);
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "agenda", providerId] });
+      void queryClient.invalidateQueries({ queryKey: ["provider-dashboard", "summary", providerId] });
+      toast.success("Principal actualizada");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "No pudimos cambiar la principal.");
+    },
+  });
+
+  const isMutating =
+    updatePrintersMutation.isPending ||
+    deletePrinterMutation.isPending ||
+    reorderMutation.isPending ||
+    setPrincipalMutation.isPending;
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = printers.map((p) => p.id);
+    const oldIndex = ids.indexOf(Number(active.id));
+    const newIndex = ids.indexOf(Number(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = [...ids];
+    const [removed] = next.splice(oldIndex, 1);
+    next.splice(newIndex, 0, removed);
+    reorderMutation.mutate(next);
+  }
+
+  function requestToggleActiva(printer: DashboardPrinter, next: boolean) {
     if (!next && activeCount === 1 && Boolean(printer.activa)) {
       setConfirmTurnOffId(printer.id);
       return;
     }
-    updatePrintersMutation.mutate(buildPayloadForToggle(printers, printer.id, next, bedStandards));
+    updatePrintersMutation.mutate(
+      buildPayloadForToggleActiva(printers, printer.id, next, bedStandards),
+    );
   }
 
   function openEditor(mode: EditorMode) {
@@ -316,7 +366,7 @@ export function ProviderProductionView() {
       return { tone: "off", label: "No dedicada", detail: "Visible en perfil, no afecta planning" };
     }
     const currentJob = agendaPrinter.jobs.find(
-      (job) => Number(job.start_day || 0) <= 0 && Number(job.duration_days || 0) > 0
+      (job) => Number(job.start_day || 0) <= 0 && Number(job.duration_days || 0) > 0,
     );
     if (currentJob) {
       return {
@@ -331,7 +381,7 @@ export function ProviderProductionView() {
   if (productionQuery.error || agendaQuery.error) {
     return (
       <DashboardErrorState
-        title="No pudimos cargar Produccion"
+        title="No pudimos cargar Producción"
         description="La base del dashboard esta lista, pero no pudimos recuperar impresoras y agenda."
       />
     );
@@ -350,7 +400,7 @@ export function ProviderProductionView() {
     return (
       <DashboardEmptyState
         title="No encontramos datos productivos"
-        description="La sesion esta activa, pero no recibimos un snapshot valido para esta vista."
+        description="La sesión está activa, pero no recibimos un snapshot válido para esta vista."
         icon={<AlertTriangle className="h-6 w-6" />}
       />
     );
@@ -381,7 +431,7 @@ export function ProviderProductionView() {
 
       {activeCount === 0 ? (
         <WarningInlineBanner tone="danger" icon={AlertTriangle}>
-          Tenes 0 impresoras dedicadas - no apareces en cotizaciones de Comparo3D. Activa al menos 1 para volver a recibir pedidos.
+          Tenés 0 impresoras dedicadas — no aparecés en cotizaciones de Comparo3D. Activá al menos 1 para volver a recibir pedidos.
         </WarningInlineBanner>
       ) : null}
 
@@ -404,38 +454,33 @@ export function ProviderProductionView() {
 
       {printers.length === 0 ? (
         <DashboardEmptyState
-          title="Todavia no cargaste impresoras"
-          description="Suma una impresora para definir capacidad productiva real."
+          title="Todavía no cargaste impresoras"
+          description="Sumá una impresora para definir capacidad productiva real."
           icon={<Cpu className="h-6 w-6" />}
           actionLabel="Agregar impresora"
           onAction={() => openEditor({ kind: "new" })}
         />
       ) : (
-        <section className="grid gap-5 lg:grid-cols-2">
-          {displayPrinters.map(({ printer, units }) => (
-            <PrinterCard
-              key={printer.id}
-              data={{
-                id: printer.id,
-                name: printer.nombre_impresora || `Impresora ${printer.id}`,
-                bed: formatBed(printer, bedStandards),
-                tech: "FDM",
-                is_planning_printer: printer.id === planningPrinterId,
-                activa: Boolean(printer.activa),
-                es_principal: Boolean(printer.es_principal),
-                marcas: getPrinterMarcas(printer),
-                materiales: Array.isArray(printer.materiales_permitidos)
-                  ? printer.materiales_permitidos
-                  : [],
-                cantidad_unidades: units,
-                status: buildPrinterStatus(printer.id),
-              }}
-              disabled={updatePrintersMutation.isPending}
-              onToggleActiva={(next) => requestToggle(printer, next)}
-              onEdit={() => openEditor({ kind: "edit", id: printer.id })}
-            />
-          ))}
-        </section>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={printers.map((p) => p.id)} strategy={rectSortingStrategy}>
+            <section className="grid gap-5 lg:grid-cols-2">
+              {printers.map((printer) => (
+                <SortablePrinterCard
+                  key={printer.id}
+                  printer={printer}
+                  bedStandards={bedStandards}
+                  planningPrinterId={planningPrinterId}
+                  buildStatus={buildPrinterStatus}
+                  disabled={isMutating}
+                  onToggleActiva={(next) => requestToggleActiva(printer, next)}
+                  onTogglePrincipal={() => setPrincipalMutation.mutate(printer.id)}
+                  onEdit={() => openEditor({ kind: "edit", id: printer.id })}
+                  onDelete={() => setConfirmDeleteId(printer.id)}
+                />
+              ))}
+            </section>
+          </SortableContext>
+        </DndContext>
       )}
 
       <section className="rounded-[17px] border border-dashed border-[var(--c3d-card-border-soft)] bg-[var(--c3d-card-bg)] px-5 py-8 text-center shadow-[var(--c3d-card-shadow)]">
@@ -444,7 +489,7 @@ export function ProviderProductionView() {
         </div>
         <div className="mx-auto mt-3 max-w-sm">
           <h2 className="font-[Montserrat] text-[16px] font-extrabold tracking-[-0.005em] text-[var(--c3d-text-strong)]">
-            Agrega mas impresoras
+            Agregá más impresoras
           </h2>
           <p className="mt-1 text-[12px] leading-relaxed text-[var(--c3d-text-muted)]">
             Cada equipo declarado puede prenderse y apagarse según tu disponibilidad real. Más impresoras dedicadas = más cotizaciones.
@@ -461,8 +506,25 @@ export function ProviderProductionView() {
           isSaving={updatePrintersMutation.isPending}
           onCancel={() => setConfirmTurnOffId(null)}
           onConfirm={() => {
-            updatePrintersMutation.mutate(buildPayloadForToggle(printers, confirmTurnOffId, false, bedStandards), {
-              onSuccess: () => setConfirmTurnOffId(null),
+            updatePrintersMutation.mutate(
+              buildPayloadForToggleActiva(printers, confirmTurnOffId, false, bedStandards),
+              { onSuccess: () => setConfirmTurnOffId(null) },
+            );
+          }}
+        />
+      ) : null}
+
+      {confirmDeleteId !== null ? (
+        <ConfirmDeleteModal
+          printerName={
+            printers.find((p) => p.id === confirmDeleteId)?.nombre_impresora ||
+            `Impresora ${confirmDeleteId}`
+          }
+          isSaving={deletePrinterMutation.isPending}
+          onCancel={() => setConfirmDeleteId(null)}
+          onConfirm={() => {
+            deletePrinterMutation.mutate(confirmDeleteId, {
+              onSuccess: () => setConfirmDeleteId(null),
             });
           }}
         />
@@ -476,12 +538,63 @@ export function ProviderProductionView() {
           isSaving={updatePrintersMutation.isPending}
           onClose={() => setEditorMode(null)}
           onSave={(state) => {
-            updatePrintersMutation.mutate(buildPayloadForEditor(printers, editorMode, state, bedStandards), {
-              onSuccess: () => setEditorMode(null),
-            });
+            updatePrintersMutation.mutate(
+              buildPayloadForEditor(printers, editorMode, state, bedStandards),
+              { onSuccess: () => setEditorMode(null) },
+            );
           }}
         />
       ) : null}
+    </div>
+  );
+}
+
+function SortablePrinterCard(props: {
+  printer: DashboardPrinter;
+  bedStandards: BedStandardEntry[];
+  planningPrinterId: number | undefined;
+  buildStatus: (id: number) => PrinterCardStatus;
+  disabled: boolean;
+  onToggleActiva: (next: boolean) => void;
+  onTogglePrincipal: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { printer, bedStandards, planningPrinterId, buildStatus, disabled } = props;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: printer.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  const data: PrinterCardData = {
+    id: printer.id,
+    name: printer.nombre_impresora || `Impresora ${printer.id}`,
+    bed: formatBed(printer, bedStandards),
+    is_planning_printer: printer.id === planningPrinterId,
+    activa: Boolean(printer.activa),
+    es_principal: Boolean(printer.es_principal),
+    cantidad_unidades: Math.max(1, Math.round(Number(printer.cantidad_unidades) || 1)),
+    priority_order: Number(printer.priority_order ?? 0),
+    status: buildStatus(printer.id),
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <PrinterCard
+        data={data}
+        disabled={disabled}
+        onToggleActiva={props.onToggleActiva}
+        onTogglePrincipal={props.onTogglePrincipal}
+        onEdit={props.onEdit}
+        onDelete={props.onDelete}
+        dragHandleProps={listeners as Record<string, unknown>}
+      />
     </div>
   );
 }
@@ -501,12 +614,12 @@ function ConfirmTurnOffModal({
         className="w-full max-w-md rounded-[17px] border border-[var(--c3d-card-border)] bg-[var(--c3d-bg)] p-6 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-rose-400">Confirmacion</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-rose-400">Confirmación</p>
         <h2 className="mt-3 font-[Montserrat] text-xl font-extrabold leading-tight text-[var(--c3d-text-strong)]">
-          Si deshabilitas todas, dejas de aparecer en cotizaciones
+          Si deshabilitas todas, dejás de aparecer en cotizaciones
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-[var(--c3d-text-muted)]">
-          Confirmas que queres apagar tu ultima impresora dedicada?
+          Confirmás que querés apagar tu última impresora dedicada?
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving} className="border-white/10 bg-white/[0.04] text-[var(--c3d-text-strong)] hover:bg-white/[0.08]">
@@ -515,6 +628,45 @@ function ConfirmTurnOffModal({
           <Button type="button" variant="destructive" onClick={onConfirm} disabled={isSaving}>
             {isSaving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
             Mantener apagada
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConfirmDeleteModal({
+  printerName,
+  isSaving,
+  onCancel,
+  onConfirm,
+}: {
+  printerName: string;
+  isSaving: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm" onClick={onCancel}>
+      <div
+        className="w-full max-w-md rounded-[17px] border border-[var(--c3d-card-border)] bg-[var(--c3d-bg)] p-6 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-rose-400">Eliminar impresora</p>
+        <h2 className="mt-3 font-[Montserrat] text-xl font-extrabold leading-tight text-[var(--c3d-text-strong)]">
+          Confirmás eliminar {printerName}?
+        </h2>
+        <p className="mt-3 text-sm leading-relaxed text-[var(--c3d-text-muted)]">
+          Esta acción no se puede deshacer. Si la impresora tiene pedidos activos, primero
+          tenés que completarlos o cancelarlos.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving} className="border-white/10 bg-white/[0.04] text-[var(--c3d-text-strong)] hover:bg-white/[0.08]">
+            Cancelar
+          </Button>
+          <Button type="button" variant="destructive" onClick={onConfirm} disabled={isSaving}>
+            {isSaving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+            Eliminar
           </Button>
         </div>
       </div>
@@ -578,7 +730,7 @@ function PrinterEditorDialog({
             />
           </DashboardField>
 
-          <DashboardField label="Tamano de cama" htmlFor="printer-bed" hint={BED_STANDARDS_CONTACT_HINT} className="md:col-span-2">
+          <DashboardField label="Tamaño de cama" htmlFor="printer-bed" hint={BED_STANDARDS_CONTACT_HINT} className="md:col-span-2">
             <Select
               value={isValidBedSku(state.bed_sku, bedStandards) ? state.bed_sku : ""}
               onValueChange={(value) => patchState({ bed_sku: value })}
@@ -596,35 +748,6 @@ function PrinterEditorDialog({
             </Select>
           </DashboardField>
 
-          <DashboardField label="Materiales que imprime la impresora" htmlFor="printer-materials" className="md:col-span-2">
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-              {MATERIAL_TYPES.map((mat) => {
-                const selected = normalizeMaterials(state.materiales_permitidos_text).includes(mat.toUpperCase());
-                return (
-                  <button
-                    key={mat}
-                    type="button"
-                    onClick={() => {
-                      const current = normalizeMaterials(state.materiales_permitidos_text);
-                      const next = selected
-                        ? current.filter((m) => m !== mat.toUpperCase())
-                        : [...current, mat.toUpperCase()];
-                      patchState({ materiales_permitidos_text: next.join(", ") });
-                    }}
-                    className={`flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 text-[11px] font-bold uppercase tracking-wide transition ${
-                      selected
-                        ? "border-blue-500 bg-blue-500/15 text-white shadow-[0_0_0_3px_rgba(59,130,246,0.2)]"
-                        : "border-white/10 bg-white/[0.04] text-[var(--c3d-text-muted)] opacity-50 hover:opacity-80"
-                    }`}
-                  >
-                    <img src="/filament-icon.png" alt="" className="h-7 w-7 object-contain" />
-                    {mat}
-                  </button>
-                );
-              })}
-            </div>
-          </DashboardField>
-
           <DashboardField label="Notas" htmlFor="printer-notes" className="md:col-span-2">
             <Textarea
               id="printer-notes"
@@ -633,26 +756,6 @@ function PrinterEditorDialog({
               className={darkTextareaClass}
             />
           </DashboardField>
-
-          <label className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-[var(--c3d-text-strong)]">
-            <input
-              type="checkbox"
-              checked={state.activa}
-              onChange={(event) => patchState({ activa: event.target.checked })}
-              className="h-4 w-4"
-            />
-            Activa
-          </label>
-
-          <label className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-[var(--c3d-text-strong)]">
-            <input
-              type="checkbox"
-              checked={state.es_principal}
-              onChange={(event) => patchState({ es_principal: event.target.checked })}
-              className="h-4 w-4"
-            />
-            Principal
-          </label>
         </div>
 
         <div className="mt-6 flex justify-end gap-3">
@@ -661,7 +764,13 @@ function PrinterEditorDialog({
           </Button>
           <Button
             type="button"
-            onClick={() => onSave(state)}
+            onClick={() => {
+              try {
+                onSave(state);
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : "Datos inválidos");
+              }
+            }}
             disabled={isSaving}
           >
             {isSaving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
