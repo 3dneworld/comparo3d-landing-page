@@ -21,6 +21,7 @@ import ProviderDashboardV2 from "./pages/ProviderDashboardV2.tsx";
 import ProveedoresLogin from "./pages/ProveedoresLogin.tsx";
 import ProveedoresOnboardingLogin from "./pages/ProveedoresOnboardingLogin.tsx";
 import ProviderProfile from "./pages/ProviderProfile.tsx";
+import { useAnalytics } from "./hooks/useAnalytics";
 
 const queryClient = new QueryClient();
 const DASHBOARD_BASE_PATH = "/dashboard/proveedores";
@@ -31,12 +32,22 @@ function LegacyProviderDashboardRedirect() {
   return <Navigate to={`${DASHBOARD_BASE_PATH}${suffix || ""}${location.search}`} replace />;
 }
 
+/**
+ * Envuelve <Routes /> y dispara page_view de Google Analytics en cada cambio de ruta.
+ * Debe estar dentro del <BrowserRouter> para que useLocation() funcione.
+ */
+function AppRoutes({ children }: { children: React.ReactNode }) {
+  useAnalytics();
+  return <>{children}</>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AppRoutes>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/materiales" element={<Navigate to={`${DASHBOARD_BASE_PATH}/materiales`} replace />} />
@@ -71,6 +82,7 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </AppRoutes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

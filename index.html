@@ -19,6 +19,20 @@
   <meta property="og:description" content="Compará presupuestos de impresión 3D de proveedores verificados en Argentina. Subí tu archivo, recibí cotizaciones y elegí la mejor opción.">
   <meta name="twitter:description" content="Compará presupuestos de impresión 3D de proveedores verificados en Argentina. Subí tu archivo, recibí cotizaciones y elegí la mejor opción.">
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
+
+  <!-- Google Analytics 4 (GA4) — Comparo3D
+       VITE_GA_MEASUREMENT_ID se reemplaza en build-time por Vite (.env.production).
+       Si la variable no está definida, gtag carga pero no envía datos (ID inválido).
+       El page_view inicial se dispara acá; los siguientes los maneja useAnalytics() en App.tsx. -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=%VITE_GA_MEASUREMENT_ID%"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '%VITE_GA_MEASUREMENT_ID%', {
+      send_page_view: false
+    });
+  </script>
 </head>
 
   <body>
