@@ -19,6 +19,8 @@ import {
   LoaderCircle,
   Mail,
   MapPin,
+  MessageSquare,
+  NotebookText,
   PackageOpen,
   Pencil,
   Phone,
@@ -45,9 +47,11 @@ import { toast } from "@/components/ui/sonner";
 import {
   cancelProviderOrder,
   dispatchProviderOrder,
+  fetchProviderNotificationsUnreadCount,
   fetchProviderOrderDetail,
   fetchProviderOrders,
   markProviderOrderDelivered,
+  markProviderOrderNotificationsRead,
   markProviderOrderPrinting,
   markProviderOrderReadyToShip,
   requestProviderOrderReview,
@@ -226,12 +230,14 @@ function OrderCard({
   isActioning,
   onSelect,
   isSelected,
+  hasUnread = false,
 }: {
   order: DashboardOrder;
   onAction: (action: "printing" | "ready" | "dispatch" | "cancel" | "deliver" | "request_review") => void;
   isActioning: boolean;
   onSelect?: () => void;
   isSelected?: boolean;
+  hasUnread?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const status = order.order_status || "paid_confirmed";
@@ -261,8 +267,14 @@ function OrderCard({
         {/* Info */}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-[7px]">
-            <span className="font-[Montserrat] text-[13px] font-bold leading-none text-[var(--c3d-text-strong)]">
+            <span className="relative inline-flex items-center font-[Montserrat] text-[13px] font-bold leading-none text-[var(--c3d-text-strong)]">
               {formatPublicOrderLabel(order.public_order_id, order.id)}
+              {hasUnread ? (
+                <span
+                  aria-label="Notificación sin leer"
+                  className="ml-1.5 inline-block h-2 w-2 rounded-full bg-red-500 ring-2 ring-[var(--c3d-card-bg)]"
+                />
+              ) : null}
             </span>
             <span className="font-[Montserrat] text-xs font-medium text-[var(--c3d-text-muted)]">
               {safeText(order.client_name, "")}
@@ -644,6 +656,118 @@ function CancelOrderDialog({
   );
 }
 
+/* ---------- OrderNotesCard ---------- */
+
+function OrderNotesCard({ notes }: { notes?: string | null }) {
+  const trimmed = (notes || "").trim();
+  return (
+    <div className="rounded-xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <NotebookText className="h-4 w-4 text-[var(--c3d-text-strong)]" />
+        <p className="font-[Montserrat] text-xs font-bold text-[var(--c3d-text-strong)]">
+          Notas del pedido
+        </p>
+      </div>
+      {trimmed ? (
+        <p className="whitespace-pre-wrap break-words text-[12px] leading-relaxed text-[var(--c3d-text-strong)]">
+          {trimmed}
+        </p>
+      ) : (
+        <p className="text-[11px] italic text-[var(--c3d-text-faint)]">
+          El cliente no dejó notas en este pedido.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ---------- CustomerCommunicationCard ---------- */
+
+function CustomerCommunicationCard({ order }: { order: DashboardOrder }) {
+  const [open, setOpen] = useState(false);
+  const publicLabel = formatPublicOrderLabel(order.public_order_id, order.id);
+  const clientName = (order.client_name || "").trim() || "el cliente";
+  return (
+    <>
+      <div className="rounded-xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] p-4">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-[var(--c3d-text-strong)]" />
+            <p className="font-[Montserrat] text-xs font-bold text-[var(--c3d-text-strong)]">
+              Comunicación con cliente
+            </p>
+          </div>
+          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 font-[Montserrat] text-[9px] font-bold uppercase tracking-wide text-amber-400">
+            Próximamente
+          </span>
+        </div>
+        <p className="mb-3 text-[11px] leading-relaxed text-[var(--c3d-text-faint)]">
+          Enviá un comunicado oficial a {clientName} desde la plataforma cuando necesites avisar un cambio (color, demora, consulta).
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-9 w-full rounded-lg border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg)] text-[12px] font-semibold text-[var(--c3d-text-strong)] hover:bg-white/5"
+          onClick={() => setOpen(true)}
+        >
+          <MessageSquare className="mr-2 h-4 w-4" />
+          Ver cómo funciona
+        </Button>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-lg rounded-2xl border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg)] text-[var(--c3d-text-strong)]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 font-[Montserrat] text-base font-bold text-[var(--c3d-text-strong)]">
+              <MessageSquare className="h-5 w-5" />
+              Comunicación con cliente — Pedido {publicLabel}
+            </DialogTitle>
+            <DialogDescription className="text-[12px] leading-relaxed text-[var(--c3d-text-faint)]">
+              Este canal te permite enviar comunicados oficiales al cliente desde tu email proveedor de Comparo3D.
+              Las respuestas del cliente vuelven a este mismo lugar como un chat.
+              El equipo de atención al cliente queda con copia automática para auditoría.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] p-3">
+            <p className="mb-2 font-[Montserrat] text-[11px] font-bold uppercase tracking-wide text-[var(--c3d-text-strong)]">
+              Cuándo usarlo
+            </p>
+            <ul className="space-y-1 text-[12px] leading-relaxed text-[var(--c3d-text-strong)]">
+              <li>• Cuando necesitás cancelar el pedido por falta de stock de color de filamento.</li>
+              <li>• Cuando no vas a llegar con la fecha comprometida y querés notificarlo.</li>
+              <li>• Cuando tenés una consulta sobre el archivo STL o las especificaciones.</li>
+              <li>• Cualquier comunicación oficial relacionada con el pedido.</li>
+            </ul>
+          </div>
+
+          <div className="rounded-xl border border-dashed border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] p-3 opacity-60">
+            <Textarea
+              placeholder="Escribí tu mensaje al cliente..."
+              disabled
+              className="min-h-[80px] resize-none border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg)] text-[12px] text-[var(--c3d-text-strong)] placeholder:text-[var(--c3d-text-faint)]"
+            />
+            <p className="mt-2 text-center text-[10px] italic text-amber-400">
+              Próximamente — disponible en la próxima actualización
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="rounded-lg border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] text-[12px] font-semibold text-[var(--c3d-text-strong)] hover:bg-white/5"
+            >
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 /* ---------- OrderDetailPanel ---------- */
 
 function OrderDetailPanel({
@@ -886,6 +1010,12 @@ function OrderDetailPanel({
         ) : null}
       </div>
 
+      {/* Notas del pedido */}
+      <OrderNotesCard notes={order.client_notes} />
+
+      {/* Comunicación con cliente — Fase A placeholder, Fase B funcional */}
+      <CustomerCommunicationCard order={order} />
+
       {/* Files */}
       {files.length > 0 && (
         <div className="rounded-xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] p-4">
@@ -1073,6 +1203,40 @@ export function ProviderOrdersView() {
     queryFn: () => fetchProviderOrders(providerId!),
     enabled: providerId != null,
     staleTime: 20_000,
+  });
+
+  // Notificaciones — solo se usa el set de pedido_ids con notifs no leídas para
+  // pintar el badge rojo per-row. La query global del Shell ya maneja el badge
+  // de la campanita. Acá refrescamos cada 60s y al focus.
+  const notificationsUnreadQuery = useQuery({
+    queryKey: ["provider-dashboard", "notifications-unread", providerId],
+    queryFn: () => fetchProviderNotificationsUnreadCount(providerId!),
+    enabled: providerId != null,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
+  });
+  const unreadPedidoIdSet = useMemo(
+    () => new Set(notificationsUnreadQuery.data?.unread_pedido_ids ?? []),
+    [notificationsUnreadQuery.data]
+  );
+
+  const markOrderReadMutation = useMutation({
+    mutationFn: async (pedidoId: number) => {
+      if (providerId == null) return null;
+      return markProviderOrderNotificationsRead(providerId, pedidoId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["provider-dashboard", "notifications-unread", providerId],
+      });
+    },
+    // Silencioso: no toasts. Si falla, el badge sigue ahí y vuelve a intentarse
+    // en el próximo click. Loggeo silente en consola para debug.
+    onError: (error) => {
+      // eslint-disable-next-line no-console
+      console.warn("[notifications] mark order read failed:", error);
+    },
   });
 
   const items = useMemo(() => ordersQuery.data?.items || [], [ordersQuery.data]);
@@ -1346,7 +1510,7 @@ export function ProviderOrdersView() {
       {/* --- Main content: order list + detail panel --- */}
       <div className={cn(
         "mt-4 gap-4",
-        selectedId != null ? "grid grid-cols-[1fr_420px]" : "flex flex-col"
+        selectedId != null ? "grid grid-cols-1 lg:grid-cols-2" : "flex flex-col"
       )}>
         {/* Order cards list */}
         <section className="flex flex-col gap-[9px]">
@@ -1355,6 +1519,7 @@ export function ProviderOrdersView() {
               <OrderCard
                 key={order.id}
                 order={order}
+                hasUnread={unreadPedidoIdSet.has(order.id)}
                 onAction={(action) => handleOrderAction(order.id, action)}
                 isActioning={
                   actionOrderId === order.id &&
@@ -1362,7 +1527,14 @@ export function ProviderOrdersView() {
                     readyToShipMutation.isPending ||
                     dispatchMutation.isPending)
                 }
-                onSelect={() => setSelectedId(order.id)}
+                onSelect={() => {
+                  setSelectedId(order.id);
+                  // Auto mark-as-read si la orden tiene notifs pendientes.
+                  // El mutation maneja invalidación y errores en silencio.
+                  if (unreadPedidoIdSet.has(order.id)) {
+                    markOrderReadMutation.mutate(order.id);
+                  }
+                }}
                 isSelected={selectedId === order.id}
               />
             ))

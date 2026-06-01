@@ -12,6 +12,7 @@ import type {
   ProviderMaterialsResponse,
   ProviderNotificationReadResponse,
   ProviderNotificationsResponse,
+  ProviderNotificationsUnreadCountResponse,
   ProviderOrderDetailResponse,
   ProviderOrderCancellationResponse,
   ProviderOrderDispatchResponse,
@@ -357,6 +358,19 @@ export function markProviderNotificationRead(providerId: number, notificationId:
 export function markAllProviderNotificationsRead(providerId: number) {
   return dashboardFetch<ProviderNotificationReadResponse>(
     `/api/provider-dashboard/proveedores/${providerId}/notifications/read-all`,
+    { method: "PUT" }
+  );
+}
+
+export function fetchProviderNotificationsUnreadCount(providerId: number) {
+  return dashboardFetch<ProviderNotificationsUnreadCountResponse>(
+    `/api/provider-dashboard/proveedores/${providerId}/notifications/unread-count`
+  );
+}
+
+export function markProviderOrderNotificationsRead(providerId: number, pedidoId: number) {
+  return dashboardFetch<ProviderNotificationReadResponse>(
+    `/api/provider-dashboard/proveedores/${providerId}/notifications/order/${pedidoId}/read`,
     { method: "PUT" }
   );
 }

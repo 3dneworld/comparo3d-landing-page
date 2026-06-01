@@ -462,6 +462,7 @@ export interface DashboardOrder {
   print_time_min?: number | null;
   print_hours_billable?: number | null;
   transit_days?: number | null;
+  client_notes?: string | null;
 }
 
 export interface ProviderOrdersResponse {
@@ -616,6 +617,13 @@ export interface DashboardNotification {
   referencia_id?: number | null;
   leida?: number | boolean | null;
   created_at?: string | null;
+  // Forma nativa (provider_notifications)
+  type?: string | null;
+  title?: string | null;
+  body?: string | null;
+  pedido_id?: number | null;
+  link?: string | null;
+  read_at?: string | null;
 }
 
 export interface ProviderNotificationsResponse {
@@ -623,10 +631,18 @@ export interface ProviderNotificationsResponse {
   items: DashboardNotification[];
   total?: number;
   unread?: number;
+  unread_pedido_ids?: number[];
 }
 
 export interface ProviderNotificationReadResponse {
   success: true;
+  updated?: number;
+}
+
+export interface ProviderNotificationsUnreadCountResponse {
+  success: true;
+  count: number;
+  unread_pedido_ids: number[];
 }
 
 export interface DashboardPortfolioItem {

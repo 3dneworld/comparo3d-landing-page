@@ -22,7 +22,10 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { DashboardStatePill } from "@/features/provider-dashboard/components/DashboardStatePill";
-import { fetchProviderSummary } from "@/features/provider-dashboard/api";
+import {
+  fetchProviderNotificationsUnreadCount,
+  fetchProviderSummary,
+} from "@/features/provider-dashboard/api";
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
 import type { DashboardProvider, DashboardUser } from "@/features/provider-dashboard/types";
 import { cn } from "@/lib/utils";
@@ -154,14 +157,19 @@ export function ProviderDashboardShell({
     return pathname[pathname.length - 1] ?? "resumen";
   }, [location.pathname]);
 
-  const hasUnreadNotifications = useMemo(() => {
-    const m = summaryQuery.data?.metrics;
-    if (!m) return false;
-    return (
-      (m.cotizaciones_participadas ?? 0) > 0 ||
-      (m.pedidos_abiertos ?? 0) > 0
-    );
-  }, [summaryQuery.data]);
+  // Sistema de notificaciones real (Fase A.4): reemplaza el proxy anterior basado
+  // en métricas. La query se refresca cada 60s para mantener el badge fresco sin
+  // saturar el backend.
+  const notificationsUnreadQuery = useQuery({
+    queryKey: ["provider-dashboard", "notifications-unread", providerId],
+    queryFn: () => fetchProviderNotificationsUnreadCount(providerId!),
+    enabled: providerId != null,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
+  });
+  const unreadNotificationCount = notificationsUnreadQuery.data?.count ?? 0;
+  const hasUnreadNotifications = unreadNotificationCount > 0;
 
   const fetchedProvider = summaryQuery.data?.provider ?? null;
   const effectiveProvider = provider ?? fetchedProvider;
@@ -333,15 +341,27 @@ export function ProviderDashboardShell({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  aria-label="Notificaciones"
+                  aria-label={
+                    hasUnreadNotifications
+                      ? `Notificaciones (${unreadNotificationCount} sin leer)`
+                      : "Notificaciones"
+                  }
                   className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10"
                   onClick={() => {
-                    window.location.assign(`/proveedores-v2/resumen${routeSuffix}`);
+                    // Fase A: click navega a pedidos (donde aparecen los badges per-row).
+                    // Fase B: dropdown con últimas notifs (ver plan).
+                    window.location.assign(`/proveedores-v2/pedidos${routeSuffix}`);
                   }}
                 >
                   <Bell className="h-4 w-4" />
                   {hasUnreadNotifications ? (
-                    <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary ring-2 ring-[#0a0d12]" />
+                    unreadNotificationCount > 1 ? (
+                      <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 font-[Montserrat] text-[9px] font-bold leading-none text-white ring-2 ring-[#0a0d12]">
+                        {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
+                      </span>
+                    ) : (
+                      <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-red-500 ring-2 ring-[#0a0d12]" />
+                    )
                   ) : null}
                 </button>
 
