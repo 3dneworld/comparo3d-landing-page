@@ -31,6 +31,7 @@ import {
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
 import { DispatchConfirmDialog, type DispatchConfirmParams } from "@/features/provider-dashboard/components/DispatchConfirmDialog";
 import type { DashboardShipment } from "@/features/provider-dashboard/types";
+import { formatPublicOrderLabel } from "@/lib/orderLabels";
 import { cn } from "@/lib/utils";
 
 /* ---------- status config matching envios.jsx ---------- */
@@ -167,7 +168,7 @@ function ShipmentCard({
               #{shipment.id}
             </span>
             <span className="font-[Montserrat] text-xs font-medium text-[var(--c3d-text-faint)]">
-              → {shipment.public_order_id || (shipment.cotizacion_id ? `ORD-${shipment.cotizacion_id}` : "")}
+              → {formatPublicOrderLabel(shipment.public_order_id, shipment.cotizacion_id)}
             </span>
             {deadlineStr && (
               <span className="rounded-full bg-[var(--c3d-card-bg-alt)] px-[7px] py-0.5 font-[Montserrat] text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--c3d-text-faint)]">

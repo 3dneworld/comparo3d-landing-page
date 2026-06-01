@@ -1164,7 +1164,6 @@ export interface CheckoutAddress {
 }
 
 export interface CreateCheckoutRequest {
-  order_id: string;
   discount?: {
     code: string;
   };
@@ -1232,7 +1231,6 @@ export interface ValidateDiscountCodeResponse {
 export async function validateCheckoutDiscountCode(
   sessionId: string,
   request: {
-    order_id: string;
     code: string;
     shipping: { price: number };
   }

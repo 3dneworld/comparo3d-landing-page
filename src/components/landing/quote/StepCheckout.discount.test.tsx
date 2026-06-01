@@ -106,7 +106,6 @@ describe("StepCheckout discount flow", () => {
 
     await waitFor(() => {
       expect(apiMocks.validateCheckoutDiscountCode).toHaveBeenCalledWith("SESSION-123", {
-        order_id: "ORD-123",
         code: "REVIEW-ADA",
         shipping: { price: 0 },
       });

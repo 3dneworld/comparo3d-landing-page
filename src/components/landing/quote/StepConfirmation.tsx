@@ -1,5 +1,7 @@
 import { ShoppingCart } from "lucide-react";
 
+import { formatPublicOrderLabel } from "@/lib/orderLabels";
+
 interface StepConfirmationProps {
   isEmpresa: boolean;
   sessionId: string;
@@ -39,7 +41,7 @@ export function StepConfirmation({
           {orderId ? (
             <p className="mb-4 text-sm font-semibold text-foreground">
               N° de pedido:{" "}
-              <span className="font-mono text-primary">{orderId}</span>
+              <span className="font-mono text-primary">{formatPublicOrderLabel(orderId)}</span>
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">Sesión: {sessionId}</p>

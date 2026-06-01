@@ -63,6 +63,7 @@ import {
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
 import { DispatchConfirmDialog, type DispatchConfirmParams } from "@/features/provider-dashboard/components/DispatchConfirmDialog";
 import type { DashboardOrder } from "@/features/provider-dashboard/types";
+import { formatPublicOrderLabel } from "@/lib/orderLabels";
 import { cn } from "@/lib/utils";
 
 /* ---------- status config matching pedidos.jsx ---------- */
@@ -261,7 +262,7 @@ function OrderCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-[7px]">
             <span className="font-[Montserrat] text-[13px] font-bold leading-none text-[var(--c3d-text-strong)]">
-              {order.public_order_id || `#${order.id}`}
+              {formatPublicOrderLabel(order.public_order_id, order.id)}
             </span>
             <span className="font-[Montserrat] text-xs font-medium text-[var(--c3d-text-muted)]">
               {safeText(order.client_name, "")}
@@ -600,7 +601,7 @@ function CancelOrderDialog({
           <div className="mb-2 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-700">
             <AlertTriangle className="h-6 w-6" />
           </div>
-          <DialogTitle>Cancelar pedido {order ? (order.public_order_id || `#${order.id}`) : ""}</DialogTitle>
+          <DialogTitle>Cancelar pedido {order ? formatPublicOrderLabel(order.public_order_id, order.id) : ""}</DialogTitle>
           <DialogDescription className="space-y-2 pt-2 text-left">
             <span className="block">
               Estas por cancelar este pedido. Se solicitara refund por MercadoPago y el{" "}
@@ -742,7 +743,7 @@ function OrderDetailPanel({
       {/* Order ID */}
       <div className="rounded-xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-4 py-3">
         <span className="font-[Montserrat] text-sm font-bold text-[var(--c3d-text-strong)]">
-          {order.public_order_id || `#${order.id}`}
+          {formatPublicOrderLabel(order.public_order_id, order.id)}
         </span>
       </div>
 
@@ -1479,7 +1480,7 @@ export function ProviderOrdersView() {
             </DialogTitle>
             <DialogDescription className="text-center text-sm text-muted-foreground">
               {actionOrder
-                ? `El pedido ${actionOrder.public_order_id || `#${actionOrder.id}`} pasara a "En produccion" y se le avisara al cliente.`
+                ? `El pedido ${formatPublicOrderLabel(actionOrder.public_order_id, actionOrder.id)} pasara a "En produccion" y se le avisara al cliente.`
                 : "Confirmar inicio de impresion."}
             </DialogDescription>
           </DialogHeader>
