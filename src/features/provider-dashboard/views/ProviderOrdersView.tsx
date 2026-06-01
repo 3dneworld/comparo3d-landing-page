@@ -47,6 +47,7 @@ import {
   dispatchProviderOrder,
   fetchProviderOrderDetail,
   fetchProviderOrders,
+  markProviderOrderDelivered,
   markProviderOrderPrinting,
   markProviderOrderReadyToShip,
   requestProviderOrderReview,
@@ -226,7 +227,7 @@ function OrderCard({
   isSelected,
 }: {
   order: DashboardOrder;
-  onAction: (action: "printing" | "ready" | "dispatch" | "cancel") => void;
+  onAction: (action: "printing" | "ready" | "dispatch" | "cancel" | "deliver" | "request_review") => void;
   isActioning: boolean;
   onSelect?: () => void;
   isSelected?: boolean;
@@ -659,7 +660,7 @@ function OrderDetailPanel({
   providerId: number;
   orderId: number;
   onClose: () => void;
-  onAction: (action: "printing" | "ready" | "dispatch" | "cancel") => void;
+  onAction: (action: "printing" | "ready" | "dispatch" | "cancel" | "deliver" | "request_review") => void;
   isActioning: boolean;
   onSaveTracking: (shipmentId: number, trackingCode: string) => void;
   isSavingTracking: boolean;
@@ -795,7 +796,7 @@ function OrderDetailPanel({
       )}
 
       {/* Actions */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {meta.next && (
           <Button
             type="button"
@@ -809,6 +810,33 @@ function OrderDetailPanel({
           >
             {isActioning ? <LoaderCircle className="mr-1 h-3 w-3 animate-spin" /> : null}
             {meta.next}
+          </Button>
+        )}
+        {/* Marcar como Entregado: visible solo cuando el pedido esta en transito */}
+        {!isCancelled && status === "en_transito" && (
+          <Button
+            type="button"
+            className="h-[34px] rounded-[10px] bg-emerald-600 hover:bg-emerald-700 font-[Montserrat] text-[12px] font-bold text-white"
+            onClick={() => onAction("deliver")}
+            disabled={isActioning}
+            title="Confirmar que el cliente recibio el pedido"
+          >
+            <CheckCircle2 className="mr-1 h-3 w-3" />
+            Marcar como Entregado
+          </Button>
+        )}
+        {/* Solicitar Review: deshabilitado hasta que el pedido este 'completed' */}
+        {!isCancelled && (
+          <Button
+            type="button"
+            variant="outline"
+            className="h-[34px] rounded-[10px] border-violet-500/30 font-[Montserrat] text-[12px] font-semibold text-violet-300 hover:bg-violet-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
+            onClick={() => onAction("request_review")}
+            disabled={isActioning || status !== "completed"}
+            title={status !== "completed" ? "Disponible solo despues de marcar como Entregado" : "Enviar email al cliente solicitando review"}
+          >
+            <Star className="mr-1 h-3 w-3" />
+            Solicitar Review
           </Button>
         )}
         {!isCancelled && status !== "completed" && (
@@ -1177,7 +1205,7 @@ export function ProviderOrdersView() {
 
   /* ---- Action handlers ---- */
 
-  function handleOrderAction(orderId: number, action: "printing" | "ready" | "dispatch" | "cancel") {
+  function handleOrderAction(orderId: number, action: "printing" | "ready" | "dispatch" | "cancel" | "deliver" | "request_review") {
     setActionOrderId(orderId);
     if (action === "printing") {
       setShowPrintingConfirm(true);
@@ -1192,6 +1220,37 @@ export function ProviderOrdersView() {
         setCancellingOrder(order);
         setCancellationReason("");
       }
+    } else if (action === "deliver") {
+      void (async () => {
+        try {
+          if (!confirm("Confirmas que este pedido fue ENTREGADO al cliente? Esta accion habilita el envio de Solicitar Review.")) return;
+          const result = await markProviderOrderDelivered(providerId!, orderId);
+          if ((result as any).error) {
+            toast.error((result as any).error || "No se pudo marcar como entregado");
+            return;
+          }
+          toast.success("Pedido marcado como entregado.");
+          void ordersQuery.refetch();
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : "Error al marcar como entregado.");
+        }
+      })();
+    } else if (action === "request_review") {
+      void (async () => {
+        try {
+          if (!confirm("Enviar email al cliente solicitandole una review ahora?")) return;
+          const result = await requestProviderOrderReview(orderId);
+          if ((result as any).error) {
+            toast.error((result as any).error || "No se pudo enviar el pedido de review");
+            return;
+          }
+          const r = result as { success: boolean; sent: boolean; reason?: string };
+          if (r.sent) toast.success("Pedido de review enviado al cliente.");
+          else toast.info(r.reason === "review_already_exists" ? "El cliente ya dejo una review." : "El email no se envio (motivo: " + (r.reason || "desconocido") + ")");
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : "Error al solicitar review.");
+        }
+      })();
     }
   }
 

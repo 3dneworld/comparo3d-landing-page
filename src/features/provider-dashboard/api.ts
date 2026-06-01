@@ -279,6 +279,17 @@ export function requestProviderOrderReview(orderId: number) {
   );
 }
 
+export function markProviderOrderDelivered(providerId: number, orderId: number) {
+  return dashboardFetch<{ success: boolean; pedido_id: number; order_status: string; already_delivered: boolean; auto?: boolean }>(
+    `/api/provider-dashboard/proveedores/${providerId}/pedidos/${orderId}/mark-delivered`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    }
+  );
+}
+
 export function cancelProviderOrder(providerId: number, orderId: number, reason: string) {
   return dashboardFetch<ProviderOrderCancellationResponse>(
     `/api/provider-dashboard/proveedores/${providerId}/pedidos/${orderId}/cancel`,
