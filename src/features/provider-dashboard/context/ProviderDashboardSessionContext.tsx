@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 
@@ -20,6 +20,34 @@ interface ProviderDashboardSessionValue {
 }
 
 const ProviderDashboardSessionContext = createContext<ProviderDashboardSessionValue | null>(null);
+
+// Persistencia del último providerId que vio un admin via query string.
+// Permite que la próxima visita sin ?providerId= reabra el mismo proveedor.
+// Sólo se activa para sesiones con role=admin — el proveedor real nunca ve
+// este comportamiento ni hay rastros en su UI.
+const ADMIN_LAST_PROVIDER_STORAGE_KEY = "comparo3d.admin.lastProviderId";
+
+function readAdminLastProviderId(): number | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const raw = window.localStorage.getItem(ADMIN_LAST_PROVIDER_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeAdminLastProviderId(providerId: number) {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(ADMIN_LAST_PROVIDER_STORAGE_KEY, String(providerId));
+  } catch {
+    /* localStorage bloqueado: no es crítico */
+  }
+}
 
 function parseRequestedProviderId(rawValue: string | null) {
   if (!rawValue) return null;
@@ -45,9 +73,23 @@ export function ProviderDashboardSessionProvider({ children }: { children: React
   );
 
   let providerId = user?.provider_id ?? null;
-  if (user?.role === "admin" && requestedProviderId) {
-    providerId = requestedProviderId;
+  if (user?.role === "admin") {
+    // 1) Si vino ?providerId= en la URL, ese gana
+    if (requestedProviderId) {
+      providerId = requestedProviderId;
+    } else {
+      // 2) Si no, intentar recuperar el último que vio el admin
+      const lastSeen = readAdminLastProviderId();
+      if (lastSeen) providerId = lastSeen;
+    }
   }
+
+  // Persistir el providerId activo del admin para futuras visitas sin query string
+  useEffect(() => {
+    if (user?.role === "admin" && providerId) {
+      writeAdminLastProviderId(providerId);
+    }
+  }, [user?.role, providerId]);
 
   const isUnauthorized = Boolean(
     sessionQuery.error &&
