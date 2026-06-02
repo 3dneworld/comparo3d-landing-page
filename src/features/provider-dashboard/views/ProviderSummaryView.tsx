@@ -538,7 +538,9 @@ function SummaryContent({
               sub={
                 summary.readiness.quote_ready
                   ? "Impresoras y stock activos."
-                  : "Faltan requisitos."
+                  : (summary.onboarding.quote_stage?.missing?.length
+                      ? `Falta: ${humanizeReason(summary.onboarding.quote_stage.missing[0])}`
+                      : "Faltan requisitos.")
               }
               pillLabel={summary.readiness.quote_ready ? "Operativa" : "Pendiente"}
               pillTone={summary.readiness.quote_ready ? "success" : "warning"}
@@ -549,18 +551,22 @@ function SummaryContent({
               sub={
                 summary.readiness.visibility_ready
                   ? "Direccion validada con Correo Argentino"
-                  : "No visible aun."
+                  : (summary.onboarding.visibility_stage?.missing?.length
+                      ? `Falta: ${humanizeReason(summary.onboarding.visibility_stage.missing[0])}`
+                      : "Validacion pendiente.")
               }
               pillLabel={summary.readiness.visibility_ready ? "Visible" : "Pendiente"}
               pillTone={summary.readiness.visibility_ready ? "success" : "warning"}
             />
             <ReadyRow
-              status={summary.readiness.order_ready ? "ok" : "pend"}
+              status={summary.readiness.order_ready ? "ok" : (hasMpLinked ? "pend" : "pend")}
               title="Pedidos directos"
               sub={
                 summary.readiness.order_ready
                   ? "MercadoPago vinculado."
-                  : "Falta vincular MercadoPago."
+                  : (summary.onboarding.order_stage?.missing?.length
+                      ? `Falta: ${humanizeReason(summary.onboarding.order_stage.missing[0])}`
+                      : (hasMpLinked ? "Faltan pasos previos." : "Falta vincular MercadoPago."))
               }
               pillLabel={summary.readiness.order_ready ? "Activo" : "1 paso"}
               pillTone={summary.readiness.order_ready ? "success" : "warning"}
