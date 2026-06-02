@@ -13,6 +13,29 @@ console.log(
   API_BASE_URL.includes("localhost") ? "✓ LOCAL" : "⚠ PRODUCCION"
 );
 
+/**
+ * Test mode: cuando esta activado (localStorage flag), los fetch al backend
+ * incluyen header `X-Test-Mode: 1` para que el backend exponga proveedores TEST.
+ * El flag se setea via /test-mode?action=on (ver TestModePage).
+ */
+export const TEST_MODE_STORAGE_KEY = "w3dn_test_mode";
+
+export function isTestModeActive(): boolean {
+  try {
+    return typeof window !== "undefined" && localStorage.getItem(TEST_MODE_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** Inyecta el header X-Test-Mode si el flag esta activo en localStorage. */
+export function withTestModeHeaders(init?: RequestInit): RequestInit {
+  if (!isTestModeActive()) return init ?? {};
+  const headers = new Headers(init?.headers || {});
+  headers.set("X-Test-Mode", "1");
+  return { ...init, headers };
+}
+
 /** Calcula SHA256 hex del archivo en el browser usando Web Crypto API.
  *  Lee el archivo entero como ArrayBuffer (en chunks no es necesario para
  *  archivos hasta ~1GB en Chrome moderno). Costo en Einstein 162MB: ~2-3s. */
@@ -703,7 +726,7 @@ export async function getQuoteOptions(
   sessionId: string
 ): Promise<QuoteOptionsResponse | QuoteOptionsProcessing | ApiError> {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/quotes/${sessionId}/options`);
+    const res = await fetch(`${API_BASE_URL}/api/quotes/${sessionId}/options`, withTestModeHeaders());
     const data = await res.json();
 
     if (res.status === 202 || (data?.success === false && data?.status === "processing")) {

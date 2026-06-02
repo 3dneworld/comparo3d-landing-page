@@ -21,7 +21,27 @@ import ProviderDashboardV2 from "./pages/ProviderDashboardV2.tsx";
 import ProveedoresLogin from "./pages/ProveedoresLogin.tsx";
 import ProveedoresOnboardingLogin from "./pages/ProveedoresOnboardingLogin.tsx";
 import ProviderProfile from "./pages/ProviderProfile.tsx";
+import TestModePage from "./pages/TestModePage.tsx";
 import { useAnalytics } from "./hooks/useAnalytics";
+import { TEST_MODE_STORAGE_KEY } from "./lib/api";
+
+// Si llegamos con query param `?w3dn_set_test_mode=on|off` (redirect del backend
+// desde /api/dev/test-mode/<action>), aplicar el flag en localStorage y limpiar
+// la URL antes de que React Router resuelva la ruta. Asi /test-mode no es
+// necesario para activar — funciona desde cualquier URL del dominio.
+function applyTestModeFromQuery() {
+  if (typeof window === "undefined") return;
+  const sp = new URLSearchParams(window.location.search);
+  const action = sp.get("w3dn_set_test_mode");
+  if (!action) return;
+  if (action === "on") localStorage.setItem(TEST_MODE_STORAGE_KEY, "1");
+  if (action === "off") localStorage.removeItem(TEST_MODE_STORAGE_KEY);
+  // Limpiar query param para no contaminar URLs compartidas
+  sp.delete("w3dn_set_test_mode");
+  const newUrl = window.location.pathname + (sp.toString() ? `?${sp.toString()}` : "") + window.location.hash;
+  window.history.replaceState({}, "", newUrl);
+}
+applyTestModeFromQuery();
 
 const queryClient = new QueryClient();
 const DASHBOARD_BASE_PATH = "/dashboard/proveedores";
@@ -62,6 +82,7 @@ const App = () => (
           <Route path="/proveedores/login" element={<ProveedoresLogin />} />
           <Route path="/proveedores/onboarding/login" element={<ProveedoresOnboardingLogin />} />
           <Route path="/client-review/:token" element={<ClientReviewPage />} />
+          <Route path="/test-mode" element={<TestModePage />} />
           <Route path={DASHBOARD_BASE_PATH} element={<ProviderDashboardV2 />}>
             <Route path="resumen" element={<ProviderSummaryView />} />
             <Route path="perfil" element={<ProviderProfileView />} />
