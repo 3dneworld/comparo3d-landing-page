@@ -511,9 +511,9 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
   };
 
   const handleStep2Continue = async () => {
-    if (!data.nombre || !data.email || !data.cantidad) {
+    if (!data.nombre || !data.email || !data.telefono || !data.cantidad) {
       flow.setError(
-        "Completá los campos obligatorios (nombre, email y cantidad) para continuar."
+        "Completá los campos obligatorios (nombre, email, teléfono y cantidad) para continuar."
       );
       return;
     }

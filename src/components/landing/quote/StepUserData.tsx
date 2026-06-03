@@ -308,13 +308,14 @@ export function StepUserData({
 
         {/* Teléfono */}
         <div>
-          <label className="mb-1.5 block text-[14px] font-semibold text-foreground">Teléfono</label>
+          <label className="mb-1.5 block text-[14px] font-semibold text-foreground">Teléfono *</label>
           <input
             type="tel"
             value={data.telefono}
             onChange={(e) => onChange("telefono", e.target.value)}
             className={inputClass}
             placeholder="+54 11 ..."
+            required
           />
         </div>
 
