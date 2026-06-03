@@ -368,9 +368,34 @@ function SummaryContent({
     !!(provider as Record<string, unknown>).cuit &&
     !!(provider as Record<string, unknown>).nombre_legal;
 
-  const hasMpLinked = summary.readiness.order_ready;
+  // MP vinculado: mirar campos reales del provider, NO order_ready (que cae
+  // por cualquier blocker upstream — daba el bug visible en Prototip id=21
+  // donde MP estaba vinculado pero el CTA decía "Falta vincular MercadoPago").
+  const providerRaw = provider as Record<string, unknown>;
+  const hasMpLinked = Boolean(providerRaw.mp_user_id || providerRaw.mp_linked_at);
 
   const activeMaterials = materials.filter((mat) => mat.activo);
+
+  // Handler: abre OAuth de MercadoPago en una pestaña nueva para vincular la
+  // cuenta del proveedor activo. Usa el endpoint backend GET /api/payment/oauth/url/:id
+  const handleVincularMP = async () => {
+    if (!provider?.id) return;
+    try {
+      const res = await fetch(`/api/payment/oauth/url/${provider.id}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data?.success && data?.oauth_url) {
+        window.location.href = data.oauth_url;
+      } else {
+        // eslint-disable-next-line no-alert
+        alert("No pudimos generar el link de MercadoPago. Reintentá en unos segundos.");
+      }
+    } catch {
+      // eslint-disable-next-line no-alert
+      alert("Error de red al pedir el link de MercadoPago.");
+    }
+  };
 
   // CTA: first missing onboarding action
   const ctaAction = useMemo(() => {
@@ -381,7 +406,8 @@ function SummaryContent({
         title: "Vincula MercadoPago",
         description:
           "Es el ultimo paso para aceptar pedidos directos. Toma menos de 3 minutos con tu cuenta operativa.",
-        href: "/proveedores-v2/perfil",
+        href: null,
+        onClick: handleVincularMP,
         buttonLabel: "Vincular ahora",
       };
     }
@@ -393,6 +419,7 @@ function SummaryContent({
         description:
           "Resolver esto desbloquea la siguiente capa de readiness para tu proveedor.",
         href: "/proveedores-v2/perfil",
+        onClick: null,
         buttonLabel: "Ir a configurar",
       };
     }
@@ -559,16 +586,18 @@ function SummaryContent({
               pillTone={summary.readiness.visibility_ready ? "success" : "warning"}
             />
             <ReadyRow
-              status={summary.readiness.order_ready ? "ok" : (hasMpLinked ? "pend" : "pend")}
+              status={summary.readiness.order_ready ? "ok" : "pend"}
               title="Pedidos directos"
               sub={
                 summary.readiness.order_ready
                   ? "MercadoPago vinculado."
                   : (summary.onboarding.order_stage?.missing?.length
                       ? `Falta: ${humanizeReason(summary.onboarding.order_stage.missing[0])}`
-                      : (hasMpLinked ? "Faltan pasos previos." : "Falta vincular MercadoPago."))
+                      : (hasMpLinked
+                          ? "MercadoPago vinculado. Faltan validaciones previas."
+                          : "Falta vincular MercadoPago."))
               }
-              pillLabel={summary.readiness.order_ready ? "Activo" : "1 paso"}
+              pillLabel={summary.readiness.order_ready ? "Activo" : (hasMpLinked ? "Pendiente" : "1 paso")}
               pillTone={summary.readiness.order_ready ? "success" : "warning"}
             />
             <ReadyRow
@@ -674,15 +703,25 @@ function SummaryContent({
               <p className="mb-[15px] font-[Montserrat] text-xs font-medium leading-[1.6] text-[hsl(220,15%,65%)]">
                 {ctaAction.description}
               </p>
-              <Button
-                asChild
-                className="h-[38px] rounded-[10px] bg-gradient-to-r from-primary to-cyan-500 px-[17px] font-[Montserrat] text-[13px] font-bold text-white shadow-[0_4px_20px_hsl(220_70%_45%/0.35)] hover:from-primary/90 hover:to-cyan-500/90"
-              >
-                <a href={ctaAction.href}>
+              {ctaAction.onClick ? (
+                <Button
+                  className="h-[38px] rounded-[10px] bg-gradient-to-r from-primary to-cyan-500 px-[17px] font-[Montserrat] text-[13px] font-bold text-white shadow-[0_4px_20px_hsl(220_70%_45%/0.35)] hover:from-primary/90 hover:to-cyan-500/90"
+                  onClick={ctaAction.onClick}
+                >
                   {ctaAction.buttonLabel}
                   <ArrowRight className="ml-1.5 h-[15px] w-[15px]" />
-                </a>
-              </Button>
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  className="h-[38px] rounded-[10px] bg-gradient-to-r from-primary to-cyan-500 px-[17px] font-[Montserrat] text-[13px] font-bold text-white shadow-[0_4px_20px_hsl(220_70%_45%/0.35)] hover:from-primary/90 hover:to-cyan-500/90"
+                >
+                  <a href={ctaAction.href ?? "#"}>
+                    {ctaAction.buttonLabel}
+                    <ArrowRight className="ml-1.5 h-[15px] w-[15px]" />
+                  </a>
+                </Button>
+              )}
             </div>
           </div>
         ) : (

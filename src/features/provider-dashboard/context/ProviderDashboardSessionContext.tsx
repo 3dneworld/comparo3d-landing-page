@@ -25,12 +25,23 @@ const ProviderDashboardSessionContext = createContext<ProviderDashboardSessionVa
 // Permite que la próxima visita sin ?providerId= reabra el mismo proveedor.
 // Sólo se activa para sesiones con role=admin — el proveedor real nunca ve
 // este comportamiento ni hay rastros en su UI.
-const ADMIN_LAST_PROVIDER_STORAGE_KEY = "comparo3d.admin.lastProviderId";
+//
+// Key scoped por email: así si cambia de cuenta admin en el mismo navegador
+// (christianmella@gmail.com vs 3dclowbot@gmail.com), cada uno tiene su propio
+// providerId guardado y no se pisan entre sí.
+const ADMIN_LAST_PROVIDER_KEY_PREFIX = "comparo3d.admin.lastProviderId";
 
-function readAdminLastProviderId(): number | null {
+function storageKeyFor(email: string | null | undefined): string {
+  const normalized = (email ?? "").trim().toLowerCase();
+  return normalized
+    ? `${ADMIN_LAST_PROVIDER_KEY_PREFIX}.${normalized}`
+    : ADMIN_LAST_PROVIDER_KEY_PREFIX;
+}
+
+function readAdminLastProviderId(email: string | null | undefined): number | null {
   try {
     if (typeof window === "undefined") return null;
-    const raw = window.localStorage.getItem(ADMIN_LAST_PROVIDER_STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKeyFor(email));
     if (!raw) return null;
     const parsed = Number(raw);
     if (!Number.isFinite(parsed) || parsed <= 0) return null;
@@ -40,10 +51,10 @@ function readAdminLastProviderId(): number | null {
   }
 }
 
-function writeAdminLastProviderId(providerId: number) {
+function writeAdminLastProviderId(email: string | null | undefined, providerId: number) {
   try {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem(ADMIN_LAST_PROVIDER_STORAGE_KEY, String(providerId));
+    window.localStorage.setItem(storageKeyFor(email), String(providerId));
   } catch {
     /* localStorage bloqueado: no es crítico */
   }
@@ -72,14 +83,16 @@ export function ProviderDashboardSessionProvider({ children }: { children: React
     searchParams.get("providerId") || searchParams.get("provider_id")
   );
 
+  const adminEmail = user?.email ?? null;
+
   let providerId = user?.provider_id ?? null;
   if (user?.role === "admin") {
     // 1) Si vino ?providerId= en la URL, ese gana
     if (requestedProviderId) {
       providerId = requestedProviderId;
     } else {
-      // 2) Si no, intentar recuperar el último que vio el admin
-      const lastSeen = readAdminLastProviderId();
+      // 2) Si no, intentar recuperar el último que vio el admin (scoped por email)
+      const lastSeen = readAdminLastProviderId(adminEmail);
       if (lastSeen) providerId = lastSeen;
     }
   }
@@ -87,9 +100,9 @@ export function ProviderDashboardSessionProvider({ children }: { children: React
   // Persistir el providerId activo del admin para futuras visitas sin query string
   useEffect(() => {
     if (user?.role === "admin" && providerId) {
-      writeAdminLastProviderId(providerId);
+      writeAdminLastProviderId(adminEmail, providerId);
     }
-  }, [user?.role, providerId]);
+  }, [user?.role, providerId, adminEmail]);
 
   const isUnauthorized = Boolean(
     sessionQuery.error &&
