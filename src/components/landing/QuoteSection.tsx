@@ -140,6 +140,8 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
   const [mpBanner, setMpBanner] = useState<{ type: "success" | "failure" | "pending"; orderId: string } | null>(null);
   /** Banner cuando un deep link de cotizacion ya no esta disponible (LOST expiro) */
   const [lostUnavailable, setLostUnavailable] = useState(false);
+  /** Lista de keys de campos del paso 2 que faltan (para marcar visualmente). */
+  const [missingStep2Fields, setMissingStep2Fields] = useState<string[]>([]);
 
   // ── Deep link recovery: ?session=XXX desde mail follow-up ──
   // Si el cliente abre el link del mail desde otro browser (mobile/desktop
@@ -511,12 +513,31 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
   };
 
   const handleStep2Continue = async () => {
-    if (!data.nombre || !data.email || !data.telefono || !data.cantidad) {
-      flow.setError(
-        "Completá los campos obligatorios (nombre, email, teléfono y cantidad) para continuar."
-      );
+    // Validar y armar lista de campos faltantes en orden de aparicion del form
+    const missing: { key: string; label: string }[] = [];
+    if (!data.nombre)   missing.push({ key: "nombre",   label: "Nombre" });
+    if (!data.email)    missing.push({ key: "email",    label: "Email" });
+    if (!data.telefono) missing.push({ key: "telefono", label: "Teléfono" });
+    if (!data.cantidad) missing.push({ key: "cantidad", label: "Cantidad" });
+
+    if (missing.length > 0) {
+      // Enviar al StepUserData la lista de keys para marcar con border rojo + glow
+      setMissingStep2Fields(missing.map((m) => m.key));
+      // Mensaje especifico: "Falta cargar: Teléfono y Email" o "Falta cargar: Teléfono"
+      const labels = missing.map((m) => m.label);
+      let listText: string;
+      if (labels.length === 1) {
+        listText = labels[0];
+      } else if (labels.length === 2) {
+        listText = `${labels[0]} y ${labels[1]}`;
+      } else {
+        listText = `${labels.slice(0, -1).join(", ")} y ${labels[labels.length - 1]}`;
+      }
+      flow.setError(`Falta cargar: ${listText}.`);
       return;
     }
+    // Si llega aca: limpiar marcas de error rojas
+    setMissingStep2Fields([]);
     // El dropdown siempre debería tener valor; si una sesión vieja guardó material vacío,
     // forzamos PLA para mantener compatibilidad y evitar un falso error de validación.
     const normalizedMaterial = VALID_MATERIALS.has(data.material) ? data.material : "PLA";
@@ -808,7 +829,14 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
               isLoading={flow.isLoading}
               progressMessage={flow.progressMessage}
               error={flow.error}
-              onChange={updateField}
+              missingFields={missingStep2Fields}
+              onChange={(field, value) => {
+                updateField(field, value);
+                // Limpiar marca de error de ese campo cuando empieza a tipear
+                if (missingStep2Fields.includes(field)) {
+                  setMissingStep2Fields((prev) => prev.filter((f) => f !== field));
+                }
+              }}
               onRemoveFile={removeUploadedStl}
               onReplacementFileSelect={handleReplacementFileSelect}
               onBack={() => goToStep(1)}

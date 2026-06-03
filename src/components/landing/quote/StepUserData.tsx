@@ -77,6 +77,8 @@ interface StepUserDataProps {
   isLoading: boolean;
   progressMessage: string;
   error: string | null;
+  /** Keys de campos faltantes — marcamos border rojo + ring rojo al focus. */
+  missingFields?: string[];
   onChange: (field: keyof FormState, value: string) => void;
   onRemoveFile: () => void;
   onReplacementFileSelect?: (file: File) => void;
@@ -92,11 +94,17 @@ export function StepUserData({
   isLoading,
   progressMessage,
   error,
+  missingFields = [],
   onChange,
   onRemoveFile,
   onBack,
   onContinue,
 }: StepUserDataProps) {
+  // Helper: dado el key del campo, devolver className extra si esta en error.
+  const errorClass = (field: string) =>
+    missingFields.includes(field)
+      ? "border-red-500 ring-2 ring-red-500/30 focus:ring-red-500/50 focus:border-red-500"
+      : "";
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [colorCustom, setColorCustom] = useState("");
@@ -289,7 +297,7 @@ export function StepUserData({
           <input
             value={data.nombre}
             onChange={(e) => onChange("nombre", e.target.value)}
-            className={inputClass}
+            className={`${inputClass} ${errorClass("nombre")}`}
             placeholder="Tu nombre"
           />
         </div>
@@ -301,7 +309,7 @@ export function StepUserData({
             type="email"
             value={data.email}
             onChange={(e) => onChange("email", e.target.value)}
-            className={inputClass}
+            className={`${inputClass} ${errorClass("email")}`}
             placeholder="tu@email.com"
           />
         </div>
@@ -313,7 +321,7 @@ export function StepUserData({
             type="tel"
             value={data.telefono}
             onChange={(e) => onChange("telefono", e.target.value)}
-            className={inputClass}
+            className={`${inputClass} ${errorClass("telefono")}`}
             placeholder="+54 11 ..."
             required
           />
@@ -514,7 +522,7 @@ export function StepUserData({
             min="1"
             value={data.cantidad}
             onChange={(e) => onChange("cantidad", e.target.value)}
-            className={inputClass}
+            className={`${inputClass} ${errorClass("cantidad")}`}
             placeholder="1"
           />
         </div>
