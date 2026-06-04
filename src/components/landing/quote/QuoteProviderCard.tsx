@@ -105,7 +105,7 @@ export function QuoteProviderCard({
           <ProviderAvatar option={option} />
 
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
               <p className="truncate text-[16px] font-bold text-foreground">{option.provider_name}</p>
 
               {option.trust_metrics.score > 0 ? (
@@ -119,6 +119,10 @@ export function QuoteProviderCard({
                   ) : null}
                 </span>
               ) : null}
+
+              {sortBadges(option.badges ?? []).map((badge) => (
+                <BadgeChip key={`${badge.badge_type}-${badge.badge_tier ?? ""}`} badge={badge} />
+              ))}
             </div>
 
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-[12px] text-muted-foreground">
@@ -136,10 +140,6 @@ export function QuoteProviderCard({
                 <Truck size={12} />
                 {option.delivery_days} {option.delivery_days === 1 ? "día" : "días"}
               </span>
-
-              {sortBadges(option.badges ?? []).map((badge) => (
-                <BadgeChip key={`${badge.badge_type}-${badge.badge_tier ?? ""}`} badge={badge} />
-              ))}
             </div>
           </div>
         </div>
