@@ -858,6 +858,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
               sessionId={data.sessionId}
               thumbnailUrl={data.thumbnailUrl || flow.thumbnailUrl || null}
               material={flow.material || data.material || null}
+              selectedColor={data.colorAcabado || null}
               cantidad={flow.cantidad ?? (data.cantidad ? Number(data.cantidad) : null)}
               stlDimensions={flow.stlDimensions}
               onSelectQuote={handleSelectQuote}

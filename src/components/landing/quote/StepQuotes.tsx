@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -41,6 +41,7 @@ interface StepQuotesProps {
   sessionId: string;
   thumbnailUrl: string | null;
   material: string | null;
+  selectedColor: string | null;
   cantidad: number | null;
   stlDimensions: { x: number; y: number; z: number } | null;
   onSelectQuote: (quoteOptionUid: string) => void;
@@ -91,6 +92,64 @@ const clampQuantity = (value: number) => Math.min(500, Math.max(1, Math.round(va
 
 const getThumbnailSrc = (thumbnailUrl: string) =>
   thumbnailUrl.startsWith("data:") ? thumbnailUrl : `data:image/png;base64,${thumbnailUrl}`;
+
+const FILAMENT_COLOR_STYLES: Record<string, { backgroundColor: string; borderColor: string }> = {
+  blanco: { backgroundColor: "#FFFFFF", borderColor: "#D1D5DB" },
+  negro: { backgroundColor: "#1F1F1F", borderColor: "#1F1F1F" },
+  azul: { backgroundColor: "#2563EB", borderColor: "#2563EB" },
+  rojo: { backgroundColor: "#DC2626", borderColor: "#DC2626" },
+  gris: { backgroundColor: "#6B7280", borderColor: "#6B7280" },
+  amarillo: { backgroundColor: "#F59E0B", borderColor: "#F59E0B" },
+  verde: { backgroundColor: "#16A34A", borderColor: "#16A34A" },
+  naranja: { backgroundColor: "#EA580C", borderColor: "#EA580C" },
+};
+
+const hexToRgb = (hex: string) => {
+  const normalized = hex.replace("#", "");
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) return null;
+  return {
+    r: Number.parseInt(normalized.slice(0, 2), 16),
+    g: Number.parseInt(normalized.slice(2, 4), 16),
+    b: Number.parseInt(normalized.slice(4, 6), 16),
+  };
+};
+
+const relativeLuminance = (hex: string) => {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return null;
+  const channels = [rgb.r, rgb.g, rgb.b].map((channel) => {
+    const value = channel / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+};
+
+const contrastRatio = (first: string, second: string) => {
+  const firstLuminance = relativeLuminance(first);
+  const secondLuminance = relativeLuminance(second);
+  if (firstLuminance === null || secondLuminance === null) return 0;
+  const lighter = Math.max(firstLuminance, secondLuminance);
+  const darker = Math.min(firstLuminance, secondLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
+};
+
+const getMaterialPillStyle = (selectedColor: string | null): CSSProperties | undefined => {
+  const normalized = String(selectedColor || "").trim().toLowerCase();
+  const preset = FILAMENT_COLOR_STYLES[normalized];
+  const customHex = /^#[0-9a-f]{6}$/i.test(normalized) ? normalized.toUpperCase() : null;
+  const colors = preset || (customHex ? { backgroundColor: customHex, borderColor: customHex } : null);
+  if (!colors) return undefined;
+
+  const darkForeground = "#0F172A";
+  const lightForeground = "#FFFFFF";
+  const color =
+    contrastRatio(colors.backgroundColor, darkForeground) >=
+    contrastRatio(colors.backgroundColor, lightForeground)
+      ? darkForeground
+      : lightForeground;
+
+  return { ...colors, color };
+};
 
 function FilamentIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -428,6 +487,7 @@ export function StepQuotes({
   quotes,
   thumbnailUrl,
   material,
+  selectedColor,
   cantidad,
   stlDimensions,
   onSelectQuote,
@@ -546,6 +606,7 @@ export function StepQuotes({
 
   const hasNearbyCoordinates = quotesWithDistance.some((quote) => quote.distanceKm !== null);
   const quantityChanged = clampQuantity(draftQuantity) !== clampQuantity(cantidad ?? 1);
+  const materialPillStyle = getMaterialPillStyle(selectedColor);
 
   const requestNearby = (shouldEnable: boolean) => {
     if (!shouldEnable) {
@@ -710,8 +771,11 @@ export function StepQuotes({
         <>
           <div className="mt-4 flex flex-wrap items-start gap-3">
             {material && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1.5 text-[13px] text-foreground">
-                <FilamentIcon className="h-[14px] w-[14px] text-primary" />
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1.5 text-[13px] text-foreground"
+                style={materialPillStyle}
+              >
+                <FilamentIcon className="h-[14px] w-[14px]" />
                 {material}
               </span>
             )}
