@@ -558,6 +558,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
       stl_sha256: data.stlSha256,
     });
     if (ok) {
+      polledSessionRef.current = "";
       goToStep(3); // el useEffect de polling detecta step=3 y arranca automáticamente
     }
   };
