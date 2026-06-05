@@ -3,7 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  ArrowRight,
   BadgeX,
   Camera,
   CheckCircle2,
@@ -320,26 +319,6 @@ function OrderCard({
           >
             {meta.label}
           </div>
-
-          {meta.next && (
-            <Button
-              type="button"
-              className="h-[34px] rounded-[10px] bg-gradient-to-r from-primary to-cyan-500 px-3 font-[Montserrat] text-[12px] font-bold text-white shadow-[0_4px_20px_hsl(220_70%_45%/0.35)] hover:opacity-90"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (status === "paid_confirmed") onAction("printing");
-                else if (status === "in_production") onAction("ready");
-                else if (status === "ready_to_ship") onAction("dispatch");
-              }}
-              disabled={isActioning}
-            >
-              {isActioning ? (
-                <LoaderCircle className="h-3 w-3 animate-spin" />
-              ) : null}
-              {meta.next}
-              <ArrowRight className="ml-1 h-3 w-3" />
-            </Button>
-          )}
 
           <button
             type="button"
@@ -950,20 +929,32 @@ function OrderDetailPanel({
             Marcar como Entregado
           </Button>
         )}
-        {/* Solicitar Review: deshabilitado hasta que el pedido este 'completed' */}
-        {!isCancelled && (
-          <Button
-            type="button"
-            variant="outline"
-            className="h-[34px] rounded-[10px] border-violet-500/30 font-[Montserrat] text-[12px] font-semibold text-violet-300 hover:bg-violet-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
-            onClick={() => onAction("request_review")}
-            disabled={isActioning || status !== "completed"}
-            title={status !== "completed" ? "Disponible solo despues de marcar como Entregado" : "Enviar email al cliente solicitando review"}
-          >
-            <Star className="mr-1 h-3 w-3" />
-            Solicitar Review
-          </Button>
-        )}
+        {/* Solicitar Review: siempre visible (también para pedidos cancelados).
+            Se grisa si ya se envió la solicitud o si el pedido no está completado/cancelado. */}
+        {(() => {
+          const reviewStatus = (order.review_reminder_status || "none").toLowerCase();
+          const alreadyRequested = reviewStatus !== "none" && reviewStatus !== "";
+          const eligible = isCancelled || status === "completed";
+          const isDisabled = isActioning || alreadyRequested || !eligible;
+          const title = alreadyRequested
+            ? "Ya se envió la solicitud de review al cliente"
+            : !eligible
+            ? "Disponible cuando el pedido esté Entregado o cancelado"
+            : "Enviar email al cliente solicitando review";
+          return (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-[34px] rounded-[10px] border-violet-500/30 font-[Montserrat] text-[12px] font-semibold text-violet-300 hover:bg-violet-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
+              onClick={() => onAction("request_review")}
+              disabled={isDisabled}
+              title={title}
+            >
+              <Star className="mr-1 h-3 w-3" />
+              Solicitar Review
+            </Button>
+          );
+        })()}
         {!isCancelled && status !== "completed" && (
           <Button
             type="button"
