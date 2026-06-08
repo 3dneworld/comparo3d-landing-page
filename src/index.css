@@ -194,6 +194,53 @@
       transform: translateX(0);
     }
   }
+
+  /* Trending — marquee de cards: mobile scroll manual, desktop auto-scroll continuo */
+  .trending-marquee-mobile {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.5rem;
+  }
+  .trending-marquee-mobile-track {
+    display: flex;
+    width: max-content;
+  }
+  .trending-marquee-desktop {
+    display: none;
+  }
+  @media (min-width: 768px) {
+    .trending-marquee-mobile {
+      display: none;
+    }
+    .trending-marquee-desktop {
+      position: relative;
+      display: block;
+      overflow: hidden;
+    }
+    .trending-marquee-track {
+      display: flex;
+      width: max-content;
+      animation-name: trending-marquee-scroll;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+    }
+    .trending-marquee-desktop:hover .trending-marquee-track {
+      animation-play-state: paused;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .trending-marquee-track {
+      animation: none;
+    }
+  }
+  @keyframes trending-marquee-scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
 }
 
 @layer components {

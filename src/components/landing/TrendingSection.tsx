@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import TrendingCarousel from "./TrendingCarousel";
+import TrendingGrid from "./TrendingGrid";
 import { getTrendingItems, isApiError, type CatalogItem } from "@/lib/api";
 
 interface TrendingSectionProps {
@@ -35,7 +35,7 @@ export default function TrendingSection({ onSelect, loadingSlug }: TrendingSecti
             Elegí un modelo y cotizalo gratis al instante.
           </p>
         </div>
-        <TrendingCarousel items={items} onSelect={onSelect} loadingSlug={loadingSlug} />
+        <TrendingGrid items={items} onSelect={onSelect} loadingSlug={loadingSlug} />
       </div>
     </section>
   );
