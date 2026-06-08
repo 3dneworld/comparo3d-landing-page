@@ -195,6 +195,7 @@ export interface QuoteOption {
   sr_score?: number;
   ranking_position?: number;
   ranking_mode?: "bootstrap" | "production";
+  price_is_minimum?: boolean;
   badges?: QuoteOptionBadge[];
   score_breakdown?: {
     seleccion_fundador: number;

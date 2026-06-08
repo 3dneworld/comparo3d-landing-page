@@ -13,6 +13,38 @@ function formatRoundedArs(value: number) {
   return Math.round(value).toLocaleString("es-AR");
 }
 
+function MinimumPriceBadge() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <span
+      className="relative inline-flex"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        aria-label="Por qué este precio"
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen((prev) => !prev);
+        }}
+        className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-sky-400 text-[12px] font-bold leading-none text-white"
+      >
+        ?
+      </button>
+      {open ? (
+        <span
+          role="tooltip"
+          className="absolute bottom-full right-0 z-20 mb-2 w-56 rounded-lg bg-slate-900 px-3 py-2 text-[12px] font-medium leading-snug text-white shadow-lg"
+        >
+          Se ha cotizado el valor mínimo aceptado por trabajo de este proveedor
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 function StarRating({ score }: { score: number }) {
   const normalizedScore = Math.max(0, Math.min(score || 0, 5));
 
@@ -145,8 +177,9 @@ export function QuoteProviderCard({
         </div>
 
         <div className="flex shrink-0 items-end justify-between gap-4 md:flex-col md:items-end">
-          <p className="text-[20px] font-extrabold leading-tight text-foreground">
+          <p className="flex items-center gap-1.5 text-[20px] font-extrabold leading-tight text-foreground">
             ${formatRoundedArs(option.price_ars)}
+            {option.price_is_minimum ? <MinimumPriceBadge /> : null}
           </p>
           <button
             type="button"

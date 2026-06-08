@@ -850,6 +850,15 @@ function OrderDetailPanel({
         </span>
       </div>
 
+      {/* Aviso: precio cotizado al mínimo del proveedor */}
+      {order.precio_es_minimo ? (
+        <div className="rounded-xl border border-[#3b82f6]/40 bg-[#3b82f6]/10 px-4 py-3">
+          <p className="font-[Montserrat] text-xs font-semibold leading-snug text-[#bcd4ff]">
+            Se cotizó el mínimo para que este pedido haya sido aceptado.
+          </p>
+        </div>
+      ) : null}
+
       {/* Timeline */}
       {!isCancelled && (
         <div className="flex flex-col gap-2 rounded-xl border border-[var(--c3d-card-border)] bg-[var(--c3d-card-bg-alt)] px-4 py-3">

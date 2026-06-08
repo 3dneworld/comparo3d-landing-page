@@ -463,6 +463,7 @@ export interface DashboardOrder {
   print_hours_billable?: number | null;
   transit_days?: number | null;
   client_notes?: string | null;
+  precio_es_minimo?: boolean | null;
 }
 
 export interface ProviderOrdersResponse {
