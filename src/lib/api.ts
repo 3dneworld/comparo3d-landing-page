@@ -1377,7 +1377,15 @@ export interface CatalogItem {
   description: string;
   category: string;
   image_url: string;
+  /** URL del thumbnail FULL pre-renderizado (PNG estatico cacheable). Disponible para items trending. */
+  thumbnail_url?: string;
   material: string;
+  /** Altura de capa sugerida (e.g. "0.15"). Default del item del catalogo. */
+  layer_height?: string;
+  /** Relleno sugerido (e.g. "20"). */
+  infill?: string;
+  /** Color sugerido para esta pieza (e.g. "amarillo", "gris"). */
+  suggested_color?: string;
   print_time_min: number | null;
   filament_grams: number | null;
   tags: string[];
@@ -1396,16 +1404,27 @@ export interface QuickQuoteResponse {
   stl_sha256: string;
   stl_dimensions: { x: number; y: number; z: number } | null;
   thumbnail_base64: string | null;
+  /** URL del thumbnail FULL estatico (mismo que viene en /api/catalog/items). */
+  thumbnail_url?: string;
   manifold_status: string;
   slicing: {
     slicing_available: boolean;
-    print_time_minutes: number;
-    filament_grams: number;
-    material: string;
-    layer_height: string;
-    infill: string;
+    print_time_minutes?: number;
+    filament_grams?: number;
+    material?: string;
+    layer_height?: string;
+    infill?: string;
+    suggested_color?: string;
+    suggested_layer_height?: string;
   };
-  catalog_item: { slug: string; title: string; material: string };
+  catalog_item: {
+    slug: string;
+    title: string;
+    material: string;
+    suggested_color?: string;
+    suggested_layer_height?: string;
+    thumbnail_url?: string;
+  };
   from_catalog: boolean;
 }
 

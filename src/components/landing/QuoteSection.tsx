@@ -112,6 +112,7 @@ function saveData(data: QuoteData): void {
 }
 
 export interface CatalogInjection {
+  /** Vacio si todavia no llego el response del backend. El paso 2 se renderiza igual con el thumbnail. */
   sessionId: string;
   tempName: string;
   stlSha256: string;
@@ -120,6 +121,10 @@ export interface CatalogInjection {
   material: string;
   catalogTitle: string;
   slug: string;
+  /** Color predeterminado sugerido para esta pieza (e.g. "amarillo", "gris"). */
+  suggestedColor?: string;
+  /** Altura de capa sugerida en milimetros sin sufijo (e.g. "0.15"). */
+  suggestedLayerHeight?: string;
 }
 
 const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjection | null }) => {
@@ -462,37 +467,67 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
   }, [data.step, data.sessionId, isCheckingSavedSession]);
 
   // ── Inyección desde catálogo ──────────────────────────────────────────────
+  // Se dispara dos veces por click:
+  //   1) Optimistic UI (sessionId === ""): pinta el paso 2 al toque con thumbnail full.
+  //   2) Backend response llega: solo mergea sessionId/tempName/stlSha256 sin tocar thumbnail.
+  const lastInjectedSlugRef = useRef<string>("");
   useEffect(() => {
     if (!catalogInjection) return;
 
-    // Reset de sesión previa
-    localStorage.removeItem(STORAGE_KEY);
-    polledSessionRef.current = "";
-    thumbnailFetchedRef.current = "";
-    restoredSessionCheckedRef.current = "";
+    const isFirstInject = lastInjectedSlugRef.current !== catalogInjection.slug;
+    const layerHeightDisplay = catalogInjection.suggestedLayerHeight
+      ? `${catalogInjection.suggestedLayerHeight}mm`
+      : "";
+    // Color del backend viene lowercase ("amarillo"). El select del frontend usa
+    // capitalize ("Amarillo"). Normalizamos al pre-cargar para que matchee la option.
+    const normalizedColor = catalogInjection.suggestedColor
+      ? catalogInjection.suggestedColor.charAt(0).toUpperCase() + catalogInjection.suggestedColor.slice(1).toLowerCase()
+      : "";
 
-    // Atribución de campaña para esta nueva sesión de catálogo
-    catalogSlugRef.current = catalogInjection.slug;
-    quoteViewedFiredRef.current = false;
+    if (isFirstInject) {
+      lastInjectedSlugRef.current = catalogInjection.slug;
 
-    // Inyectar datos del catálogo
-    const next: QuoteData = {
-      ...defaultData,
-      sessionId: catalogInjection.sessionId,
-      tempName: catalogInjection.tempName,
-      stlSha256: catalogInjection.stlSha256,
-      thumbnailUrl: catalogInjection.thumbnailUrl,
-      thumbnailQuality: "full",
-      fileName: catalogInjection.fileName,
-      material: catalogInjection.material,
-      step: 2,
-    };
-    saveData(next);
-    setDataRaw(next);
-    setHasSaved(true);
-    setIsCheckingSavedSession(false);
-    setSelectedQuote(null);
-    setMpBanner(null);
+      // Reset de sesión previa
+      localStorage.removeItem(STORAGE_KEY);
+      polledSessionRef.current = "";
+      thumbnailFetchedRef.current = "";
+      restoredSessionCheckedRef.current = "";
+
+      // Atribución de campaña para esta nueva sesión de catálogo
+      catalogSlugRef.current = catalogInjection.slug;
+      quoteViewedFiredRef.current = false;
+
+      // Inyectar datos del catálogo — con defaults sugeridos por pieza
+      const next: QuoteData = {
+        ...defaultData,
+        sessionId:        catalogInjection.sessionId,
+        tempName:         catalogInjection.tempName,
+        stlSha256:        catalogInjection.stlSha256,
+        thumbnailUrl:     catalogInjection.thumbnailUrl,
+        thumbnailQuality: "full",
+        fileName:         catalogInjection.fileName,
+        material:         catalogInjection.material,
+        colorAcabado:     normalizedColor,
+        alturaCapa:       layerHeightDisplay || defaultData.alturaCapa,
+        step: 2,
+      };
+      saveData(next);
+      setDataRaw(next);
+      setHasSaved(true);
+      setIsCheckingSavedSession(false);
+      setSelectedQuote(null);
+      setMpBanner(null);
+      return;
+    }
+
+    // Mismo slug: el backend response llego. Mergear sessionId/tempName/stlSha256 sin tocar thumbnail.
+    if (catalogInjection.sessionId && !data.sessionId) {
+      setData({
+        sessionId: catalogInjection.sessionId,
+        tempName:  catalogInjection.tempName,
+        stlSha256: catalogInjection.stlSha256,
+      });
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalogInjection]);
 
@@ -529,6 +564,23 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
   };
 
   const handleStep2Continue = async () => {
+    // Si veniamos del flujo catalogo y todavia no llego el sessionId real del backend,
+    // esperamos brevemente (max ~3s). En la practica ya llego para cuando el cliente
+    // termina de completar nombre/email/telefono.
+    if (catalogInjection && !data.sessionId) {
+      const waitStart = Date.now();
+      while (!data.sessionId && Date.now() - waitStart < 3000) {
+        await new Promise((r) => setTimeout(r, 100));
+        if (data.sessionId) break;
+      }
+      // Releer del state actualizado tras la espera
+      const latestSession = (loadSaved()?.sessionId) || data.sessionId;
+      if (!latestSession) {
+        flow.setError("Estamos preparando la pieza, esperá un instante y reintentá.");
+        return;
+      }
+    }
+
     // Validar y armar lista de campos faltantes en orden de aparicion del form
     const missing: { key: string; label: string }[] = [];
     if (!data.nombre)   missing.push({ key: "nombre",   label: "Nombre" });
@@ -847,6 +899,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
               progressMessage={flow.progressMessage}
               error={flow.error}
               missingFields={missingStep2Fields}
+              suggestedLayerHeight={catalogInjection?.suggestedLayerHeight ?? null}
               onChange={(field, value) => {
                 updateField(field, value);
                 // Limpiar marca de error de ese campo cuando empieza a tipear

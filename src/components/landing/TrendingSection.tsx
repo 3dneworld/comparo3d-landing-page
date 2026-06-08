@@ -5,9 +5,11 @@ import { getTrendingItems, isApiError, type CatalogItem } from "@/lib/api";
 interface TrendingSectionProps {
   onSelect: (slug: string) => void;
   loadingSlug?: string | null;
+  /** Callback que recibe los items cuando se cargan. Permite al parent pre-cachear thumbnails y leer defaults. */
+  onItemsLoaded?: (items: CatalogItem[]) => void;
 }
 
-export default function TrendingSection({ onSelect, loadingSlug }: TrendingSectionProps) {
+export default function TrendingSection({ onSelect, loadingSlug, onItemsLoaded }: TrendingSectionProps) {
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -15,12 +17,16 @@ export default function TrendingSection({ onSelect, loadingSlug }: TrendingSecti
     let active = true;
     getTrendingItems().then((res) => {
       if (!active) return;
-      if (!isApiError(res)) setItems(res.items);
+      if (!isApiError(res)) {
+        setItems(res.items);
+        onItemsLoaded?.(res.items);
+      }
       setLoaded(true);
     });
     return () => {
       active = false;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // No renderizar nada si todavía no cargó o si no hay items (no romper la landing)

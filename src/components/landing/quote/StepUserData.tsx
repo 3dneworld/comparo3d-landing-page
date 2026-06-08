@@ -37,11 +37,22 @@ const INFILL_DEFAULT = "20%";
 
 // ── Altura de capa opciones ───────────────────────────────────────────────────
 const LAYER_OPTIONS = [
-  { label: "0.1mm (Alta calidad)", value: "0.1mm" },
-  { label: "0.2mm (Recomendado)", value: "0.2mm" },
+  { label: "0.1mm (Alta calidad)",     value: "0.1mm" },
+  { label: "0.15mm (Detalle)",         value: "0.15mm" },
+  { label: "0.2mm (Recomendado)",      value: "0.2mm" },
   { label: "0.3mm (Económico/Rápido)", value: "0.3mm" },
 ];
 const LAYER_DEFAULT = "0.2mm";
+
+/** Normaliza "0.15" / "0.15mm" / "0,15" a "0.15mm" para comparar contra el value del select. */
+function normalizeLayerValue(v: string | null | undefined): string {
+  if (!v) return "";
+  const s = String(v).trim().toLowerCase().replace(",", ".").replace(/mm$/, "");
+  const num = Number(s);
+  if (!isFinite(num) || num <= 0) return "";
+  // Formato compacto: 0.1, 0.15, 0.2, 0.3
+  return `${num}mm`;
+}
 
 // ── Colores ───────────────────────────────────────────────────────────────────
 const COLOR_OPTIONS = [
@@ -79,6 +90,8 @@ interface StepUserDataProps {
   error: string | null;
   /** Keys de campos faltantes — marcamos border rojo + ring rojo al focus. */
   missingFields?: string[];
+  /** Altura de capa sugerida (sin sufijo mm, e.g. "0.15"). Si difiere del seleccionado, mostramos tooltip ambar. */
+  suggestedLayerHeight?: string | null;
   onChange: (field: keyof FormState, value: string) => void;
   onRemoveFile: () => void;
   onReplacementFileSelect?: (file: File) => void;
@@ -95,11 +108,15 @@ export function StepUserData({
   progressMessage,
   error,
   missingFields = [],
+  suggestedLayerHeight = null,
   onChange,
   onRemoveFile,
   onBack,
   onContinue,
 }: StepUserDataProps) {
+  const suggestedLayerValue = normalizeLayerValue(suggestedLayerHeight);
+  const layerDiffersFromSuggested =
+    !!suggestedLayerValue && normalizeLayerValue(data.alturaCapa) !== suggestedLayerValue;
   // Helper: dado el key del campo, devolver className extra si esta en error.
   const errorClass = (field: string) =>
     missingFields.includes(field)
@@ -665,9 +682,21 @@ export function StepUserData({
                   </select>
                   <ChevronDown size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 </div>
-                <p className="mt-1.5 text-[12px] text-muted-foreground">
-                  Menor altura = más detalle pero más tiempo
-                </p>
+                {layerDiffersFromSuggested ? (
+                  <div
+                    role="note"
+                    className="mt-1.5 flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-[12px] text-amber-900"
+                  >
+                    <span aria-hidden="true">ℹ</span>
+                    <span>
+                      La configuración predeterminada ({suggestedLayerValue}) es la sugerida para un mejor resultado.
+                    </span>
+                  </div>
+                ) : (
+                  <p className="mt-1.5 text-[12px] text-muted-foreground">
+                    Menor altura = más detalle pero más tiempo
+                  </p>
+                )}
               </div>
             </div>
 
