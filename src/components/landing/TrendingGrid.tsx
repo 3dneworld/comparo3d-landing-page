@@ -116,7 +116,7 @@ function TrendingCard({
         disabled={loading}
         className="mt-3 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
       >
-        {loading ? "Cargando…" : "Cotizar gratis"}
+        {loading ? "Cargando…" : "Cotizar"}
         <ArrowRight size={16} />
       </button>
     </div>
