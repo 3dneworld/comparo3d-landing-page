@@ -101,10 +101,10 @@ function TrendingSlide({
 }) {
   return (
     <div className="min-w-full flex-shrink-0 px-1">
-      <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 items-center gap-5 sm:gap-8">
         <Figure src={`${API_BASE_URL}${item.image_url}`} alt={item.title} />
-        <div className="flex flex-col items-start gap-4 text-left">
-          <h3 className="text-xl md:text-2xl font-semibold">{item.title}</h3>
+        <div className="flex min-w-0 flex-col items-start gap-4 text-left">
+          <h3 className="text-xl md:text-2xl font-semibold break-words">{item.title}</h3>
           <button
             type="button"
             onClick={() => {
@@ -126,7 +126,7 @@ function TrendingSlide({
 function Figure({ src, alt }: { src: string; alt: string }) {
   const [errored, setErrored] = useState(false);
   return (
-    <div className="aspect-[4/3] rounded-lg bg-white overflow-hidden flex items-center justify-center">
+    <div className="h-52 sm:h-60 md:h-64 rounded-lg bg-white overflow-hidden flex items-center justify-center">
       {errored ? (
         <Layers size={48} className="text-muted-foreground/40" />
       ) : (
