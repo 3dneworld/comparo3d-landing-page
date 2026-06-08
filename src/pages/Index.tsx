@@ -8,6 +8,7 @@ import HowItWorks from "@/components/landing/HowItWorks";
 import QuoteSection, { CatalogInjection } from "@/components/landing/QuoteSection";
 import CompaniesSection from "@/components/landing/CompaniesSection";
 import NoStlTransformSection from "@/components/landing/NoStlTransformSection";
+import TrendingSection from "@/components/landing/TrendingSection";
 import ProjectsGallery from "@/components/landing/ProjectsGallery";
 import MaterialsSection from "@/components/landing/MaterialsSection";
 import FAQ from "@/components/landing/FAQ";
@@ -26,12 +27,12 @@ const LandingContent = () => {
 
   // ── Estado para inyección desde catálogo ─────────────────────────────────
   const [catalogInjection, setCatalogInjection] = useState<CatalogInjection | null>(null);
-  const [isLoadingCatalogItem, setIsLoadingCatalogItem] = useState(false);
+  const [loadingSlug, setLoadingSlug] = useState<string | null>(null);
 
   const handleCatalogItemSelect = async (slug: string) => {
-    setIsLoadingCatalogItem(true);
+    setLoadingSlug(slug);
     const result = await quickQuoteFromCatalog(slug);
-    setIsLoadingCatalogItem(false);
+    setLoadingSlug(null);
 
     if (isApiError(result)) {
       console.error("[catalog] quick-quote error:", result.error);
@@ -47,6 +48,7 @@ const LandingContent = () => {
       fileName:     `${result.catalog_item.title}.stl`,
       material:     result.catalog_item.material,
       catalogTitle: result.catalog_item.title,
+      slug,
     });
 
     // Scroll a la sección de cotización
@@ -65,6 +67,7 @@ const LandingContent = () => {
         <QuoteSection catalogInjection={catalogInjection} />
         {audience === "empresa" && <CompaniesSection />}
         <NoStlTransformSection whatsappHref={NO_STL_WHATSAPP_URL} />
+        <TrendingSection onSelect={handleCatalogItemSelect} loadingSlug={loadingSlug} />
         <ProjectsGallery />
         <MaterialsSection />
         <FAQ />

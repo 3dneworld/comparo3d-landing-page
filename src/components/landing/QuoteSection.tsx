@@ -10,6 +10,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useAudience } from "@/contexts/AudienceContext";
+import { trackEvent } from "@/lib/analytics";
 import AnimateOnScroll from "@/components/AnimateOnScroll";
 import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
 import { useQuoteFlow } from "@/hooks/useQuoteFlow";
@@ -118,6 +119,7 @@ export interface CatalogInjection {
   fileName: string;
   material: string;
   catalogTitle: string;
+  slug: string;
 }
 
 const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjection | null }) => {
@@ -278,6 +280,10 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
   const thumbnailFetchedRef = useRef<string>("");
   // ── Ref para validar una sesión restaurada una sola vez contra el backend ──
   const restoredSessionCheckedRef = useRef<string>("");
+  // ── Atribución de campaña: slug del item de catálogo de la sesión activa
+  //    (para disparar trending_quote_viewed una sola vez al ver cotizaciones) ──
+  const catalogSlugRef = useRef<string>("");
+  const quoteViewedFiredRef = useRef<boolean>(false);
 
   // --- Callbacks para el hook ---
   const handleSessionIdReady = useCallback(
@@ -301,6 +307,11 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
 
   const handleQuotesReady = useCallback((_quotes: QuoteOption[]) => {
     // quotes ya vienen del hook, no necesitamos guardarlas en data
+    // GA4: atribución de campaña — el usuario que vino del carrusel vio cotizaciones
+    if (catalogSlugRef.current && !quoteViewedFiredRef.current) {
+      quoteViewedFiredRef.current = true;
+      trackEvent("trending_quote_viewed", { slug: catalogSlugRef.current });
+    }
   }, []);
 
   const flow = useQuoteFlow({
@@ -315,6 +326,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
     thumbnailFetchedRef.current = "";
     restoredSessionCheckedRef.current = "";
     polledSessionRef.current = "";
+    catalogSlugRef.current = "";
     setSelectedQuote(null);
     setData((prev) => ({
       ...prev,
@@ -458,6 +470,10 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
     polledSessionRef.current = "";
     thumbnailFetchedRef.current = "";
     restoredSessionCheckedRef.current = "";
+
+    // Atribución de campaña para esta nueva sesión de catálogo
+    catalogSlugRef.current = catalogInjection.slug;
+    quoteViewedFiredRef.current = false;
 
     // Inyectar datos del catálogo
     const next: QuoteData = {

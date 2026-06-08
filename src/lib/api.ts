@@ -1422,6 +1422,20 @@ export async function getCatalogItems(): Promise<CatalogItemsResponse | ApiError
   }
 }
 
+/** Obtener items trending para el carrousel STL Trending (hasta 15). */
+export async function getTrendingItems(limit = 15): Promise<CatalogItemsResponse | ApiError> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/catalog/items?trending=1&limit=${limit}`);
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || "Error al obtener trending" };
+    }
+    return data as CatalogItemsResponse;
+  } catch {
+    return { success: false, error: "Error de conexión al obtener trending" };
+  }
+}
+
 /** Iniciar cotización rápida desde un item del catálogo. */
 export async function quickQuoteFromCatalog(slug: string): Promise<QuickQuoteResponse | ApiError> {
   try {
