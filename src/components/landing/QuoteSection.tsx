@@ -649,6 +649,11 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
   useEffect(() => {
     if (isCheckingSavedSession) return;
     if (!hasSaved || data.step <= 1) return;
+    // Si la URL pide explícitamente otra sección (#trending, #faq, etc.), no robarle el scroll.
+    // El hash tiene prioridad sobre la restauración de sesión.
+    if (typeof window !== "undefined" && window.location.hash && window.location.hash !== "#cotizar") {
+      return;
+    }
 
     const scrollKey = `${data.sessionId}:${data.step}`;
     if (restoredScrollKeyRef.current === scrollKey) return;
