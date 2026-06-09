@@ -700,8 +700,12 @@ export function StepCheckout({
   // (camas + buffer + offset + logistica). Si por alguna razon llega 0,
   // mostramos el minimo razonable (logistica + 1 cama + buffer = 3 hab).
   const pickupReadyLabel = formatEstimatedDate(Math.max(3, selectedQuote.delivery_days || 0));
+  // thumbnailUrl puede ser: data URL, HTTP(S) absoluto, ruta /api/..., o base64 raw.
   const thumbnailSrc = thumbnailUrl
-    ? thumbnailUrl.startsWith("data:")
+    ? (thumbnailUrl.startsWith("data:") ||
+       thumbnailUrl.startsWith("http://") ||
+       thumbnailUrl.startsWith("https://") ||
+       thumbnailUrl.startsWith("/"))
       ? thumbnailUrl
       : `data:image/png;base64,${thumbnailUrl}`
     : null;

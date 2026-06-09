@@ -90,8 +90,16 @@ const formatRoundedArs = (value: number) =>
 
 const clampQuantity = (value: number) => Math.min(500, Math.max(1, Math.round(value || 1)));
 
-const getThumbnailSrc = (thumbnailUrl: string) =>
-  thumbnailUrl.startsWith("data:") ? thumbnailUrl : `data:image/png;base64,${thumbnailUrl}`;
+const getThumbnailSrc = (thumbnailUrl: string) => {
+  // Data URL — usar tal cual
+  if (thumbnailUrl.startsWith("data:")) return thumbnailUrl;
+  // URL absoluta (http/https) o relativa (/api/...) — usar tal cual
+  if (thumbnailUrl.startsWith("http://") || thumbnailUrl.startsWith("https://") || thumbnailUrl.startsWith("/")) {
+    return thumbnailUrl;
+  }
+  // Base64 raw — agregarle el prefix
+  return `data:image/png;base64,${thumbnailUrl}`;
+};
 
 const FILAMENT_COLOR_STYLES: Record<string, { backgroundColor: string; borderColor: string }> = {
   blanco: { backgroundColor: "#FFFFFF", borderColor: "#D1D5DB" },
