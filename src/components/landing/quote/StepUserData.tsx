@@ -687,11 +687,15 @@ export function StepUserData({
                     role="note"
                     className="mt-1.5 flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-[12px] text-amber-900"
                   >
-                    <span aria-hidden="true">ℹ</span>
+                    <span aria-hidden="true">⚠</span>
                     <span>
-                      La configuración predeterminada ({suggestedLayerValue}) es la sugerida para un mejor resultado.
+                      La configuración predeterminada (<strong>{suggestedLayerValue}</strong>) es la sugerida para un mejor resultado.
                     </span>
                   </div>
+                ) : suggestedLayerValue ? (
+                  <p className="mt-1.5 flex items-center gap-1 text-[12px] text-emerald-700">
+                    <span aria-hidden="true">✓</span> Estás usando la altura sugerida para esta pieza.
+                  </p>
                 ) : (
                   <p className="mt-1.5 text-[12px] text-muted-foreground">
                     Menor altura = más detalle pero más tiempo

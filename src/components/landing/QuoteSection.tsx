@@ -481,8 +481,12 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
     if (!catalogInjection) return;
 
     const isFirstInject = lastInjectedSlugRef.current !== catalogInjection.slug;
-    const layerHeightDisplay = catalogInjection.suggestedLayerHeight
-      ? `${catalogInjection.suggestedLayerHeight}mm`
+    // Normalizamos via Number para que "0.10" -> "0.1mm" (match con LAYER_OPTIONS del select).
+    // Si no normalizamos, el select queda en el primer option como fallback y nunca
+    // refleja visualmente que esta en el sugerido.
+    const suggestedNum = Number(catalogInjection.suggestedLayerHeight);
+    const layerHeightDisplay = (catalogInjection.suggestedLayerHeight && isFinite(suggestedNum) && suggestedNum > 0)
+      ? `${suggestedNum}mm`
       : "";
     // Color del backend viene lowercase ("amarillo"). El select del frontend usa
     // capitalize ("Amarillo"). Normalizamos al pre-cargar para que matchee la option.
