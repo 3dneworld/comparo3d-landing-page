@@ -21,6 +21,8 @@ import {
 } from "@/lib/api";
 import { reportClientError } from "@/lib/clientErrorReporter";
 
+const ABANDONED_POLL_MIN_ELAPSED_MS = 30 * 1000;
+
 export interface QuoteFlowState {
   /** true durante upload o submit */
   isLoading: boolean;
@@ -104,6 +106,8 @@ export function useQuoteFlow({
     const reportAbandonedPoll = () => {
       const latest = latestStateRef.current;
       if (!latest?.isProcessing || !sessionId) return;
+      const elapsedMs = processingStartedAtRef.current ? Date.now() - processingStartedAtRef.current : null;
+      if (elapsedMs === null || elapsedMs < ABANDONED_POLL_MIN_ELAPSED_MS) return;
       const reportKey = `${sessionId}:${processingStartedAtRef.current ?? ""}`;
       if (abandonedReportKeyRef.current === reportKey) return;
       abandonedReportKeyRef.current = reportKey;
@@ -118,14 +122,13 @@ export function useQuoteFlow({
           material: latest.material,
           cantidad: latest.cantidad,
           quotes_count: latest.quotes.length,
-          elapsed_ms: processingStartedAtRef.current ? Date.now() - processingStartedAtRef.current : null,
+          elapsed_ms: elapsedMs,
         },
       });
     };
     window.addEventListener("pagehide", reportAbandonedPoll);
     return () => {
       isMountedRef.current = false;
-      reportAbandonedPoll();
       window.removeEventListener("pagehide", reportAbandonedPoll);
       if (pollRef.current) clearTimeout(pollRef.current);
     };
@@ -535,7 +538,6 @@ export function useQuoteFlow({
     resetUploadState,
     setError,
     clearError,
-    resetUploadState,
     handleUploadStl,
     handleInitDraft,
     startPollingOptions,

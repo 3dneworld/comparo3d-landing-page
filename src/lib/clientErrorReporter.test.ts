@@ -1,26 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  installClientErrorReporting,
-  reportClientError,
-  shouldIgnoreClientErrorSource,
-} from "./clientErrorReporter";
+
+type ClientErrorReporterModule = typeof import("./clientErrorReporter");
+
+let reporter: ClientErrorReporterModule;
 
 describe("clientErrorReporter", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+    vi.stubEnv("VITE_API_URL", "https://api.3dneworld.com");
+    vi.resetModules();
+    reporter = await import("./clientErrorReporter");
     sessionStorage.clear();
   });
 
   it("ignores browser extension sources", () => {
-    expect(shouldIgnoreClientErrorSource("chrome-extension://abc/content.js")).toBe(true);
-    expect(shouldIgnoreClientErrorSource("moz-extension://abc/content.js")).toBe(true);
-    expect(shouldIgnoreClientErrorSource("https://comparo3d.com.ar/assets/index.js")).toBe(false);
+    expect(reporter.shouldIgnoreClientErrorSource("chrome-extension://abc/content.js")).toBe(true);
+    expect(reporter.shouldIgnoreClientErrorSource("moz-extension://abc/content.js")).toBe(true);
+    expect(reporter.shouldIgnoreClientErrorSource("https://comparo3d.com.ar/assets/index.js")).toBe(false);
   });
 
   it("sends a critical client error to backend AND worker (canal alterno)", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
 
-    await reportClientError({
+    await reporter.reportClientError({
       event_type: "upload_timeout",
       message: "Upload timeout",
       context: { flow: "quote_upload", filename: "piece.stl" },
@@ -44,7 +47,7 @@ describe("clientErrorReporter", () => {
 
   it("does not send extension window errors", () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
-    installClientErrorReporting();
+    reporter.installClientErrorReporting();
 
     window.dispatchEvent(
       new ErrorEvent("error", {
