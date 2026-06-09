@@ -46,9 +46,12 @@ const LandingContent = () => {
   const handleCatalogItemSelect = (slug: string) => {
     const card = trendingItemsRef.current.get(slug);
 
-    // 1) INMEDIATO: pintar el paso 2 con el thumbnail full ya cacheado del card.
-    //    Sin esperar el response del backend — el thumbnail estatico ya esta en CATALOG_IMG_DIR.
-    const thumbnailUrlAbs = card?.thumbnail_url ? `${API_BASE_URL}${card.thumbnail_url}` : "";
+    // 1) INMEDIATO: pintar el paso 2 con el thumbnail full pre-renderizado.
+    //    La URL es PREDECIBLE (no depende del cache de items) — la armamos a mano para
+    //    garantizar que el <img> arranque a cargar en este mismo render sin esperar nada.
+    //    El PNG ya esta en disco del backend (CATALOG_IMG_DIR/<slug>_thumb.png) con
+    //    cache-control max-age=86400 immutable — segunda vez es 0ms.
+    const thumbnailUrlAbs = `${API_BASE_URL}/api/catalog/thumbnail/${slug}`;
     setCatalogInjection({
       sessionId:             "",   // se completa cuando llegue el response del backend
       tempName:              "",

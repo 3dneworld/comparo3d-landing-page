@@ -388,7 +388,10 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
       conditions.sessionOk &&
       conditions.restoredOk &&
       conditions.refOk &&
-      (isRestoredSession || (conditions.noFlowThumb && conditions.noDataThumb))
+      // Solo pedir thumbnail al backend si NO tenemos uno ya pintado.
+      // En flujo catalogo seteamos data.thumbnailUrl al toque desde el frontend
+      // (URL al endpoint /api/catalog/thumbnail/<slug>) — no hace falta otro fetch.
+      conditions.noFlowThumb && conditions.noDataThumb
     ) {
       if (isRestoredSession) restoredSessionCheckedRef.current = data.sessionId;
       thumbnailFetchedRef.current = data.sessionId;
@@ -416,7 +419,10 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
         if (isRestoredSession) setIsCheckingSavedSession(false);
       });
     } else {
-      if (!isRestoredSession) setIsCheckingSavedSession(false);
+      // Tenemos thumbnail ya (catalog flow o upload reciente) — marcar la sesion
+      // como validada para no quedarnos con el banner "Validando sesion guardada".
+      setIsCheckingSavedSession(false);
+      if (isRestoredSession) restoredSessionCheckedRef.current = data.sessionId;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.step, data.sessionId, hasSaved]);
@@ -485,10 +491,11 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
       : "";
 
     if (isFirstInject) {
+      const previousSlug = lastInjectedSlugRef.current;
       lastInjectedSlugRef.current = catalogInjection.slug;
 
-      // Reset de sesión previa
-      localStorage.removeItem(STORAGE_KEY);
+      // Reset de session refs (la sesion de backend es nueva), pero preservamos los
+      // campos del cliente (nombre/email/telefono/etc) si ya empezo a escribir.
       polledSessionRef.current = "";
       thumbnailFetchedRef.current = "";
       restoredSessionCheckedRef.current = "";
@@ -497,22 +504,32 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
       catalogSlugRef.current = catalogInjection.slug;
       quoteViewedFiredRef.current = false;
 
-      // Inyectar datos del catálogo — con defaults sugeridos por pieza
-      const next: QuoteData = {
-        ...defaultData,
-        sessionId:        catalogInjection.sessionId,
-        tempName:         catalogInjection.tempName,
-        stlSha256:        catalogInjection.stlSha256,
-        thumbnailUrl:     catalogInjection.thumbnailUrl,
-        thumbnailQuality: "full",
-        fileName:         catalogInjection.fileName,
-        material:         catalogInjection.material,
-        colorAcabado:     normalizedColor,
-        alturaCapa:       layerHeightDisplay || defaultData.alturaCapa,
-        step: 2,
-      };
-      saveData(next);
-      setDataRaw(next);
+      // Inyectar datos del catálogo — preservando los campos del cliente.
+      //   - Si es la PRIMERA vez (no habia slug previo) y no hay nada escrito, parte de defaults.
+      //   - Si esta cambiando de slug, conserva nombre/email/telefono/ubicacion/detalles/observaciones/cantidad.
+      //   - Material, color y altura de capa se actualizan con los defaults sugeridos del nuevo slug.
+      setDataRaw((prev) => {
+        const preserveClientFields = !!previousSlug;  // segundo+ click: preservar
+        const base = preserveClientFields ? prev : defaultData;
+        const next: QuoteData = {
+          ...base,
+          sessionId:        catalogInjection.sessionId,
+          tempName:         catalogInjection.tempName,
+          stlSha256:        catalogInjection.stlSha256,
+          thumbnailUrl:     catalogInjection.thumbnailUrl,
+          thumbnailQuality: "full",
+          fileName:         catalogInjection.fileName,
+          material:         catalogInjection.material,
+          colorAcabado:     normalizedColor,
+          alturaCapa:       layerHeightDisplay || base.alturaCapa,
+          // Reset de elementos especificos de la sesion anterior — no aplican al nuevo STL
+          selectedQuote:    null,
+          orderId:          "",
+          step: 2,
+        };
+        saveData(next);
+        return next;
+      });
       setHasSaved(true);
       setIsCheckingSavedSession(false);
       setSelectedQuote(null);
