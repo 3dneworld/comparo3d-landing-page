@@ -53,6 +53,44 @@ function LegacyProviderDashboardRedirect() {
 }
 
 /**
+ * Short-link redirects para campanas de marketing.
+ * Cada ruta corta /r/<red> redirige a / con utm_source de esa red + utm_campaign + #trending.
+ * Mantiene tracking por red en GA4 con URLs faciles de tipear en bio o video.
+ *
+ * Si la URL trae ?campaign=X, sobreescribe el default. Asi podemos reusar /r/ig en futuras
+ * campanas sin tocar codigo: comparo3d.com.ar/r/ig?campaign=fase2 -> utm_campaign=fase2.
+ */
+const SHORT_LINK_SOURCES: Record<string, string> = {
+  ig: "instagram",
+  fb: "facebook",
+  fbg: "facebook_grupo",
+  tt: "tiktok",
+  tw: "twitter",
+};
+const DEFAULT_SHORT_LINK_CAMPAIGN = "mundial2026";
+
+function ShortLinkRedirect() {
+  const location = useLocation();
+  const sourceKey = location.pathname.replace(/^\/r\//, "").toLowerCase();
+  const utmSource = SHORT_LINK_SOURCES[sourceKey];
+  if (!utmSource) {
+    // Slug desconocido: tirar al home sin UTMs y dejar que el hash decida (si vino con uno).
+    return <Navigate to={`/${location.search}${location.hash || "#trending"}`} replace />;
+  }
+  const incoming = new URLSearchParams(location.search);
+  const campaign = incoming.get("campaign") || DEFAULT_SHORT_LINK_CAMPAIGN;
+  const out = new URLSearchParams();
+  out.set("utm_source", utmSource);
+  out.set("utm_medium", "organic");
+  out.set("utm_campaign", campaign);
+  // Preservar otros params que el user haya pasado (ej tracking experimental).
+  incoming.forEach((value, key) => {
+    if (key !== "campaign" && !out.has(key)) out.set(key, value);
+  });
+  return <Navigate to={`/?${out.toString()}#trending`} replace />;
+}
+
+/**
  * Envuelve <Routes /> y dispara page_view de Google Analytics en cada cambio de ruta.
  * Debe estar dentro del <BrowserRouter> para que useLocation() funcione.
  */
@@ -70,6 +108,8 @@ const App = () => (
         <AppRoutes>
         <Routes>
           <Route path="/" element={<Index />} />
+          {/* Short links de marketing — redirigen a / con utm_source de la red. */}
+          <Route path="/r/:source" element={<ShortLinkRedirect />} />
           <Route path="/materiales" element={<Navigate to={`${DASHBOARD_BASE_PATH}/materiales`} replace />} />
           <Route path="/cotizaciones" element={<Navigate to={`${DASHBOARD_BASE_PATH}/cotizaciones`} replace />} />
           <Route path="/pedidos" element={<Navigate to={`${DASHBOARD_BASE_PATH}/pedidos`} replace />} />
