@@ -17,6 +17,7 @@ import { ProfileSkeleton } from "@/features/provider-profile/components/ProfileS
 import { ProfileTabs } from "@/features/provider-profile/components/ProfileTabs";
 import { ProfileIndustries } from "@/features/provider-profile/components/ProfileIndustries";
 import { ProfileQuotePanel } from "@/features/provider-profile/components/ProfileQuotePanel";
+import { ProfileMaterials } from "@/features/provider-profile/components/ProfileMaterials";
 import type { ProviderProfileResponse } from "@/features/provider-profile/types";
 
 // ─── Estados de error/404 ────────────────────────────────────────────────────
@@ -182,6 +183,7 @@ function makeVideoProviderProfile(input: {
         cama_max_mm: { x: 300, y: 300, z: 300 },
         impresoras_declaradas: 3,
         materiales_activos: input.materiales,
+        materiales: null,
         marcas: null,
       },
       rating: {
@@ -331,6 +333,11 @@ export default function ProviderProfile() {
             {/* Capacidad */}
             <div id="capacidad" className="scroll-mt-32">
               <ProfileCapacity capacity={provider.capacity} />
+            </div>
+
+            {/* Materiales */}
+            <div id="materiales" className="scroll-mt-32 mt-6">
+              <ProfileMaterials capacity={provider.capacity} />
             </div>
 
             {/* Trabajos / Portfolio */}

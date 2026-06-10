@@ -11,6 +11,7 @@ describe("ProfileCapacity", () => {
           cama_max_mm: { x: 400, y: 400, z: 450 },
           impresoras_declaradas: 4,
           materiales_activos: ["PLA", "PETG"],
+          materiales: null,
           marcas: ["Bambu Lab", "Prusa"],
         }}
       />,
