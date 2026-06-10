@@ -57,9 +57,10 @@ export function ProfileHero({ provider, badges }: Props) {
   // Quick-stats — solo columnas con dato real
   const stats: QStat[] = [];
 
-  // Cama maxima — siempre presente si hay capacity
-  if (capacity.cama_max_mm) {
-    const maxDim = getCamaMaxDim(capacity.cama_max_mm);
+  // Cama maxima — presente solo si al menos un eje tiene dimension > 0
+  const cama = capacity.cama_max_mm;
+  if (cama && (cama.x > 0 || cama.y > 0 || cama.z > 0)) {
+    const maxDim = getCamaMaxDim(cama);
     stats.push({
       label: "Cama máxima",
       value: `${maxDim}³`,
@@ -192,8 +193,7 @@ export function ProfileHero({ provider, badges }: Props) {
       {/* Quick-stats — solo columnas con dato real */}
       {stats.length > 0 && (
         <div
-          className={`relative grid ${gridCols} gap-3 px-10 py-6`}
-          style={{ borderTop: "1px solid hsl(var(--hero-muted) / 0.12)" }}
+          className={`relative grid ${gridCols} gap-3 px-10 py-6 border-t border-[hsl(var(--hero-muted)/0.12)]`}
         >
           {stats.map((s) => (
             <div key={s.label} className="py-1">
@@ -204,12 +204,7 @@ export function ProfileHero({ provider, badges }: Props) {
                 {s.label}
               </div>
               <div className="font-[Montserrat] text-[22px] font-bold leading-none tracking-[-0.01em] text-hero-foreground">
-                {s.value}{" "}
-                {s.label === "Cama máxima" && (
-                  <small className="text-sm font-medium text-hero-muted">
-                    mm
-                  </small>
-                )}
+                {s.value}
               </div>
               <span
                 className="mt-1 block text-[11px] font-medium text-hero-muted"
