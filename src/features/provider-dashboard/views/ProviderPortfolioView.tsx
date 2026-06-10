@@ -3,18 +3,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowUpRight,
-  BriefcaseBusiness,
+  Box,
   Camera,
-  CheckCircle2,
-  Image as ImageIcon,
-  Layers3,
   LoaderCircle,
-  Palette,
   Plus,
   RefreshCcw,
   Save,
   Search,
-  Sparkles,
+  Star,
   Trash2,
 } from "lucide-react";
 
@@ -27,7 +23,6 @@ import {
   fetchProviderPortfolio,
 } from "@/features/provider-dashboard/api";
 import { DashboardField } from "@/features/provider-dashboard/components/DashboardField";
-import { DashboardMetricCard } from "@/features/provider-dashboard/components/DashboardMetricCard";
 import { DashboardPageHeader } from "@/features/provider-dashboard/components/DashboardPageHeader";
 import { DashboardPanel } from "@/features/provider-dashboard/components/DashboardPanel";
 import { DashboardStatePill } from "@/features/provider-dashboard/components/DashboardStatePill";
@@ -38,7 +33,6 @@ import {
 } from "@/features/provider-dashboard/components/DashboardStates";
 import { useProviderDashboardSession } from "@/features/provider-dashboard/context/ProviderDashboardSessionContext";
 import type { DashboardPortfolioFormPayload, DashboardPortfolioItem } from "@/features/provider-dashboard/types";
-import { cn } from "@/lib/utils";
 
 type PortfolioFormState = {
   photo_path: string;
@@ -70,6 +64,13 @@ const projectTypeLabels: Record<string, string> = Object.fromEntries(
   projectTypeOptions.map((option) => [option.value, option.label])
 );
 
+// Paleta de tonos para los headers gradiente de cada card (espejo del mock v2).
+const CARD_HUES = [220, 200, 240, 160, 280, 190];
+
+function gradientForHue(hue: number) {
+  return `linear-gradient(135deg, hsl(${hue} 55% 40%), hsl(${hue + 20} 65% 55%))`;
+}
+
 function safeText(value?: string | number | null, fallback = "Sin dato") {
   if (value == null || value === "") return fallback;
   return String(value);
@@ -80,10 +81,6 @@ function formatDateTime(value?: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Sin registro";
   return new Intl.DateTimeFormat("es-AR", { dateStyle: "medium", timeStyle: "short" }).format(date);
-}
-
-function isSeedImage(path?: string | null) {
-  return Boolean(path && path.startsWith("seed://"));
 }
 
 function isExternalImage(path?: string | null) {
@@ -113,14 +110,7 @@ function buildPortfolioPayload(form: PortfolioFormState): DashboardPortfolioForm
   return payload;
 }
 
-function portfolioScore(items: DashboardPortfolioItem[]) {
-  const countScore = Math.min(40, items.length * 8);
-  const imageScore = Math.min(30, items.filter((item) => isExternalImage(item.photo_path)).length * 6);
-  const varietyScore = Math.min(30, new Set(items.map((item) => item.technology).filter(Boolean)).size * 10);
-  return countScore + imageScore + varietyScore;
-}
-
-function PortfolioImage({ item }: { item: DashboardPortfolioItem }) {
+function PortfolioImage({ item, hue }: { item: DashboardPortfolioItem; hue: number }) {
   const path = item.photo_path || "";
 
   if (isExternalImage(path)) {
@@ -135,60 +125,74 @@ function PortfolioImage({ item }: { item: DashboardPortfolioItem }) {
   }
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-muted/60 text-muted-foreground">
-      <Camera className="h-9 w-9" />
-      <span className="px-4 text-center text-xs font-semibold uppercase tracking-[0.12em]">
-        {isSeedImage(path) ? "Seed visual" : "Sin imagen publica"}
-      </span>
+    <div
+      className="flex h-full w-full items-center justify-center"
+      style={{ background: gradientForHue(hue) }}
+    >
+      <Box className="h-11 w-11 text-white/55" />
     </div>
   );
 }
 
 function PortfolioCard({
   item,
+  index,
   onDelete,
   isDeleting,
 }: {
   item: DashboardPortfolioItem;
+  index: number;
   onDelete: () => void;
   isDeleting: boolean;
 }) {
+  const hue = CARD_HUES[index % CARD_HUES.length];
+
   return (
-    <article className="overflow-hidden rounded-[1.25rem] border border-border/70 bg-white shadow-card">
-      <div className="aspect-[4/3] bg-muted">
-        <PortfolioImage item={item} />
-      </div>
-      <div className="space-y-4 p-4">
-        <div className="space-y-2">
-          <div className="flex flex-wrap gap-2">
-            <DashboardStatePill tone="info">{safeText(item.technology, "Tecnologia")}</DashboardStatePill>
-            <DashboardStatePill tone="muted">{projectTypeLabel(item.project_type)}</DashboardStatePill>
-            {item.client_industry ? <DashboardStatePill tone="success">{item.client_industry}</DashboardStatePill> : null}
-          </div>
-          <p className="min-h-[3rem] text-sm font-medium leading-relaxed text-foreground">
-            {safeText(item.description, "Trabajo sin descripcion")}
-          </p>
-          <p className="text-xs text-muted-foreground">Creado {formatDateTime(item.created_at)}</p>
+    <article className="overflow-hidden rounded-[1.25rem] border border-white/10 bg-white/[0.05]">
+      <div className="relative h-[150px]">
+        <PortfolioImage item={item} hue={hue} />
+        <div className="absolute right-2.5 top-2.5">
+          <span className="inline-flex items-center rounded-full border border-white/25 bg-black/35 px-2.5 py-1 text-[11px] font-bold leading-none tracking-[0.04em] text-white backdrop-blur-sm">
+            {projectTypeLabel(item.project_type)}
+          </span>
         </div>
+      </div>
+      <div className="space-y-3 p-4">
+        <h3 className="font-[Montserrat] text-[15px] font-bold leading-snug text-white">
+          {safeText(item.description, "Trabajo sin descripcion")}
+        </h3>
         <div className="flex flex-wrap gap-2">
-          {isExternalImage(item.photo_path) ? (
-            <Button asChild variant="outline" className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted">
-              <a href={item.photo_path || "#"} target="_blank" rel="noreferrer">
-                Abrir imagen
-                <ArrowUpRight className="h-4 w-4" />
-              </a>
-            </Button>
+          <DashboardStatePill tone="info">{safeText(item.technology, "Tecnologia")}</DashboardStatePill>
+          {item.client_industry ? (
+            <DashboardStatePill tone="success">{item.client_industry}</DashboardStatePill>
           ) : null}
-          <Button
-            type="button"
-            variant="outline"
-            className="h-10 rounded-xl border-rose-200 bg-white/90 px-4 text-rose-700 hover:bg-rose-50"
-            onClick={onDelete}
-            disabled={isDeleting}
-          >
-            {isDeleting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-            Eliminar
-          </Button>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <p className="text-xs text-white/45">Creado {formatDateTime(item.created_at)}</p>
+          <div className="flex flex-wrap gap-2">
+            {isExternalImage(item.photo_path) ? (
+              <Button
+                asChild
+                variant="outline"
+                className="h-9 rounded-xl border-white/15 bg-white/10 px-3 text-sm text-white hover:bg-white/20"
+              >
+                <a href={item.photo_path || "#"} target="_blank" rel="noreferrer">
+                  Abrir
+                  <ArrowUpRight className="h-4 w-4" />
+                </a>
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 rounded-xl border-rose-400/30 bg-rose-500/10 px-3 text-sm text-rose-300 hover:bg-rose-500/20"
+              onClick={onDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Eliminar
+            </Button>
+          </div>
         </div>
       </div>
     </article>
@@ -226,7 +230,7 @@ function PortfolioForm({
           <Button
             type="button"
             variant="outline"
-            className="h-10 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
+            className="h-10 rounded-xl border-white/15 bg-white/10 px-4 text-white hover:bg-white/20"
             onClick={onCancel}
             disabled={isSaving}
           >
@@ -245,9 +249,9 @@ function PortfolioForm({
       }
     >
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <div className="overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted">
+        <div className="overflow-hidden rounded-[1.25rem] border border-white/10 bg-white/[0.03]">
           <div className="aspect-[4/3]">
-            <PortfolioImage item={previewItem} />
+            <PortfolioImage item={previewItem} hue={CARD_HUES[0]} />
           </div>
         </div>
 
@@ -347,41 +351,18 @@ function PortfolioContent({
   deletingId: number | null;
   isFetching: boolean;
 }) {
-  const byTechnology = useMemo(() => {
-    return items.reduce<Record<string, number>>((acc, item) => {
-      const key = item.technology || "Sin tecnologia";
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    }, {});
-  }, [items]);
-  const byProjectType = useMemo(() => {
-    return items.reduce<Record<string, number>>((acc, item) => {
-      const key = projectTypeLabel(item.project_type);
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    }, {});
-  }, [items]);
-  const score = portfolioScore(items);
-  const realImages = items.filter((item) => isExternalImage(item.photo_path)).length;
-  const topTechnology = Object.entries(byTechnology).sort((a, b) => b[1] - a[1])[0];
-  const nextSteps = [
-    items.length < 3 ? "Cargar al menos 3 trabajos fuertes para que el perfil publico tenga cuerpo." : null,
-    realImages < items.length ? "Reemplazar placeholders o seeds por imagenes publicas cuando sea posible." : null,
-    Object.keys(byTechnology).length < 2 ? "Mostrar variedad de tecnologia si el taller ofrece mas de un proceso." : null,
-    !items.some((item) => item.client_industry) ? "Agregar industria del cliente en casos B2B o tecnicos." : null,
-  ].filter(Boolean) as string[];
-
   return (
     <div className="space-y-6">
       <DashboardPageHeader
-        eyebrow="Vista editable"
-        title="Portfolio de trabajos"
-        description="Galeria real del proveedor para reforzar confianza y conversion cuando los clientes comparan opciones."
-        meta={
+        variant="dark"
+        eyebrow="REPUTACIÓN VISUAL"
+        title="Portfolio"
+        description="Mostrá tus mejores trabajos. Los clientes ven tu portfolio al comparar proveedores."
+        metaPills={
           <>
-            <DashboardStatePill tone={items.length ? "success" : "warning"}>{items.length}/50 trabajos</DashboardStatePill>
-            <DashboardStatePill tone={realImages ? "info" : "muted"}>{realImages} imagenes publicas</DashboardStatePill>
-            <DashboardStatePill tone={score >= 70 ? "success" : score >= 35 ? "warning" : "muted"}>Score {score}%</DashboardStatePill>
+            <DashboardStatePill tone={items.length ? "info" : "muted"}>
+              {items.length} trabajos publicados
+            </DashboardStatePill>
             {isFetching ? <DashboardStatePill tone="warning">Actualizando</DashboardStatePill> : null}
           </>
         }
@@ -390,7 +371,7 @@ function PortfolioContent({
             <Button
               type="button"
               variant="outline"
-              className="h-11 rounded-xl border-border/80 bg-white/90 px-4 text-foreground hover:bg-muted"
+              className="h-10 rounded-xl border-white/15 bg-white/10 px-4 text-white hover:bg-white/20"
               onClick={onRefresh}
               disabled={isFetching || isSaving}
             >
@@ -399,7 +380,7 @@ function PortfolioContent({
             </Button>
             <Button
               type="button"
-              className="h-11 rounded-xl bg-gradient-primary px-5 text-primary-foreground shadow-cta hover:opacity-95"
+              className="h-10 rounded-xl bg-gradient-primary px-5 text-primary-foreground shadow-cta hover:opacity-95"
               onClick={onShowForm}
               disabled={showForm || isSaving}
             >
@@ -410,12 +391,15 @@ function PortfolioContent({
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardMetricCard title="Trabajos cargados" value={String(items.length)} support="Maximo actual del endpoint: 50 items." icon={<ImageIcon className="h-5 w-5" />} />
-        <DashboardMetricCard title="Imagenes reales" value={`${realImages}/${items.length}`} support="URLs o paths publicos listos para mostrar." icon={<Camera className="h-5 w-5" />} />
-        <DashboardMetricCard title="Tecnologia principal" value={topTechnology?.[0] || "Pendiente"} support={topTechnology ? `${topTechnology[1]} trabajos cargados` : "Aun sin datos"} icon={<Layers3 className="h-5 w-5" />} />
-        <DashboardMetricCard title="Confianza visual" value={`${score}%`} support="Lectura local: cantidad, imagenes y variedad." icon={<Sparkles className="h-5 w-5" />} />
-      </section>
+      <div className="flex items-start gap-3 rounded-[1.25rem] border border-primary/25 bg-primary/[0.08] px-5 py-4">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+          <Star className="h-4 w-4" />
+        </div>
+        <p className="text-sm leading-relaxed text-white/70">
+          Proveedores con 6+ trabajos reciben un 60% más de clics en el marketplace. Un portfolio sólido es tu mejor
+          vendedor silencioso — sin costo extra.
+        </p>
+      </div>
 
       {showForm ? (
         <PortfolioForm
@@ -427,106 +411,48 @@ function PortfolioContent({
         />
       ) : null}
 
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <DashboardPanel
-          title="Galeria visible"
-          description="Trabajos ordenados desde el backend por fecha de carga."
-        >
-          {items.length ? (
-            <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-              {items.map((item) => (
-                <PortfolioCard
-                  key={item.id}
-                  item={item}
-                  onDelete={() => onDelete(item)}
-                  isDeleting={deletingId === item.id}
-                />
-              ))}
-            </div>
-          ) : (
-            <DashboardEmptyState
-              title="Sin trabajos en portfolio"
-              description="Carga fotos de trabajos reales para que el proveedor tenga una ficha mas confiable."
-              icon={<Search className="h-6 w-6" />}
-              className="min-h-[420px]"
-            />
-          )}
-        </DashboardPanel>
+      {items.length ? (
+        <>
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {items.map((item, index) => (
+              <PortfolioCard
+                key={item.id}
+                item={item}
+                index={index}
+                onDelete={() => onDelete(item)}
+                isDeleting={deletingId === item.id}
+              />
+            ))}
+          </div>
 
-        <div className="space-y-6">
-          <DashboardPanel title="Distribucion" description="Lectura rapida de variedad del portfolio.">
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-semibold text-foreground">Por tecnologia</p>
-                <div className="mt-3 space-y-2">
-                  {Object.entries(byTechnology).length ? (
-                    Object.entries(byTechnology).map(([label, count]) => (
-                      <div key={label} className="flex items-center justify-between rounded-[1rem] border border-border/70 bg-background/70 px-4 py-3 text-sm">
-                        <span className="font-medium text-foreground">{label}</span>
-                        <DashboardStatePill tone="info">{count}</DashboardStatePill>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="rounded-[1rem] border border-dashed border-border/80 bg-background/70 px-4 py-3 text-sm text-muted-foreground">
-                      Sin tecnologias cargadas.
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Por tipo</p>
-                <div className="mt-3 space-y-2">
-                  {Object.entries(byProjectType).length ? (
-                    Object.entries(byProjectType).map(([label, count]) => (
-                      <div key={label} className="flex items-center justify-between rounded-[1rem] border border-border/70 bg-background/70 px-4 py-3 text-sm">
-                        <span className="font-medium text-foreground">{label}</span>
-                        <DashboardStatePill tone="muted">{count}</DashboardStatePill>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="rounded-[1rem] border border-dashed border-border/80 bg-background/70 px-4 py-3 text-sm text-muted-foreground">
-                      Sin tipos cargados.
-                    </div>
-                  )}
-                </div>
-              </div>
+          <div className="rounded-[1.25rem] border border-dashed border-white/15 bg-white/[0.025] px-6 py-8 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Camera className="h-6 w-6" />
             </div>
-          </DashboardPanel>
-
-          <DashboardPanel title="Proximos pasos" description="Mejoras que aumentan confianza del perfil.">
-            {nextSteps.length ? (
-              <div className="space-y-3">
-                {nextSteps.map((item, index) => (
-                  <div
-                    key={item}
-                    className="flex items-start gap-3 rounded-[1.15rem] border border-border/70 bg-background/70 px-4 py-3"
-                  >
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                      {index + 1}
-                    </div>
-                    <p className="text-sm leading-relaxed text-muted-foreground">{item}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-[1.15rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                El portfolio ya tiene buena cantidad, imagenes y variedad para reforzar la ficha publica.
-              </div>
-            )}
-          </DashboardPanel>
-
-          <DashboardPanel title="Frontera tecnica" description="Que hace esta migracion hoy.">
-            <div className="space-y-3">
-              <div className="rounded-[1.15rem] border border-border/70 bg-background/70 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-                El backend actual acepta URL/path de imagen; la subida binaria de archivos queda para una fase posterior.
-              </div>
-              <div className="rounded-[1.15rem] border border-border/70 bg-background/70 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-                Este portfolio alimenta confianza publica; certificacion y reviews quedan como el siguiente bloque natural.
-              </div>
-            </div>
-          </DashboardPanel>
-        </div>
-      </section>
+            <h4 className="mt-4 font-[Montserrat] text-lg font-bold text-white">Agregá más trabajos</h4>
+            <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-white/55">
+              Apuntá a 6+ trabajos representativos. Incluí proyectos B2B, series y prototipos para mostrar tu rango
+              completo.
+            </p>
+            <Button
+              type="button"
+              className="mx-auto mt-5 flex h-10 rounded-xl bg-gradient-primary px-5 text-primary-foreground shadow-cta hover:opacity-95"
+              onClick={onShowForm}
+              disabled={showForm || isSaving}
+            >
+              <Plus className="h-4 w-4" />
+              Agregar trabajo
+            </Button>
+          </div>
+        </>
+      ) : (
+        <DashboardEmptyState
+          title="Sin trabajos en portfolio"
+          description="Carga fotos de trabajos reales para que el proveedor tenga una ficha mas confiable."
+          icon={<Search className="h-6 w-6" />}
+          className="min-h-[420px]"
+        />
+      )}
     </div>
   );
 }
