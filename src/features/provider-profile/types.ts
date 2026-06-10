@@ -22,10 +22,18 @@ export interface ProviderCamaMm {
   z: number;
 }
 
+export interface MaterialDetail {
+  code: string;            // "PLA"
+  label: string;           // "PLA"
+  color_count: number | null;
+  attributes: string[];    // ["Apto exterior"], ["Técnico"]
+}
+
 export interface ProviderCapacity {
   cama_max_mm: ProviderCamaMm;
   impresoras_declaradas: number | null;
   materiales_activos: string[] | null;
+  materiales: MaterialDetail[] | null;   // NUEVO
   marcas: string[] | null;
 }
 
@@ -46,6 +54,11 @@ export interface ProviderRating {
 export interface ProviderRanking {
   sr_score: number | null;
   mode: string | null;
+}
+
+export interface ReviewReply {
+  text: string;
+  created_at: string;
 }
 
 export interface PublicProvider {
@@ -86,6 +99,7 @@ export interface ReviewItem {
   is_b2b_order: boolean;
   created_at: string;
   author_display: string;
+  reply: ReviewReply | null;   // NUEVO
 }
 
 export interface ProviderReviews {
