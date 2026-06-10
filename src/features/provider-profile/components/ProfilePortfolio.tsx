@@ -31,7 +31,7 @@ export function ProfilePortfolio({ items }: Props) {
             type="button"
             onClick={() => setLightboxIndex(index)}
             aria-label={item.description ?? `Trabajo del proveedor ${index + 1}`}
-            className="group relative aspect-square overflow-hidden rounded-xl bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="group relative aspect-square overflow-hidden rounded-2xl bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             {item.photo_url ? (
               <img
@@ -46,17 +46,17 @@ export function ProfilePortfolio({ items }: Props) {
               </div>
             )}
 
-            {/* Overlay con descripción en hover */}
-            <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-              <div className="p-3">
-                {item.description && (
-                  <p className="line-clamp-2 text-[12px] font-medium text-white">
-                    {item.description}
+            {/* Overlay con tag + label en hover — gradiente al mockup */}
+            <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-[rgba(14,18,25,0.85)] via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <div className="p-4">
+                {(item.technology ?? item.project_type) && (
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70">
+                    {item.technology ?? item.project_type}
                   </p>
                 )}
-                {item.technology && (
-                  <p className="mt-0.5 text-[10px] text-white/80">
-                    {item.technology}
+                {item.description && (
+                  <p className="mt-1 line-clamp-2 text-[14px] font-bold text-white">
+                    {item.description}
                   </p>
                 )}
               </div>
