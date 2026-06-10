@@ -298,51 +298,49 @@ export default function ProviderProfile() {
     const { provider, badges, portfolio, reviews, derived } = profileData;
 
     return (
-      <>
-        {/* Hero full-width — fuera del contenedor para que ocupe todo el ancho */}
+      <main className="mx-auto max-w-screen-xl px-4 py-10">
+        {/* Breadcrumb */}
+        <nav aria-label="Navegación" className="mb-6 text-sm text-muted-foreground">
+          <a
+            href="/proveedores"
+            className="hover:text-foreground transition-colors"
+          >
+            Proveedores
+          </a>
+          <span className="mx-2">/</span>
+          <span className="text-foreground font-medium">{provider.nombre}</span>
+        </nav>
+
+        {/* Hero dentro del contenedor — rounded-3xl card */}
         <ProfileHero provider={provider} badges={badges} />
 
         {/* Tabs sticky debajo del hero */}
         <ProfileTabs />
 
-        <main className="mx-auto max-w-screen-xl px-4 py-10">
-          {/* Breadcrumb */}
-          <nav aria-label="Navegación" className="mb-6 text-sm text-muted-foreground">
-            <a
-              href="/proveedores"
-              className="hover:text-foreground transition-colors"
-            >
-              Proveedores
-            </a>
-            <span className="mx-2">/</span>
-            <span className="text-foreground font-medium">{provider.nombre}</span>
-          </nav>
+        {/* Resumen: descripción + sectores */}
+        <section id="resumen" className="scroll-mt-32 space-y-6">
+          <ProfileAbout about={provider.about} />
+          <ProfileIndustries derived={derived} />
+        </section>
 
-          {/* Resumen: descripción + sectores */}
-          <section id="resumen" className="scroll-mt-32 space-y-6">
-            <ProfileAbout about={provider.about} />
-            <ProfileIndustries derived={derived} />
-          </section>
+        {/* Capacidad */}
+        <div id="capacidad" className="scroll-mt-32 mt-6">
+          <ProfileCapacity capacity={provider.capacity} />
+        </div>
 
-          {/* Capacidad */}
-          <div id="capacidad" className="scroll-mt-32 mt-6">
-            <ProfileCapacity capacity={provider.capacity} />
-          </div>
+        {/* Trabajos / Portfolio */}
+        <div id="trabajos" className="scroll-mt-32 mt-6">
+          <ProfilePortfolio items={portfolio} />
+        </div>
 
-          {/* Trabajos / Portfolio */}
-          <div id="trabajos" className="scroll-mt-32 mt-6">
-            <ProfilePortfolio items={portfolio} />
-          </div>
+        {/* Reseñas */}
+        <div id="resenas" className="scroll-mt-32 mt-6">
+          <ProfileReviews data={reviews} providerId={provider.id} />
+        </div>
 
-          {/* Reseñas */}
-          <div id="resenas" className="scroll-mt-32 mt-6">
-            <ProfileReviews data={reviews} providerId={provider.id} />
-          </div>
-
-          {/* Padding inferior en mobile para que el CTA sticky no tape el footer */}
-          <div className="h-20 lg:hidden" aria-hidden="true" />
-        </main>
-      </>
+        {/* Padding inferior en mobile para que el CTA sticky no tape el footer */}
+        <div className="h-20 lg:hidden" aria-hidden="true" />
+      </main>
     );
   };
 
