@@ -347,7 +347,7 @@ export default function ProviderProfile() {
 
             {/* Reseñas */}
             <div id="resenas" className="scroll-mt-32">
-              <ProfileReviews data={reviews} providerId={provider.id} />
+              <ProfileReviews data={reviews} rating={provider.rating} providerId={provider.id} providerName={provider.nombre} />
             </div>
           </div>
 
