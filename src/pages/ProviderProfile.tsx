@@ -369,7 +369,9 @@ export default function ProviderProfile() {
       {renderContent()}
       {!is404 && profileData && <Footer />}
       {/* CTA sticky mobile — solo cuando hay datos */}
-      {!is404 && profileData && <ProfileContactCTA />}
+      {!is404 && profileData && (
+        <ProfileContactCTA providerSlug={profileData.provider.slug_hint} />
+      )}
     </div>
   );
 }

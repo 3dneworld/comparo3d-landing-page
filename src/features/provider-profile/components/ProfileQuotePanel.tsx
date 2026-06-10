@@ -86,9 +86,13 @@ export function ProfileQuotePanel({ provider }: ProfileQuotePanelProps) {
         </div>
       </div>
 
-      {/* CTA principal */}
+      {/* CTA principal — deep-link con proveedor preseleccionado */}
       <a
-        href="/#cotizador"
+        href={
+          provider.slug_hint
+            ? `/?provider=${encodeURIComponent(provider.slug_hint)}#cotizador`
+            : "/#cotizador"
+        }
         className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-primary px-4 py-3.5 text-[14px] font-bold text-white shadow-cta transition-opacity hover:opacity-90"
       >
         Pedir cotización
