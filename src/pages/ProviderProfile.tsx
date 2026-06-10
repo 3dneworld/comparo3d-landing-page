@@ -16,6 +16,7 @@ import { ProfileContactCTA } from "@/features/provider-profile/components/Profil
 import { ProfileSkeleton } from "@/features/provider-profile/components/ProfileSkeleton";
 import { ProfileTabs } from "@/features/provider-profile/components/ProfileTabs";
 import { ProfileIndustries } from "@/features/provider-profile/components/ProfileIndustries";
+import { ProfileQuotePanel } from "@/features/provider-profile/components/ProfileQuotePanel";
 import type { ProviderProfileResponse } from "@/features/provider-profile/types";
 
 // ─── Estados de error/404 ────────────────────────────────────────────────────
@@ -317,25 +318,36 @@ export default function ProviderProfile() {
         {/* Tabs sticky debajo del hero */}
         <ProfileTabs />
 
-        {/* Resumen: descripción + sectores */}
-        <section id="resumen" className="scroll-mt-32 space-y-6">
-          <ProfileAbout about={provider.about} />
-          <ProfileIndustries derived={derived} />
-        </section>
+        {/* Layout 2 columnas: secciones (izq) + panel de cotización sticky (der) */}
+        <div className="mt-6 grid items-start gap-8 lg:grid-cols-[1fr_340px]">
+          {/* Columna izquierda — secciones de contenido */}
+          <div className="min-w-0 space-y-6">
+            {/* Resumen: descripción + sectores */}
+            <section id="resumen" className="scroll-mt-32 space-y-6">
+              <ProfileAbout about={provider.about} />
+              <ProfileIndustries derived={derived} />
+            </section>
 
-        {/* Capacidad */}
-        <div id="capacidad" className="scroll-mt-32 mt-6">
-          <ProfileCapacity capacity={provider.capacity} />
-        </div>
+            {/* Capacidad */}
+            <div id="capacidad" className="scroll-mt-32">
+              <ProfileCapacity capacity={provider.capacity} />
+            </div>
 
-        {/* Trabajos / Portfolio */}
-        <div id="trabajos" className="scroll-mt-32 mt-6">
-          <ProfilePortfolio items={portfolio} />
-        </div>
+            {/* Trabajos / Portfolio */}
+            <div id="trabajos" className="scroll-mt-32">
+              <ProfilePortfolio items={portfolio} />
+            </div>
 
-        {/* Reseñas */}
-        <div id="resenas" className="scroll-mt-32 mt-6">
-          <ProfileReviews data={reviews} providerId={provider.id} />
+            {/* Reseñas */}
+            <div id="resenas" className="scroll-mt-32">
+              <ProfileReviews data={reviews} providerId={provider.id} />
+            </div>
+          </div>
+
+          {/* Columna derecha — panel sticky (solo desktop) */}
+          <aside className="hidden lg:block">
+            <ProfileQuotePanel provider={provider} />
+          </aside>
         </div>
 
         {/* Padding inferior en mobile para que el CTA sticky no tape el footer */}
