@@ -41,7 +41,7 @@ export function ProfileQuotePanel({ provider }: ProfileQuotePanelProps) {
             </span>
           </div>
           <p className="mt-1.5 text-[12px] font-medium text-muted-foreground">
-            Promedio sobre cotizaciones similares · IVA incluido
+            Monto mínimo por trabajo
           </p>
         </div>
       )}
