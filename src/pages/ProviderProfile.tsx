@@ -14,6 +14,8 @@ import { ProfileReviews } from "@/features/provider-profile/components/ProfileRe
 import { ProfilePortfolio } from "@/features/provider-profile/components/ProfilePortfolio";
 import { ProfileContactCTA } from "@/features/provider-profile/components/ProfileContactCTA";
 import { ProfileSkeleton } from "@/features/provider-profile/components/ProfileSkeleton";
+import { ProfileTabs } from "@/features/provider-profile/components/ProfileTabs";
+import { ProfileIndustries } from "@/features/provider-profile/components/ProfileIndustries";
 import type { ProviderProfileResponse } from "@/features/provider-profile/types";
 
 // ─── Estados de error/404 ────────────────────────────────────────────────────
@@ -293,38 +295,54 @@ export default function ProviderProfile() {
     if (!profileData) return <ErrorState onRetry={() => refetch()} />;
     if (!staticProfile && isError) return <ErrorState onRetry={() => refetch()} />;
 
-    const { provider, badges, portfolio, reviews } = profileData;
+    const { provider, badges, portfolio, reviews, derived } = profileData;
 
     return (
-      <main className="mx-auto max-w-screen-xl px-4 py-10">
-        {/* Breadcrumb */}
-        <nav aria-label="Navegación" className="mb-6 text-sm text-muted-foreground">
-          <a
-            href="/proveedores"
-            className="hover:text-foreground transition-colors"
-          >
-            Proveedores
-          </a>
-          <span className="mx-2">/</span>
-          <span className="text-foreground font-medium">{provider.nombre}</span>
-        </nav>
+      <>
+        {/* Hero full-width — fuera del contenedor para que ocupe todo el ancho */}
+        <ProfileHero provider={provider} badges={badges} />
 
-        {/* 2-col layout: sidebar sticky + main */}
-        <div className="grid items-start gap-8 lg:grid-cols-[420px_1fr]">
-          <ProfileHero provider={provider} badges={badges} />
-          <div className="space-y-6">
+        {/* Tabs sticky debajo del hero */}
+        <ProfileTabs />
+
+        <main className="mx-auto max-w-screen-xl px-4 py-10">
+          {/* Breadcrumb */}
+          <nav aria-label="Navegación" className="mb-6 text-sm text-muted-foreground">
+            <a
+              href="/proveedores"
+              className="hover:text-foreground transition-colors"
+            >
+              Proveedores
+            </a>
+            <span className="mx-2">/</span>
+            <span className="text-foreground font-medium">{provider.nombre}</span>
+          </nav>
+
+          {/* Resumen: descripción + sectores */}
+          <section id="resumen" className="scroll-mt-32 space-y-6">
             <ProfileAbout about={provider.about} />
+            <ProfileIndustries derived={derived} />
+          </section>
+
+          {/* Capacidad */}
+          <div id="capacidad" className="scroll-mt-32 mt-6">
             <ProfileCapacity capacity={provider.capacity} />
           </div>
-        </div>
 
-        {/* Full-width sections */}
-        <ProfileReviews data={reviews} providerId={provider.id} />
-        <ProfilePortfolio items={portfolio} />
+          {/* Trabajos / Portfolio */}
+          <div id="trabajos" className="scroll-mt-32 mt-6">
+            <ProfilePortfolio items={portfolio} />
+          </div>
 
-        {/* Padding inferior en mobile para que el CTA sticky no tape el footer */}
-        <div className="h-20 lg:hidden" aria-hidden="true" />
-      </main>
+          {/* Reseñas */}
+          <div id="resenas" className="scroll-mt-32 mt-6">
+            <ProfileReviews data={reviews} providerId={provider.id} />
+          </div>
+
+          {/* Padding inferior en mobile para que el CTA sticky no tape el footer */}
+          <div className="h-20 lg:hidden" aria-hidden="true" />
+        </main>
+      </>
     );
   };
 
