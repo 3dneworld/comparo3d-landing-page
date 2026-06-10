@@ -1,5 +1,6 @@
-// ProfileHero.tsx - ficha izquierda del perfil publico de proveedor
-import { Globe, HelpCircle, MapPin, MessageCircle, Star } from "lucide-react";
+// ProfileHero.tsx — Hero dark de perfil publico de proveedor
+// Layout: sección full-width con fondo gradient-dark, badges pill-style, quick-stats reales
+import { MapPin, ShieldCheck, CheckCircle2, Star } from "lucide-react";
 import { AvatarFallback } from "./AvatarFallback";
 import type { PublicProvider, PublicProviderBadge } from "../types";
 
@@ -8,183 +9,217 @@ interface Props {
   badges: PublicProviderBadge[];
 }
 
-function formatARS(amount: number | null): string | null {
-  if (amount == null) return null;
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  }).format(amount);
+// Determina la dimension mayor de la cama para mostrarlo como headline
+function getCamaMaxDim(cama: { x: number; y: number; z: number }): number {
+  return Math.max(cama.x, cama.y, cama.z);
 }
 
-function buildWhatsAppUrl(whatsapp: string): string {
-  const phone = whatsapp.replace(/\D/g, "");
-  const msg = encodeURIComponent(
-    "Hola, vi tu perfil en Comparo3D y queria consultarte por un trabajo.",
-  );
-  return `https://wa.me/${phone}?text=${msg}`;
-}
-
-function getBadgeImage(badge: PublicProviderBadge): string | null {
+// Devuelve clase de estilo + icono para cada tipo de badge
+function getBadgeStyle(badge: PublicProviderBadge): {
+  className: string;
+  icon: React.ReactNode;
+} | null {
   const type = String(badge.type || "").toLowerCase();
-  const tier = String(badge.tier || "").toLowerCase();
-
-  if (type.includes("organico")) return "/badges/certificado-organico.svg";
-  if (type.includes("fundador") || type.includes("trayectoria")) {
-    return tier.includes("10") ? "/badges/trayectoria-10.svg" : "/badges/trayectoria-5.svg";
+  if (type.includes("trayectoria") || type.includes("fundador")) {
+    return {
+      className:
+        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border bg-[hsl(var(--primary)/0.16)] text-[#c1d4f5] border-[hsl(var(--primary)/0.4)]",
+      icon: <ShieldCheck size={13} aria-hidden="true" />,
+    };
+  }
+  if (type.includes("organico")) {
+    return {
+      className:
+        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border bg-[hsl(152_68%_40%/0.16)] text-[#6ee7b7] border-[hsl(152_68%_40%/0.4)]",
+      icon: <CheckCircle2 size={13} aria-hidden="true" />,
+    };
   }
   return null;
 }
 
-function ProfileBadgeMark({ badge }: { badge: PublicProviderBadge }) {
-  const image = getBadgeImage(badge);
-  if (!image) return null;
-
-  return (
-    <div className="flex items-center justify-end gap-2">
-      <img
-        src={image}
-        alt={badge.label}
-        className="h-20 w-20 shrink-0 object-contain drop-shadow-sm"
-      />
-      <button
-        type="button"
-        title={badge.label}
-        aria-label={`Mas informacion sobre ${badge.label}`}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-primary/15 bg-primary/5 text-primary transition hover:bg-primary/10"
-      >
-        <HelpCircle size={16} aria-hidden="true" />
-      </button>
-    </div>
-  );
+interface QStat {
+  label: string;
+  value: string;
+  sub: string;
 }
 
 export function ProfileHero({ provider, badges }: Props) {
-  const { id, nombre, logo_url, location, social, pricing, rating } = provider;
-  const visualBadges = badges
-    .map((badge, index) => ({ badge, index, image: getBadgeImage(badge) }))
-    .filter((item) => item.image)
-    .slice(0, 2);
+  const { id, nombre, logo_url, location, capacity, pricing, rating } = provider;
+
   const hasRating = rating.count > 0 && rating.average != null;
-  const minTrabajoStr = formatARS(pricing.min_trabajo_ars);
+
+  // Filtrar solo badges con estilo conocido (trayectoria + organico)
+  const heroBadges = badges
+    .map((badge) => ({ badge, style: getBadgeStyle(badge) }))
+    .filter((item) => item.style !== null)
+    .slice(0, 3);
+
+  // Quick-stats — solo columnas con dato real
+  const stats: QStat[] = [];
+
+  // Cama maxima — siempre presente si hay capacity
+  if (capacity.cama_max_mm) {
+    const maxDim = getCamaMaxDim(capacity.cama_max_mm);
+    stats.push({
+      label: "Cama máxima",
+      value: `${maxDim}³`,
+      sub: "mm · volumen de impresión",
+    });
+  }
+
+  // Entrega — solo si hay dato
+  if (pricing.tiempo_entrega_dias != null) {
+    const dias = pricing.tiempo_entrega_dias;
+    stats.push({
+      label: "Entrega",
+      value: `${dias} día${dias === 1 ? "" : "s"}`,
+      sub: "tiempo estimado de producción",
+    });
+  }
+
+  // Impresoras declaradas — solo si hay dato
+  if (capacity.impresoras_declaradas != null && capacity.impresoras_declaradas > 0) {
+    stats.push({
+      label: "Impresoras",
+      value: String(capacity.impresoras_declaradas),
+      sub: "equipos declarados activos",
+    });
+  }
+
+  // Materiales activos — solo si hay dato
+  if (
+    stats.length < 4 &&
+    capacity.materiales_activos != null &&
+    capacity.materiales_activos.length > 0
+  ) {
+    stats.push({
+      label: "Materiales",
+      value: String(capacity.materiales_activos.length),
+      sub: "tipos de filamento disponibles",
+    });
+  }
+
+  // Columnas del grid segun cantidad de stats reales
+  const gridCols =
+    stats.length === 4
+      ? "grid-cols-4"
+      : stats.length === 3
+        ? "grid-cols-3"
+        : stats.length === 2
+          ? "grid-cols-2"
+          : "grid-cols-1";
+
+  const locationStr = [location.localidad, location.provincia]
+    .filter(Boolean)
+    .join(", ");
 
   return (
-    <aside className="lg:sticky lg:top-24 lg:self-start">
-      <div className="overflow-hidden rounded-[28px] border border-border/70 bg-card p-6 shadow-[0_18px_55px_rgba(15,23,42,0.10)]">
-        <div className="grid grid-cols-[112px_1fr] items-center gap-5">
+    <section className="bg-gradient-dark text-hero-foreground relative overflow-hidden rounded-3xl">
+      {/* Grid overlay */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0z' fill='none' stroke='white' stroke-width='.5'/%3E%3C/svg%3E")`,
+          opacity: 0.035,
+        }}
+        aria-hidden="true"
+      />
+
+      {/* Hero inner — avatar + título + meta + badges */}
+      <div className="relative grid grid-cols-[auto_1fr] items-center gap-7 px-10 pb-6 pt-10">
+        {/* Avatar 96px */}
+        <div className="shrink-0">
           {logo_url ? (
             <img
               src={logo_url}
               alt={`Logo de ${nombre}`}
-              className="h-28 w-28 rounded-full object-cover shadow-sm ring-2 ring-border/50"
+              className="h-24 w-24 rounded-[20px] object-cover shadow-[0_20px_50px_-10px_rgba(34,96,201,.5)] ring-[3px] ring-white/6"
             />
           ) : (
-            <AvatarFallback id={id} nombre={nombre} size={112} />
-          )}
-
-          <div className="min-w-0">
-            <h1 className="font-[Montserrat] text-3xl font-extrabold leading-tight tracking-[-0.03em] text-foreground">
-              {nombre}
-            </h1>
-            {hasRating ? (
-              <div className="mt-5 flex items-center gap-2 text-base">
-                <Star
-                  size={22}
-                  className="fill-amber-400 text-amber-400"
-                  aria-hidden="true"
-                />
-                <span className="font-bold text-foreground">
-                  {rating.average!.toFixed(1)}
-                </span>
-                <span className="text-muted-foreground">
-                  ({rating.count} reseñas)
-                </span>
-              </div>
-            ) : (
-              <p className="mt-5 text-sm text-muted-foreground">
-                Sin reseñas aun
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-7 grid gap-5 sm:grid-cols-[1fr_auto]">
-          <div className="space-y-4 text-[15px]">
-            {minTrabajoStr && (
-              <div className="grid grid-cols-[92px_1fr] items-baseline gap-3">
-                <span className="text-sm font-extrabold uppercase tracking-wide text-muted-foreground/70">
-                  Minimo
-                </span>
-                <span className="font-extrabold text-foreground">
-                  {minTrabajoStr}
-                </span>
-              </div>
-            )}
-            {pricing.tiempo_entrega_dias != null && (
-              <div className="grid grid-cols-[92px_1fr] items-baseline gap-3">
-                <span className="text-sm font-extrabold uppercase tracking-wide text-muted-foreground/70">
-                  Entrega
-                </span>
-                <span className="font-extrabold text-foreground">
-                  {pricing.tiempo_entrega_dias} dias aprox.
-                </span>
-              </div>
-            )}
-            {(location.localidad || location.provincia) && (
-              <div className="flex items-center gap-3 pt-1 text-muted-foreground">
-                <MapPin size={18} className="shrink-0" aria-hidden="true" />
-                <span className="font-semibold">
-                  {[location.localidad, location.provincia]
-                    .filter(Boolean)
-                    .join(", ")}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {visualBadges.length > 0 && (
-            <div className="flex flex-col items-end gap-3">
-              {visualBadges.map(({ badge, index }) => (
-                <ProfileBadgeMark key={`${badge.type}-${index}`} badge={badge} />
-              ))}
+            <div className="flex h-24 w-24 items-center justify-center rounded-[20px] bg-gradient-primary shadow-[0_20px_50px_-10px_rgba(34,96,201,.5)] ring-[3px] ring-white/6">
+              <AvatarFallback id={id} nombre={nombre} size={96} />
             </div>
           )}
         </div>
 
-        <a
-          href="/#cotizador"
-          className="mt-7 flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-[15px] font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800"
-        >
-          Pedir cotizacion
-        </a>
+        {/* Nombre + meta + badges */}
+        <div className="min-w-0">
+          <h1 className="font-[Montserrat] text-[clamp(1.8rem,2vw+1rem,2.6rem)] font-extrabold leading-[1.1] tracking-[-0.015em] text-hero-foreground">
+            {nombre}
+          </h1>
 
-        {(social.sitio_web || social.whatsapp) && (
-          <div className="mt-4 flex gap-2">
-            {social.sitio_web && (
-              <a
-                href={social.sitio_web}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Sitio web del proveedor"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                <Globe size={16} />
-              </a>
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-[13px] font-medium text-hero-muted">
+            {locationStr && (
+              <span className="flex items-center gap-1">
+                <MapPin size={13} aria-hidden="true" className="shrink-0" />
+                {locationStr}
+              </span>
             )}
-            {social.whatsapp && (
-              <a
-                href={buildWhatsAppUrl(social.whatsapp)}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Contactar por WhatsApp"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 text-emerald-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
-              >
-                <MessageCircle size={16} />
-              </a>
+            {locationStr && hasRating && (
+              <span className="opacity-40">·</span>
+            )}
+            {hasRating && (
+              <span className="flex items-center gap-1">
+                <Star
+                  size={13}
+                  className="fill-amber-400 text-amber-400"
+                  aria-hidden="true"
+                />
+                <span>
+                  {rating.average!.toFixed(1)} sobre {rating.count}{" "}
+                  {rating.count === 1 ? "reseña" : "reseñas"}
+                </span>
+              </span>
             )}
           </div>
-        )}
+
+          {heroBadges.length > 0 && (
+            <div className="mt-3.5 flex flex-wrap gap-2">
+              {heroBadges.map(({ badge, style }, i) => (
+                <span
+                  key={`${badge.type}-${i}`}
+                  className={style!.className}
+                >
+                  {style!.icon}
+                  {badge.label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </aside>
+
+      {/* Quick-stats — solo columnas con dato real */}
+      {stats.length > 0 && (
+        <div
+          className={`relative grid ${gridCols} gap-3 px-10 py-6`}
+          style={{ borderTop: "1px solid hsl(var(--hero-muted) / 0.12)" }}
+        >
+          {stats.map((s) => (
+            <div key={s.label} className="py-1">
+              <div
+                className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em]"
+                style={{ color: "hsl(var(--hero-muted) / 0.8)" }}
+              >
+                {s.label}
+              </div>
+              <div className="font-[Montserrat] text-[22px] font-bold leading-none tracking-[-0.01em] text-hero-foreground">
+                {s.value}{" "}
+                {s.label === "Cama máxima" && (
+                  <small className="text-sm font-medium text-hero-muted">
+                    mm
+                  </small>
+                )}
+              </div>
+              <span
+                className="mt-1 block text-[11px] font-medium text-hero-muted"
+              >
+                {s.sub}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
