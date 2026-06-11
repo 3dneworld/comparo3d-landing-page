@@ -14,7 +14,33 @@ interface WorkerEnv {
   ASSETS: {
     fetch(request: Request): Promise<Response>;
   };
+  SHORTLINKS_KV?: {
+    get(key: string): Promise<string | null>;
+    put(key: string, value: string): Promise<void>;
+  };
+  SHORTLINK_ADMIN_TOKEN?: string;
 }
+
+interface ShortLinkConfig {
+  destination_path?: string;
+  fragment?: string;
+  active?: boolean;
+  utm_source: string;
+  utm_medium?: string;
+  utm_campaign: string;
+  utm_content?: string;
+  utm_term?: string;
+}
+
+const SHORTLINK_SLUG_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+const DEFAULT_SHORT_LINK_CAMPAIGN = "mundial2026";
+const DEFAULT_SHORT_LINKS: Record<string, ShortLinkConfig> = {
+  ig: { utm_source: "instagram", utm_medium: "organic", utm_campaign: DEFAULT_SHORT_LINK_CAMPAIGN },
+  fb: { utm_source: "facebook", utm_medium: "organic", utm_campaign: DEFAULT_SHORT_LINK_CAMPAIGN },
+  fbg: { utm_source: "facebook_grupo", utm_medium: "organic", utm_campaign: DEFAULT_SHORT_LINK_CAMPAIGN },
+  tt: { utm_source: "tiktok", utm_medium: "organic", utm_campaign: DEFAULT_SHORT_LINK_CAMPAIGN },
+  tw: { utm_source: "twitter", utm_medium: "organic", utm_campaign: DEFAULT_SHORT_LINK_CAMPAIGN },
+};
 
 const BRAND_WORDMARK_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" width="360" height="96" viewBox="0 0 360 96" fill="none">
@@ -87,6 +113,196 @@ function buildLoginFallbackRedirect(url: URL, code = "auth_unavailable") {
   return Response.redirect(loginUrl.toString(), 302);
 }
 
+function jsonResponse(payload: unknown, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+    },
+  });
+}
+
+function normalizeShortLinkSlug(slug: string) {
+  return slug.trim().toLowerCase();
+}
+
+function buildShortLinkTarget(url: URL, config: ShortLinkConfig) {
+  const destinationPath = config.destination_path || "/";
+  const target = new URL(destinationPath.startsWith("/") ? destinationPath : `/${destinationPath}`, url.origin);
+  target.searchParams.set("utm_source", config.utm_source);
+  target.searchParams.set("utm_medium", config.utm_medium || "organic");
+  target.searchParams.set("utm_campaign", config.utm_campaign);
+  if (config.utm_content) target.searchParams.set("utm_content", config.utm_content);
+  if (config.utm_term) target.searchParams.set("utm_term", config.utm_term);
+
+  const fragment = config.fragment === undefined ? "trending" : config.fragment;
+  if (fragment) target.hash = fragment.startsWith("#") ? fragment.slice(1) : fragment;
+  return target.toString();
+}
+
+async function resolveShortLink(slug: string, env: WorkerEnv): Promise<ShortLinkConfig | null> {
+  const kvValue = await env.SHORTLINKS_KV?.get(`link:${slug}`);
+  if (kvValue) {
+    try {
+      const config = JSON.parse(kvValue) as ShortLinkConfig;
+      if (config.active === false) return null;
+      if (config.utm_source && config.utm_campaign) return config;
+    } catch (error) {
+      console.log(`SHORTLINK malformed config slug=${slug} error=${String(error)}`);
+    }
+  }
+
+  return DEFAULT_SHORT_LINKS[slug] || null;
+}
+
+async function incrementKvCounter(env: WorkerEnv, key: string) {
+  const kv = env.SHORTLINKS_KV;
+  if (!kv) return;
+  try {
+    const current = Number.parseInt((await kv.get(key)) || "0", 10);
+    await kv.put(key, String(Number.isFinite(current) ? current + 1 : 1));
+  } catch (error) {
+    console.log(`SHORTLINK counter failed key=${key} error=${String(error)}`);
+  }
+}
+
+async function trackShortLinkClick(slug: string, request: Request, env: WorkerEnv) {
+  const day = new Date().toISOString().slice(0, 10);
+  await Promise.all([
+    incrementKvCounter(env, `clicks:${slug}:total`),
+    incrementKvCounter(env, `clicks:${slug}:daily:${day}`),
+  ]);
+
+  const cf = request.cf || {};
+  console.log(
+    JSON.stringify({
+      event: "shortlink_click",
+      slug,
+      day,
+      referer: request.headers.get("referer") || "",
+      country: typeof cf === "object" && cf && "country" in cf ? cf.country : "",
+      user_agent: request.headers.get("user-agent") || "",
+    }),
+  );
+}
+
+function readAdminToken(request: Request) {
+  const bearer = request.headers.get("authorization") || "";
+  if (bearer.toLowerCase().startsWith("bearer ")) return bearer.slice(7).trim();
+  return request.headers.get("x-shortlink-admin-token") || "";
+}
+
+function authorizeShortLinkAdmin(request: Request, env: WorkerEnv) {
+  if (!env.SHORTLINK_ADMIN_TOKEN) {
+    return jsonResponse({ ok: false, error: "shortlink_admin_token_not_configured" }, 503);
+  }
+  if (readAdminToken(request) !== env.SHORTLINK_ADMIN_TOKEN) {
+    return jsonResponse({ ok: false, error: "unauthorized" }, 401);
+  }
+  return null;
+}
+
+function parseShortLinkPayload(payload: Record<string, unknown>): { slug: string; config: ShortLinkConfig } | Response {
+  const slug = normalizeShortLinkSlug(String(payload.slug || ""));
+  if (!SHORTLINK_SLUG_RE.test(slug)) {
+    return jsonResponse({ ok: false, error: "invalid_slug" }, 400);
+  }
+
+  const utmSource = String(payload.utm_source || "").trim();
+  const utmCampaign = String(payload.utm_campaign || "").trim();
+  if (!utmSource || !utmCampaign) {
+    return jsonResponse({ ok: false, error: "utm_source_and_utm_campaign_required" }, 400);
+  }
+
+  const destinationPath = String(payload.destination_path || "/").trim() || "/";
+  if (/^https?:\/\//i.test(destinationPath) || !destinationPath.startsWith("/")) {
+    return jsonResponse({ ok: false, error: "destination_path_must_be_same_origin_path" }, 400);
+  }
+
+  const config: ShortLinkConfig = {
+    destination_path: destinationPath,
+    fragment: payload.fragment === undefined ? "trending" : String(payload.fragment || ""),
+    active: payload.active === undefined ? true : Boolean(payload.active),
+    utm_source: utmSource,
+    utm_medium: String(payload.utm_medium || "organic").trim() || "organic",
+    utm_campaign: utmCampaign,
+  };
+
+  const utmContent = String(payload.utm_content || "").trim();
+  const utmTerm = String(payload.utm_term || "").trim();
+  if (utmContent) config.utm_content = utmContent;
+  if (utmTerm) config.utm_term = utmTerm;
+
+  return { slug, config };
+}
+
+async function handleShortLinkRedirect(request: Request, env: WorkerEnv, url: URL) {
+  const slug = normalizeShortLinkSlug(url.pathname.slice("/r/".length).replace(/\/$/, ""));
+  if (!SHORTLINK_SLUG_RE.test(slug)) {
+    return Response.redirect(new URL("/#trending", url.origin).toString(), 302);
+  }
+
+  const config = await resolveShortLink(slug, env);
+  if (!config) {
+    return Response.redirect(new URL("/#trending", url.origin).toString(), 302);
+  }
+
+  const target = buildShortLinkTarget(url, config);
+  await trackShortLinkClick(slug, request, env);
+  return Response.redirect(target, 302);
+}
+
+async function handleShortLinksApi(request: Request, env: WorkerEnv, url: URL) {
+  const authError = authorizeShortLinkAdmin(request, env);
+  if (authError) return authError;
+
+  const kv = env.SHORTLINKS_KV;
+  if (!kv) return jsonResponse({ ok: false, error: "shortlinks_kv_not_configured" }, 503);
+
+  if (url.pathname === "/api/shortlinks" && request.method === "POST") {
+    let payload: Record<string, unknown>;
+    try {
+      payload = (await request.json()) as Record<string, unknown>;
+    } catch {
+      return jsonResponse({ ok: false, error: "invalid_json" }, 400);
+    }
+
+    const parsed = parseShortLinkPayload(payload);
+    if (parsed instanceof Response) return parsed;
+
+    await kv.put(`link:${parsed.slug}`, JSON.stringify(parsed.config));
+    return jsonResponse(
+      {
+        ok: true,
+        slug: parsed.slug,
+        short_url: new URL(`/r/${parsed.slug}`, url.origin).toString(),
+        target_url: buildShortLinkTarget(url, parsed.config),
+      },
+      201,
+    );
+  }
+
+  if (url.pathname.startsWith("/api/shortlinks/") && request.method === "GET") {
+    const slug = normalizeShortLinkSlug(url.pathname.slice("/api/shortlinks/".length).replace(/\/$/, ""));
+    if (!SHORTLINK_SLUG_RE.test(slug)) return jsonResponse({ ok: false, error: "invalid_slug" }, 400);
+
+    const config = await resolveShortLink(slug, env);
+    if (!config) return jsonResponse({ ok: false, error: "not_found" }, 404);
+
+    return jsonResponse({
+      ok: true,
+      slug,
+      short_url: new URL(`/r/${slug}`, url.origin).toString(),
+      target_url: buildShortLinkTarget(url, config),
+      clicks_total: Number.parseInt((await kv.get(`clicks:${slug}:total`)) || "0", 10) || 0,
+      config,
+    });
+  }
+
+  return jsonResponse({ ok: false, error: "not_found" }, 404);
+}
+
 export default {
   async fetch(request: Request, env: WorkerEnv): Promise<Response> {
     const url = new URL(request.url);
@@ -119,6 +335,14 @@ export default {
 
     const isProviderLoginRoute =
       url.pathname === "/proveedores/login" || url.pathname === "/proveedores/login/";
+
+    if (url.pathname === "/api/shortlinks" || url.pathname.startsWith("/api/shortlinks/")) {
+      return handleShortLinksApi(request, env, url);
+    }
+
+    if (url.pathname === "/r" || url.pathname === "/r/" || url.pathname.startsWith("/r/")) {
+      return handleShortLinkRedirect(request, env, url);
+    }
 
     if (isProviderLoginRoute) {
       if (hasAuthCookie) {

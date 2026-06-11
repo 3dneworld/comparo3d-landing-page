@@ -10,3 +10,7 @@ routes = [
 [assets]
 directory = "./dist"
 binding = "ASSETS"
+
+[[kv_namespaces]]
+binding = "SHORTLINKS_KV"
+id = "5c3f61692850430cb8c41859cd8d24f8"
