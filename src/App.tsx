@@ -23,6 +23,7 @@ import ProveedoresOnboardingLogin from "./pages/ProveedoresOnboardingLogin.tsx";
 import ProviderProfile from "./pages/ProviderProfile.tsx";
 import TestModePage from "./pages/TestModePage.tsx";
 import { useAnalytics } from "./hooks/useAnalytics";
+import { useAttribution } from "./hooks/useAttribution";
 import { TEST_MODE_STORAGE_KEY } from "./lib/api";
 
 // Si llegamos con query param `?w3dn_set_test_mode=on|off` (redirect del backend
@@ -96,6 +97,7 @@ function ShortLinkRedirect() {
  */
 function AppRoutes({ children }: { children: React.ReactNode }) {
   useAnalytics();
+  useAttribution();
   return <>{children}</>;
 }
 

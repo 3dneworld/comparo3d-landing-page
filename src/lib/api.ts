@@ -3,6 +3,7 @@
  */
 
 import { reportClientError } from "./clientErrorReporter";
+import { getAttributionPayload } from "./attribution";
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL || "";
@@ -706,10 +707,13 @@ export async function initDraft(payload: {
   infill?: string;
   layer_height?: string;
 }): Promise<InitDraftResponse | ApiError> {
+  // F0 — adjuntar atribución de marketing (utm_*) capturada al aterrizar.
+  // Es el momento donde el quote nace, así que acá queda atado a su red de origen.
+  const body = { ...payload, ...getAttributionPayload() };
   const res = await fetch(`${API_BASE_URL}/api/quotes/init-draft`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   });
 
   const data = await res.json();
