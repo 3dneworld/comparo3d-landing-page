@@ -710,11 +710,17 @@ export async function initDraft(payload: {
   // F0 — adjuntar atribución de marketing (utm_*) capturada al aterrizar.
   // Es el momento donde el quote nace, así que acá queda atado a su red de origen.
   const body = { ...payload, ...getAttributionPayload() };
-  const res = await fetch(`${API_BASE_URL}/api/quotes/init-draft`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  // El slicing en background decide include_all_providers (proveedores TEST) según
+  // el test-mode de ESTE request. Sin el header acá, el match se persiste sin los
+  // proveedores TEST aunque el GET /options después sí lo mande. → mandarlo siempre.
+  const res = await fetch(
+    `${API_BASE_URL}/api/quotes/init-draft`,
+    withTestModeHeaders({
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+  );
 
   const data = await res.json();
   if (!res.ok) {
