@@ -8,6 +8,7 @@ import {
   Minus,
   Plus,
   Ruler,
+  Sparkles,
   Star,
   Truck,
 } from "lucide-react";
@@ -25,6 +26,23 @@ import { Switch } from "@/components/ui/switch";
 import { TrimmedThumbnail } from "./TrimmedThumbnail";
 
 type SortMode = "recommended" | "price" | "rating";
+
+/**
+ * Slug URL-safe a partir del nombre del proveedor. Espeja `_slugify` del backend
+ * (public_bp.py) para poder matchear el deep-link `?provider=<slug_hint>` contra
+ * el `provider_name` de cada cotización sin necesidad de un endpoint nuevo.
+ */
+function slugifyProviderName(name: string): string {
+  const normalized = (name || "")
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "");
+  return (
+    normalized
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "proveedor"
+  );
+}
 
 interface StepQuotesProps {
   isEmpresa: boolean;
@@ -48,6 +66,8 @@ interface StepQuotesProps {
   onUpdateQuantity: (qty: number) => void | Promise<void>;
   onRetry: () => void;
   onBack: () => void;
+  /** Slug del proveedor recibido vía deep-link `?provider=` desde su perfil público. */
+  highlightProviderSlug?: string | null;
 }
 
 interface UserLocation {
@@ -502,6 +522,7 @@ export function StepQuotes({
   onUpdateQuantity,
   onRetry,
   onBack,
+  highlightProviderSlug,
 }: StepQuotesProps) {
   const [sortMode, setSortMode] = useState<SortMode>("recommended");
   const [filterCertified, setFilterCertified] = useState(false);
@@ -591,8 +612,35 @@ export function StepQuotes({
       return compare(a, b);
     });
 
+    // Deep-link: traer al proveedor elegido desde su perfil al frente de la lista.
+    if (highlightProviderSlug) {
+      const idx = next.findIndex(
+        (quote) => slugifyProviderName(quote.provider_name) === highlightProviderSlug,
+      );
+      if (idx > 0) {
+        const [picked] = next.splice(idx, 1);
+        next.unshift(picked);
+      }
+    }
+
     return next;
-  }, [quotesWithDistance, filterCertified, filterNearby, sortMode, userLocation]);
+  }, [quotesWithDistance, filterCertified, filterNearby, sortMode, userLocation, highlightProviderSlug]);
+
+  const highlightedQuoteUid = useMemo(() => {
+    if (!highlightProviderSlug) return null;
+    const match = visibleQuotes.find(
+      (quote) => slugifyProviderName(quote.provider_name) === highlightProviderSlug,
+    );
+    return match?.quote_option_uid ?? null;
+  }, [visibleQuotes, highlightProviderSlug]);
+
+  const highlightedProviderName = useMemo(() => {
+    if (!highlightedQuoteUid) return null;
+    return (
+      visibleQuotes.find((quote) => quote.quote_option_uid === highlightedQuoteUid)?.provider_name ??
+      null
+    );
+  }, [visibleQuotes, highlightedQuoteUid]);
 
   const openMediationPolicy = () => {
     setMediationAccordionValue("politica");
@@ -1000,14 +1048,29 @@ export function StepQuotes({
 
           {!isProcessing && visibleQuotes.length > 0 && (
             <div className="mt-6 space-y-3">
-              {visibleQuotes.map((quote) => (
-                <QuoteProviderCard
-                  key={quote.quote_option_uid}
-                  option={quote}
-                  isRecommended={quote.quote_option_uid === recommendedQuoteUid}
-                  onSelect={() => onSelectQuote(quote.quote_option_uid)}
-                />
-              ))}
+              {highlightedProviderName ? (
+                <div className="flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-[13px] leading-snug text-blue-900">
+                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                  <span>
+                    Estás cotizando con <strong>{highlightedProviderName}</strong>, el proveedor que
+                    elegiste desde su perfil. También podés comparar con el resto.
+                  </span>
+                </div>
+              ) : null}
+
+              {visibleQuotes.map((quote) => {
+                const isHighlighted = quote.quote_option_uid === highlightedQuoteUid;
+                return (
+                  <QuoteProviderCard
+                    key={quote.quote_option_uid}
+                    option={quote}
+                    isRecommended={quote.quote_option_uid === recommendedQuoteUid}
+                    onSelect={() => onSelectQuote(quote.quote_option_uid)}
+                    highlightLabel={isHighlighted ? "Tu elección" : undefined}
+                    className={isHighlighted ? "ring-2 ring-blue-500 ring-offset-2" : undefined}
+                  />
+                );
+              })}
 
               <div className="flex justify-end pt-1">
                 <div className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/70 px-2 py-1 text-[11px] text-muted-foreground">

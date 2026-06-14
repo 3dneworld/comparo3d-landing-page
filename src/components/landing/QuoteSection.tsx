@@ -150,6 +150,22 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
   /** Lista de keys de campos del paso 2 que faltan (para marcar visualmente). */
   const [missingStep2Fields, setMissingStep2Fields] = useState<string[]>([]);
 
+  // ── Deep-link desde perfil de proveedor: ?provider=<slug> destaca al proveedor ──
+  // El CTA "Pedir cotización" del perfil público navega a /?provider=<slug_hint>#cotizador.
+  // Guardamos el slug para resaltar/ordenar su card cuando aparezcan las cotizaciones.
+  const [highlightProviderSlug, setHighlightProviderSlug] = useState<string | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const provider = params.get("provider");
+    if (!provider) return;
+    setHighlightProviderSlug(provider);
+    // Limpiar el param (preservando el resto y el hash) para no re-disparar en navegación interna.
+    params.delete("provider");
+    const qs = params.toString();
+    const cleanUrl = window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash;
+    window.history.replaceState({}, "", cleanUrl);
+  }, []);
+
   // ── Deep link recovery: ?session=XXX desde mail follow-up ──
   // Si el cliente abre el link del mail desde otro browser (mobile/desktop
   // distinto) sin sessionStorage, llamamos /from-lost/<sid> al backend, que
@@ -956,6 +972,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
               selectedColor={data.colorAcabado || null}
               cantidad={flow.cantidad ?? (data.cantidad ? Number(data.cantidad) : null)}
               stlDimensions={flow.stlDimensions}
+              highlightProviderSlug={highlightProviderSlug}
               onSelectQuote={handleSelectQuote}
               onUpdateQuantity={async (newQty) => {
                 const ok = await flow.handleUpdateQuantity(newQty);
