@@ -17,6 +17,7 @@ const mockData = vi.hoisted(() => {
       last_confirmed_at: "2026-05-20T10:00:00+00:00",
       allow_custom_color: 0,
       trabajo_minimo_override: null,
+      metadata: { color_count: 4, attributes: ["Técnico"] },
       colores: [
         {
           id: 101,
@@ -126,6 +127,8 @@ describe("ProviderMaterialsView", () => {
     const pla = payload.materiales.find((m) => m.material_code === "PLA");
 
     expect(pla?.in_stock).toBe(true);
+    // El toggle inline (PUT replace) NO debe perder el metadata del material.
+    expect(pla?.metadata).toEqual({ color_count: 4, attributes: ["Técnico"] });
     expect(pla?.colores).toHaveLength(8);
     expect(pla?.colores).toEqual(
       expect.arrayContaining([

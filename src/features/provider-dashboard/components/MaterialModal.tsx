@@ -15,8 +15,17 @@ import type {
   DashboardMaterial,
   DashboardMaterialColorFormPayload,
   DashboardMaterialFormPayload,
+  DashboardMaterialMetadata,
   MarketplacePriceAverage,
 } from "@/features/provider-dashboard/types";
+
+/** Catálogo cerrado de atributos de material (alineado con los chips del perfil público). */
+const MATERIAL_ATTRIBUTE_OPTIONS = [
+  "Apto exterior",
+  "Técnico",
+  "Flexible",
+  "Alta resistencia",
+] as const;
 
 export type ModalMode =
   | { kind: "new" }
@@ -42,6 +51,8 @@ interface FormState {
   material_code: string;
   selectedColors: string[];
   precio_hora: string;
+  colorCount: string;
+  attributes: string[];
 }
 
 function normalizeMaterialCode(value: string): string {
@@ -79,6 +90,9 @@ function materialToPayload(m: DashboardMaterial): DashboardMaterialFormPayload |
     in_stock: Boolean(m.in_stock),
     allow_custom_color: false,
     trabajo_minimo_override: m.trabajo_minimo_override ?? null,
+    // ⚠️ Preservar metadata (color_count/attributes) de materiales NO editados: el PUT
+    // reemplaza TODOS los materiales, así que sin este passthrough se perderían.
+    ...(m.metadata ? { metadata: m.metadata } : {}),
     colores: QUOTE_COLOR_OPTIONS.map((color) => {
       const existing = (m.colores || []).find((c) => c.color_name?.toLowerCase() === color.value.toLowerCase());
       return {
@@ -104,6 +118,8 @@ export function MaterialModal({
   const initial = useMemo<FormState>(() => {
     if (mode.kind === "edit") {
       const m = materials.find((x) => x.id === mode.id);
+      const meta = m?.metadata ?? {};
+      const rawAttributes = Array.isArray(meta.attributes) ? meta.attributes : [];
       return {
         material_code: displayMaterialCode(m?.material_code || "PLA"),
         selectedColors: Boolean(m?.in_stock)
@@ -113,6 +129,8 @@ export function MaterialModal({
               .filter(Boolean)
           : [],
         precio_hora: m ? String(m.precio_hora || "") : "",
+        colorCount: meta.color_count != null ? String(meta.color_count) : "",
+        attributes: rawAttributes.filter((a): a is string => typeof a === "string"),
       };
     }
     if (mode.kind === "preset") {
@@ -120,6 +138,8 @@ export function MaterialModal({
         material_code: displayMaterialCode(mode.data.name),
         selectedColors: [],
         precio_hora: String(mode.data.avg_price || ""),
+        colorCount: "",
+        attributes: [],
       };
     }
     const firstMissing = MATERIAL_TYPES.find(
@@ -129,6 +149,8 @@ export function MaterialModal({
       material_code: firstMissing || "PLA",
       selectedColors: [],
       precio_hora: "",
+      colorCount: "",
+      attributes: [],
     };
   }, [mode, materials]);
 
@@ -159,6 +181,18 @@ export function MaterialModal({
     });
   };
 
+  const toggleAttribute = (attribute: string) => {
+    setForm((current) => {
+      const exists = current.attributes.includes(attribute);
+      return {
+        ...current,
+        attributes: exists
+          ? current.attributes.filter((a) => a !== attribute)
+          : [...current.attributes, attribute],
+      };
+    });
+  };
+
   const saveMut = useMutation({
     mutationFn: async () => {
       if (!form.material_code.trim()) throw new Error("Material requerido");
@@ -170,13 +204,28 @@ export function MaterialModal({
         .map(materialToPayload)
         .filter((payload): payload is DashboardMaterialFormPayload => payload != null);
 
-      const selectedPayload = {
+      // Metadata del material editado/nuevo: parte del metadata existente (passthrough de
+      // claves legacy) y sobreescribe color_count + attributes con lo del form.
+      const editedMaterial =
+        mode.kind === "edit" ? materials.find((m) => m.id === mode.id) : undefined;
+      const parsedColorCount =
+        form.colorCount.trim() === ""
+          ? form.selectedColors.length
+          : Math.max(0, Math.floor(Number(form.colorCount) || 0));
+      const selectedMetadata: DashboardMaterialMetadata = {
+        ...(editedMaterial?.metadata ?? {}),
+        color_count: parsedColorCount,
+        attributes: form.attributes,
+      };
+
+      const selectedPayload: DashboardMaterialFormPayload = {
         material_code: displayMaterialCode(form.material_code),
         activo: true,
         precio_hora: priceNum,
         in_stock: true,
         allow_custom_color: false,
         trabajo_minimo_override: null,
+        metadata: selectedMetadata,
         colores: buildColorPayload(form.selectedColors),
       };
 
@@ -306,6 +355,56 @@ export function MaterialModal({
               {priceHint.text}
             </div>
           ) : null}
+        </div>
+
+        <div>
+          <label style={{ font: "700 11px/1 Montserrat,sans-serif", textTransform: "uppercase", letterSpacing: ".14em", color: "var(--c3d-text-faint, rgba(255,255,255,.45))", display: "block", marginBottom: 6 }}>
+            Cantidad de colores
+          </label>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={form.colorCount}
+            onChange={(e) => setForm((f) => ({ ...f, colorCount: e.target.value }))}
+            placeholder={String(form.selectedColors.length)}
+            style={{ width: "100%", height: 42, borderRadius: 10, border: "1px solid var(--c3d-card-border, rgba(255,255,255,.14))", padding: "0 12px", font: "700 14px Montserrat,sans-serif", background: "rgba(255,255,255,.95)", color: "#111827" }}
+          />
+          <div style={{ marginTop: 7, font: "500 11px/1.3 Montserrat,sans-serif", color: "var(--c3d-text-muted, rgba(255,255,255,.55))" }}>
+            Se muestra en tu perfil público. Sugerido: {form.selectedColors.length} (colores seleccionados). Dejalo vacío para usar el sugerido.
+          </div>
+        </div>
+
+        <div>
+          <label style={{ font: "700 11px/1 Montserrat,sans-serif", textTransform: "uppercase", letterSpacing: ".14em", color: "var(--c3d-text-faint, rgba(255,255,255,.45))", display: "block", marginBottom: 8 }}>
+            Atributos del material
+          </label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {MATERIAL_ATTRIBUTE_OPTIONS.map((attribute) => {
+              const active = form.attributes.includes(attribute);
+              return (
+                <button
+                  key={attribute}
+                  type="button"
+                  onClick={() => toggleAttribute(attribute)}
+                  aria-pressed={active}
+                  style={{
+                    cursor: "pointer",
+                    borderRadius: 999,
+                    padding: "7px 14px",
+                    font: "700 12px/1 Montserrat,sans-serif",
+                    border: active
+                      ? "1px solid hsl(220,80%,65%)"
+                      : "1px solid var(--c3d-card-border, rgba(255,255,255,.16))",
+                    background: active ? "hsl(220,80%,65%)" : "transparent",
+                    color: active ? "#0b1220" : "var(--c3d-text-muted, rgba(255,255,255,.7))",
+                  }}
+                >
+                  {attribute}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, paddingTop: 6, borderTop: "1px solid var(--c3d-card-border-soft, rgba(255,255,255,.08))" }}>

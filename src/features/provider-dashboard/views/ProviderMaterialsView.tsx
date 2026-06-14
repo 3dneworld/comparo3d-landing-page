@@ -77,6 +77,9 @@ function materialToPayload(m: DashboardMaterial): DashboardMaterialFormPayload |
     in_stock: effectiveStock,
     allow_custom_color: false,
     trabajo_minimo_override: m.trabajo_minimo_override ?? null,
+    // ⚠️ Preservar metadata (color_count/attributes): el PUT reemplaza TODOS los
+    // materiales, así que los toggles inline también deben reenviarla intacta.
+    ...(m.metadata ? { metadata: m.metadata } : {}),
     colores: ensureDashboardColors(m).map((c) => ({
       color_name: c.color_name || "",
       color_hex: c.color_hex || "#78716c",

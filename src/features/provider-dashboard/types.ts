@@ -195,6 +195,15 @@ export interface DashboardMaterialColor {
   last_confirmed_at?: string | null;
 }
 
+export interface DashboardMaterialMetadata {
+  /** Cantidad de colores que el proveedor ofrece para este material. */
+  color_count?: number;
+  /** Atributos del material (catálogo cerrado): Apto exterior, Técnico, etc. */
+  attributes?: string[];
+  /** Passthrough de claves legacy no modeladas explícitamente. */
+  [key: string]: unknown;
+}
+
 export interface DashboardMaterial {
   id: number;
   material_code: string;
@@ -204,6 +213,7 @@ export interface DashboardMaterial {
   last_confirmed_at?: string | null;
   allow_custom_color: number;
   trabajo_minimo_override?: number | null;
+  metadata?: DashboardMaterialMetadata | null;
   colores: DashboardMaterialColor[];
 }
 
@@ -221,6 +231,8 @@ export interface DashboardMaterialFormPayload {
   in_stock: boolean;
   allow_custom_color: boolean;
   trabajo_minimo_override: number | null;
+  /** Se reenvía tal cual para no perder color_count/attributes de materiales no editados. */
+  metadata?: DashboardMaterialMetadata;
   colores: DashboardMaterialColorFormPayload[];
 }
 
