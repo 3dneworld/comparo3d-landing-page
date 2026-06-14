@@ -716,6 +716,11 @@ export interface ProviderBadgesResponse {
   items: DashboardProviderBadge[];
 }
 
+export interface DashboardReviewReply {
+  text: string;
+  created_at?: string | null;
+}
+
 export interface DashboardProviderReview {
   id: number;
   order_id?: number | null;
@@ -726,11 +731,17 @@ export interface DashboardProviderReview {
   visible?: number | boolean | null;
   reported?: number | boolean | null;
   created_at?: string | null;
+  reply?: DashboardReviewReply | null;
 }
 
 export interface ProviderReviewsResponse {
   success: true;
   items: DashboardProviderReview[];
+}
+
+export interface ProviderReviewReplyResponse {
+  success: true;
+  reply: DashboardReviewReply;
 }
 
 export interface DashboardProviderRawMetrics {

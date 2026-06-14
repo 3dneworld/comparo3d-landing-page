@@ -12,6 +12,7 @@ import { ProviderPortfolioView } from "@/features/provider-dashboard/views/Provi
 import { ProviderProductionView } from "@/features/provider-dashboard/views/ProviderProductionView";
 import { ProviderProfileView } from "@/features/provider-dashboard/views/ProviderProfileView";
 import { ProviderQuotesView } from "@/features/provider-dashboard/views/ProviderQuotesView";
+import { ProviderReviewsView } from "@/features/provider-dashboard/views/ProviderReviewsView";
 import { ProviderShipmentsView } from "@/features/provider-dashboard/views/ProviderShipmentsView";
 import { ProviderSummaryView } from "@/features/provider-dashboard/views/ProviderSummaryView";
 import Index from "./pages/Index.tsx";
@@ -117,6 +118,7 @@ const App = () => (
           <Route path="/pedidos" element={<Navigate to={`${DASHBOARD_BASE_PATH}/pedidos`} replace />} />
           <Route path="/envios" element={<Navigate to={`${DASHBOARD_BASE_PATH}/envios`} replace />} />
           <Route path="/portfolio" element={<Navigate to={`${DASHBOARD_BASE_PATH}/portfolio`} replace />} />
+          <Route path="/resenas" element={<Navigate to={`${DASHBOARD_BASE_PATH}/resenas`} replace />} />
           <Route path="/certificacion" element={<Navigate to={`${DASHBOARD_BASE_PATH}/certificacion`} replace />} />
           <Route path="/competitividad" element={<Navigate to={`${DASHBOARD_BASE_PATH}/competitividad`} replace />} />
           {/* Directorio público de proveedores — redirige a landing hasta versión final */}
@@ -135,6 +137,7 @@ const App = () => (
             <Route path="pedidos" element={<ProviderOrdersView />} />
             <Route path="envios" element={<ProviderShipmentsView />} />
             <Route path="portfolio" element={<ProviderPortfolioView />} />
+            <Route path="resenas" element={<ProviderReviewsView />} />
             <Route path="certificacion" element={<ProviderCertificationView />} />
             <Route path="competitividad" element={<ProviderCompetitivenessView />} />
           </Route>

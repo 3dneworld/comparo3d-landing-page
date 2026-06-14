@@ -34,6 +34,7 @@ import type {
   ProviderCertificationProgressResponse,
   ProviderMetricsResponse,
   ProviderReviewsResponse,
+  ProviderReviewReplyResponse,
   ProviderScoreBreakdownResponse,
   ProviderShipmentMutationResponse,
   ProviderShipmentsResponse,
@@ -412,6 +413,19 @@ export function fetchProviderBadges(providerId: number) {
 
 export function fetchProviderReviews(providerId: number) {
   return dashboardFetch<ProviderReviewsResponse>(`/api/providers/${providerId}/reviews`);
+}
+
+export function updateProviderReviewReply(providerId: number, reviewId: number, replyText: string) {
+  return dashboardFetch<ProviderReviewReplyResponse>(
+    `/api/provider-dashboard/proveedores/${providerId}/reviews/${reviewId}/reply`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ reply_text: replyText }),
+    }
+  );
 }
 
 export function fetchProviderScoreBreakdown(providerId: number) {

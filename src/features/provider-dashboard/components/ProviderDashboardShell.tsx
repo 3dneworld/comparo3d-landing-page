@@ -9,6 +9,7 @@ import {
   ClipboardList,
   HelpCircle,
   MapPinned,
+  MessageSquareText,
   PackageCheck,
   PackageOpen,
   Printer,
@@ -90,6 +91,7 @@ const baseNavigationGroups: NavGroup[] = [
     label: "Reputacion",
     items: [
       { key: "portfolio", label: "Portfolio", to: "portfolio", icon: Star, available: true },
+      { key: "resenas", label: "Resenas", to: "resenas", icon: MessageSquareText, available: true },
       { key: "certificacion", label: "Certificacion", to: "certificacion", icon: ShieldCheck, available: true },
       { key: "competitividad", label: "Competitividad", to: "competitividad", icon: TrendingUp, available: true },
     ],
