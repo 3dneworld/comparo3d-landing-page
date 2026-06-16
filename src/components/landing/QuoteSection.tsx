@@ -703,6 +703,18 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
     return () => window.clearTimeout(timer);
   }, [data.sessionId, data.step, hasSaved, isCheckingSavedSession, scrollToActiveStep]);
 
+  // Si la URL pide #cotizar explícitamente (ej: campaña de email comparo3d.com.ar/adorni),
+  // scrollear a la sección al cargar AUNQUE no haya sesión previa. El scroll nativo del
+  // hash no es confiable en la SPA: la sección puede montar después de que el browser
+  // ya intentó scrollear. Corre una sola vez al montar.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#cotizar") return;
+    const timer = window.setTimeout(() => scrollToActiveStep("smooth"), 200);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     const previousStep = previousStepRef.current;
     previousStepRef.current = data.step;
