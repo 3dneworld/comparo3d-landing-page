@@ -40,7 +40,12 @@ const DEFAULT_SHORT_LINKS: Record<string, ShortLinkConfig> = {
   fbg: { utm_source: "facebook_grupo", utm_medium: "organic", utm_campaign: DEFAULT_SHORT_LINK_CAMPAIGN },
   tt: { utm_source: "tiktok", utm_medium: "organic", utm_campaign: DEFAULT_SHORT_LINK_CAMPAIGN },
   tw: { utm_source: "twitter", utm_medium: "organic", utm_campaign: DEFAULT_SHORT_LINK_CAMPAIGN },
+  // Campaña email "Adorni" (particulares): cae directo en el paso 1 de cotización (#cotizar).
+  adorni: { utm_source: "email", utm_medium: "email", utm_campaign: "adorni", destination_path: "/", fragment: "cotizar" },
 };
+
+// Slugs de campaña accesibles como ruta corta SIN prefijo /r/ (ej: comparo3d.com.ar/adorni).
+const BARE_CAMPAIGN_SLUGS = new Set<string>(["adorni"]);
 
 const BRAND_WORDMARK_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" width="360" height="96" viewBox="0 0 360 96" fill="none">
@@ -237,8 +242,8 @@ function parseShortLinkPayload(payload: Record<string, unknown>): { slug: string
   return { slug, config };
 }
 
-async function handleShortLinkRedirect(request: Request, env: WorkerEnv, url: URL) {
-  const slug = normalizeShortLinkSlug(url.pathname.slice("/r/".length).replace(/\/$/, ""));
+async function handleShortLinkRedirect(request: Request, env: WorkerEnv, url: URL, forcedSlug?: string) {
+  const slug = forcedSlug ?? normalizeShortLinkSlug(url.pathname.slice("/r/".length).replace(/\/$/, ""));
   if (!SHORTLINK_SLUG_RE.test(slug)) {
     return Response.redirect(new URL("/#trending", url.origin).toString(), 302);
   }
@@ -342,6 +347,14 @@ export default {
 
     if (url.pathname === "/r" || url.pathname === "/r/" || url.pathname.startsWith("/r/")) {
       return handleShortLinkRedirect(request, env, url);
+    }
+
+    // Short links de campaña sin prefijo /r/ (ej: /adorni). Mismo tracking + redirect.
+    {
+      const bareSlug = normalizeShortLinkSlug(url.pathname.replace(/^\//, "").replace(/\/$/, ""));
+      if (BARE_CAMPAIGN_SLUGS.has(bareSlug)) {
+        return handleShortLinkRedirect(request, env, url, bareSlug);
+      }
     }
 
     if (isProviderLoginRoute) {

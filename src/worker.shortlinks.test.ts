@@ -40,6 +40,20 @@ describe("short-link worker routes", () => {
     expect(await kv.get("clicks:fbg:total")).toBe("1");
   });
 
+  it("redirects the bare /adorni campaign slug to step 1 (#cotizar) and tracks the click", async () => {
+    const kv = new MemoryKv();
+    const response = await worker.fetch(
+      new Request("https://comparo3d.com.ar/adorni"),
+      buildEnv(kv),
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe(
+      "https://comparo3d.com.ar/?utm_source=email&utm_medium=email&utm_campaign=adorni#cotizar",
+    );
+    expect(await kv.get("clicks:adorni:total")).toBe("1");
+  });
+
   it("creates a KV-backed short link through the admin API", async () => {
     const kv = new MemoryKv();
     const response = await worker.fetch(

@@ -113,6 +113,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           {/* Short links de marketing — redirigen a / con utm_source de la red. */}
           <Route path="/r/:source" element={<ShortLinkRedirect />} />
+          {/* Campaña email "Adorni" — fallback SPA (el Worker la intercepta en prod). Cae en paso 1 (#cotizar). */}
+          <Route path="/adorni" element={<Navigate to="/?utm_source=email&utm_medium=email&utm_campaign=adorni#cotizar" replace />} />
           <Route path="/materiales" element={<Navigate to={`${DASHBOARD_BASE_PATH}/materiales`} replace />} />
           <Route path="/cotizaciones" element={<Navigate to={`${DASHBOARD_BASE_PATH}/cotizaciones`} replace />} />
           <Route path="/pedidos" element={<Navigate to={`${DASHBOARD_BASE_PATH}/pedidos`} replace />} />
