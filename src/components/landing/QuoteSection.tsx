@@ -710,7 +710,12 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.location.hash !== "#cotizar") return;
-    const timer = window.setTimeout(() => scrollToActiveStep("smooth"), 200);
+    const timer = window.setTimeout(() => {
+      // Apuntar a la SECCIÓN (incluye el stepper de 5 pasos), no a la content card,
+      // para que se vea el progreso completo desde arriba. scroll-mt-* compensa la navbar.
+      const el = sectionRef.current ?? document.getElementById("cotizar");
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 200);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
