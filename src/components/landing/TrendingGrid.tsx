@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Layers } from "lucide-react";
 import { API_BASE_URL, type CatalogItem } from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
+import { trackCatalogImpression, trackCatalogEvent } from "@/lib/catalogTracking";
 
 interface TrendingGridProps {
   items: CatalogItem[];
@@ -79,6 +80,7 @@ function TrendingCard({
       if (!impressionFired.current) {
         impressionFired.current = true;
         trackEvent("trending_card_impression", { slug: item.slug });
+        trackCatalogImpression(item.slug);
       }
       return;
     }
@@ -88,6 +90,7 @@ function TrendingCard({
           if (entry.isIntersecting && !impressionFired.current) {
             impressionFired.current = true;
             trackEvent("trending_card_impression", { slug: item.slug });
+            trackCatalogImpression(item.slug);
             observer.disconnect();
           }
         }
@@ -111,6 +114,7 @@ function TrendingCard({
         type="button"
         onClick={() => {
           trackEvent("trending_card_click", { slug: item.slug });
+          trackCatalogEvent("click", item.slug);
           onSelect(item.slug);
         }}
         disabled={loading}

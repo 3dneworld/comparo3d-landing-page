@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAudience } from "@/contexts/AudienceContext";
 import { trackEvent } from "@/lib/analytics";
+import { trackCatalogEvent } from "@/lib/catalogTracking";
 import AnimateOnScroll from "@/components/AnimateOnScroll";
 import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
 import { useQuoteFlow } from "@/hooks/useQuoteFlow";
@@ -304,6 +305,10 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
   // ── Atribución de campaña: slug del item de catálogo de la sesión activa
   //    (para disparar trending_quote_viewed una sola vez al ver cotizaciones) ──
   const catalogSlugRef = useRef<string>("");
+  // session_id de la sesión de catálogo activa ({slug}_{ts}) — para anclar quote_viewed/
+  // provider_selected server-side. En ref porque handleQuotesReady tiene deps [] (data.sessionId
+  // quedaría stale). F8 lo usa para resolver cotizacion_id.
+  const catalogSessionIdRef = useRef<string>("");
   const quoteViewedFiredRef = useRef<boolean>(false);
 
   // --- Callbacks para el hook ---
@@ -332,6 +337,10 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
     if (catalogSlugRef.current && !quoteViewedFiredRef.current) {
       quoteViewedFiredRef.current = true;
       trackEvent("trending_quote_viewed", { slug: catalogSlugRef.current });
+      // Espejo server-side en catalog_events (Fase 7), anclado al session_id de catálogo.
+      trackCatalogEvent("quote_viewed", catalogSlugRef.current, {
+        sessionId: catalogSessionIdRef.current || undefined,
+      });
     }
   }, []);
 
@@ -522,6 +531,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
 
       // Atribución de campaña para esta nueva sesión de catálogo
       catalogSlugRef.current = catalogInjection.slug;
+      catalogSessionIdRef.current = catalogInjection.sessionId || "";
       quoteViewedFiredRef.current = false;
 
       // Inyectar datos del catálogo — preservando los campos del cliente.
@@ -559,6 +569,7 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
 
     // Mismo slug: el backend response llego. Mergear sessionId/tempName/stlSha256 sin tocar thumbnail.
     if (catalogInjection.sessionId && !data.sessionId) {
+      catalogSessionIdRef.current = catalogInjection.sessionId;
       setData({
         sessionId: catalogInjection.sessionId,
         tempName:  catalogInjection.tempName,
@@ -677,6 +688,17 @@ const QuoteSection = ({ catalogInjection }: { catalogInjection?: CatalogInjectio
     }
     setSelectedQuote(chosen);
     setData({ selectedQuote: chosen });
+    // Funnel STL Trending: el usuario que vino del carrusel eligió proveedor (Fase 7).
+    if (catalogSlugRef.current) {
+      trackEvent("trending_provider_selected", {
+        slug: catalogSlugRef.current,
+        provider_id: chosen.provider_id,
+      });
+      trackCatalogEvent("provider_selected", catalogSlugRef.current, {
+        sessionId: catalogSessionIdRef.current || data.sessionId || undefined,
+        providerId: chosen.provider_id,
+      });
+    }
     const accepted = await flow.handleAcceptQuote(quoteOptionUid);
     if (accepted) {
       setData((prev) => ({ ...prev, step: 4, selectedQuote: chosen }));
