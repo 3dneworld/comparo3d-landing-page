@@ -258,6 +258,31 @@ async function handleShortLinkRedirect(request: Request, env: WorkerEnv, url: UR
   return Response.redirect(target, 302);
 }
 
+async function proxyBackendShortLink(request: Request, url: URL) {
+  const backendUrl = new URL(url.pathname + url.search, BACKEND);
+  const proxyHeaders = new Headers(request.headers);
+  proxyHeaders.set("Host", "api.3dneworld.com");
+  proxyHeaders.set("X-Forwarded-Host", url.host);
+
+  const proxyRequest = new Request(backendUrl.toString(), {
+    method: request.method,
+    headers: proxyHeaders,
+    body: request.method === "GET" || request.method === "HEAD" ? null : request.body,
+    redirect: "manual",
+  });
+
+  const backendResponse = await fetch(proxyRequest);
+  const responseHeaders = new Headers();
+  for (const [key, value] of backendResponse.headers.entries()) {
+    responseHeaders.append(key, value);
+  }
+  return new Response(backendResponse.body, {
+    status: backendResponse.status,
+    statusText: backendResponse.statusText,
+    headers: responseHeaders,
+  });
+}
+
 async function handleShortLinksApi(request: Request, env: WorkerEnv, url: URL) {
   const authError = authorizeShortLinkAdmin(request, env);
   if (authError) return authError;
@@ -350,6 +375,10 @@ export default {
     }
 
     // Short links de campaña sin prefijo /r/ (ej: /adorni). Mismo tracking + redirect.
+    if (url.pathname === "/ditella" || url.pathname === "/ditella/") {
+      return proxyBackendShortLink(request, url);
+    }
+
     {
       const bareSlug = normalizeShortLinkSlug(url.pathname.replace(/^\//, "").replace(/\/$/, ""));
       if (BARE_CAMPAIGN_SLUGS.has(bareSlug)) {

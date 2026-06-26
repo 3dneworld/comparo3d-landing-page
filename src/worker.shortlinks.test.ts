@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import worker from "./worker";
 
 type KvValue = string | null;
@@ -26,6 +26,10 @@ function buildEnv(kv = new MemoryKv()) {
 }
 
 describe("short-link worker routes", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("redirects the built-in /r/fbg slug to the campaign URL and tracks the click", async () => {
     const kv = new MemoryKv();
     const response = await worker.fetch(
@@ -52,6 +56,32 @@ describe("short-link worker routes", () => {
       "https://comparo3d.com.ar/?utm_source=email&utm_medium=email&utm_campaign=adorni#cotizar",
     );
     expect(await kv.get("clicks:adorni:total")).toBe("1");
+  });
+
+  it("proxies /ditella to the backend shortlink so clicks are recorded in DB", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(null, {
+          status: 302,
+          headers: {
+            location:
+              "https://comparo3d.com.ar/cotizar?utm_source=whatsapp&utm_medium=grupo&utm_campaign=ditella_arquitectura&utm_content=maqueta_entrega",
+          },
+        }),
+      );
+
+    const response = await worker.fetch(
+      new Request("https://comparo3d.com.ar/ditella?codex_verify=1"),
+      buildEnv(),
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toContain("utm_campaign=ditella_arquitectura");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toMatchObject({
+      url: "https://api.3dneworld.com/ditella?codex_verify=1",
+    });
   });
 
   it("creates a KV-backed short link through the admin API", async () => {
