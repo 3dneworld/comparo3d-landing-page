@@ -379,6 +379,13 @@ export default {
       return proxyBackendShortLink(request, url);
     }
 
+    if (url.pathname === "/cotizar" || url.pathname === "/cotizar/") {
+      const target = new URL("/", url.origin);
+      target.search = url.search;
+      target.hash = "cotizar";
+      return Response.redirect(target.toString(), 302);
+    }
+
     {
       const bareSlug = normalizeShortLinkSlug(url.pathname.replace(/^\//, "").replace(/\/$/, ""));
       if (BARE_CAMPAIGN_SLUGS.has(bareSlug)) {

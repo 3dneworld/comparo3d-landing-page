@@ -66,7 +66,7 @@ describe("short-link worker routes", () => {
           status: 302,
           headers: {
             location:
-              "https://comparo3d.com.ar/cotizar?utm_source=whatsapp&utm_medium=grupo&utm_campaign=ditella_arquitectura&utm_content=maqueta_entrega",
+              "https://comparo3d.com.ar/?utm_source=whatsapp&utm_medium=grupo&utm_campaign=ditella_arquitectura&utm_content=maqueta_entrega#cotizar",
           },
         }),
       );
@@ -82,6 +82,20 @@ describe("short-link worker routes", () => {
     expect(fetchMock.mock.calls[0][0]).toMatchObject({
       url: "https://api.3dneworld.com/ditella?codex_verify=1",
     });
+  });
+
+  it("keeps legacy /cotizar campaign URLs working by redirecting to the landing quote section", async () => {
+    const response = await worker.fetch(
+      new Request(
+        "https://comparo3d.com.ar/cotizar?utm_source=whatsapp&utm_medium=grupo&utm_campaign=ditella_arquitectura",
+      ),
+      buildEnv(),
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe(
+      "https://comparo3d.com.ar/?utm_source=whatsapp&utm_medium=grupo&utm_campaign=ditella_arquitectura#cotizar",
+    );
   });
 
   it("creates a KV-backed short link through the admin API", async () => {
