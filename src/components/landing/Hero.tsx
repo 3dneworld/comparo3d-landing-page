@@ -50,9 +50,12 @@ const Hero = () => {
       <div className="container max-w-6xl relative z-10">
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
           {/* Left: copy */}
+          {/* initial opacity:1 — el <h1> es el elemento LCP en mobile; NO debe arrancar
+              invisible esperando a que framer-motion hidrate. Mantenemos el slide-up
+              (y:12→0) que no bloquea el paint del texto. */}
           <motion.div
             key={audience}
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 1, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
             className="flex-1 text-center lg:text-left max-w-xl"

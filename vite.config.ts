@@ -24,4 +24,18 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Fase B LCP: separar librerías pesadas en chunks propios para mejor caching
+        // y evitar que una sola lib bloquee el chunk principal. `recharts` solo lo
+        // usa el dashboard (lazy) → su chunk no entra en el initial load de la home.
+        manualChunks: {
+          "react-vendor": ["react", "react-dom", "react-router-dom"],
+          recharts: ["recharts"],
+          motion: ["framer-motion"],
+        },
+      },
+    },
+  },
 }));

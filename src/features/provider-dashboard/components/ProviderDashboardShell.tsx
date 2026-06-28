@@ -1,5 +1,8 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
+// Tokens dark del dashboard (scope .dashboard-dark). Importado acá — y no en main.tsx —
+// para que viaje en el chunk lazy del dashboard y no infle el CSS de la home (LCP mobile).
+import "@/features/provider-dashboard/styles/provider-dashboard-dark.css";
 import {
   AlertCircle,
   Bell,

@@ -1,31 +1,63 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ProviderCertificationView } from "@/features/provider-dashboard/views/ProviderCertificationView";
-import { ProviderCompetitivenessView } from "@/features/provider-dashboard/views/ProviderCompetitivenessView";
-import { ProviderLogisticsView } from "@/features/provider-dashboard/views/ProviderLogisticsView";
-import { ProviderMaterialsView } from "@/features/provider-dashboard/views/ProviderMaterialsView";
-import { ProviderOrdersView } from "@/features/provider-dashboard/views/ProviderOrdersView";
-import { ProviderPortfolioView } from "@/features/provider-dashboard/views/ProviderPortfolioView";
-import { ProviderProductionView } from "@/features/provider-dashboard/views/ProviderProductionView";
-import { ProviderProfileView } from "@/features/provider-dashboard/views/ProviderProfileView";
-import { ProviderQuotesView } from "@/features/provider-dashboard/views/ProviderQuotesView";
-import { ProviderReviewsView } from "@/features/provider-dashboard/views/ProviderReviewsView";
-import { ProviderShipmentsView } from "@/features/provider-dashboard/views/ProviderShipmentsView";
-import { ProviderSummaryView } from "@/features/provider-dashboard/views/ProviderSummaryView";
 import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
-import ClientReviewPage from "./pages/ClientReviewPage.tsx";
-import ProviderDashboardV2 from "./pages/ProviderDashboardV2.tsx";
-import ProveedoresLogin from "./pages/ProveedoresLogin.tsx";
-import ProveedoresOnboardingLogin from "./pages/ProveedoresOnboardingLogin.tsx";
-import ProviderProfile from "./pages/ProviderProfile.tsx";
-import TestModePage from "./pages/TestModePage.tsx";
 import { useAnalytics } from "./hooks/useAnalytics";
 import { useAttribution } from "./hooks/useAttribution";
 import { TEST_MODE_STORAGE_KEY } from "./lib/api";
+
+// ── Lazy routes (Fase A LCP mobile) ──────────────────────────────────────────
+// La home `/` (<Index/>) queda EAGER — es la ruta crítica del LCP. Todo lo demás
+// (dashboard de proveedor con recharts/@dnd-kit, logins, perfil público, etc.) se
+// carga bajo demanda para no embarcarlo en el bundle inicial de la home.
+const ProviderDashboardV2 = lazy(() => import("./pages/ProviderDashboardV2.tsx"));
+const ProveedoresLogin = lazy(() => import("./pages/ProveedoresLogin.tsx"));
+const ProveedoresOnboardingLogin = lazy(() => import("./pages/ProveedoresOnboardingLogin.tsx"));
+const ProviderProfile = lazy(() => import("./pages/ProviderProfile.tsx"));
+const ClientReviewPage = lazy(() => import("./pages/ClientReviewPage.tsx"));
+const TestModePage = lazy(() => import("./pages/TestModePage.tsx"));
+const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+
+// Vistas anidadas del dashboard — exports nombrados, hay que mapearlos a `default`.
+const ProviderCertificationView = lazy(() =>
+  import("@/features/provider-dashboard/views/ProviderCertificationView").then((m) => ({ default: m.ProviderCertificationView })),
+);
+const ProviderCompetitivenessView = lazy(() =>
+  import("@/features/provider-dashboard/views/ProviderCompetitivenessView").then((m) => ({ default: m.ProviderCompetitivenessView })),
+);
+const ProviderLogisticsView = lazy(() =>
+  import("@/features/provider-dashboard/views/ProviderLogisticsView").then((m) => ({ default: m.ProviderLogisticsView })),
+);
+const ProviderMaterialsView = lazy(() =>
+  import("@/features/provider-dashboard/views/ProviderMaterialsView").then((m) => ({ default: m.ProviderMaterialsView })),
+);
+const ProviderOrdersView = lazy(() =>
+  import("@/features/provider-dashboard/views/ProviderOrdersView").then((m) => ({ default: m.ProviderOrdersView })),
+);
+const ProviderPortfolioView = lazy(() =>
+  import("@/features/provider-dashboard/views/ProviderPortfolioView").then((m) => ({ default: m.ProviderPortfolioView })),
+);
+const ProviderProductionView = lazy(() =>
+  import("@/features/provider-dashboard/views/ProviderProductionView").then((m) => ({ default: m.ProviderProductionView })),
+);
+const ProviderProfileView = lazy(() =>
+  import("@/features/provider-dashboard/views/ProviderProfileView").then((m) => ({ default: m.ProviderProfileView })),
+);
+const ProviderQuotesView = lazy(() =>
+  import("@/features/provider-dashboard/views/ProviderQuotesView").then((m) => ({ default: m.ProviderQuotesView })),
+);
+const ProviderReviewsView = lazy(() =>
+  import("@/features/provider-dashboard/views/ProviderReviewsView").then((m) => ({ default: m.ProviderReviewsView })),
+);
+const ProviderShipmentsView = lazy(() =>
+  import("@/features/provider-dashboard/views/ProviderShipmentsView").then((m) => ({ default: m.ProviderShipmentsView })),
+);
+const ProviderSummaryView = lazy(() =>
+  import("@/features/provider-dashboard/views/ProviderSummaryView").then((m) => ({ default: m.ProviderSummaryView })),
+);
 
 // Si llegamos con query param `?w3dn_set_test_mode=on|off` (redirect del backend
 // desde /api/dev/test-mode/<action>), aplicar el flag en localStorage y limpiar
@@ -109,6 +141,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AppRoutes>
+        <Suspense fallback={<div className="min-h-screen bg-background" />}>
         <Routes>
           <Route path="/" element={<Index />} />
           {/* Short links de marketing — redirigen a / con utm_source de la red. */}
@@ -150,6 +183,7 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
         </AppRoutes>
       </BrowserRouter>
     </TooltipProvider>
