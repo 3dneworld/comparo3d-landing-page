@@ -64,6 +64,49 @@
     fbq('track', 'PageView');
   </script>
   <!-- End Meta Pixel Code -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://comparo3d.com.ar/#org",
+        "name": "Comparo3D",
+        "url": "https://comparo3d.com.ar/",
+        "logo": "https://comparo3d.com.ar/favicon.png",
+        "description": "Marketplace de impresión 3D de Argentina: compará cotizaciones de proveedores verificados.",
+        "areaServed": {
+          "@type": "Country",
+          "name": "Argentina"
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://comparo3d.com.ar/#website",
+        "url": "https://comparo3d.com.ar/",
+        "name": "Comparo3D",
+        "inLanguage": "es-AR",
+        "publisher": {
+          "@id": "https://comparo3d.com.ar/#org"
+        }
+      },
+      {
+        "@type": "Service",
+        "@id": "https://comparo3d.com.ar/#service",
+        "serviceType": "Impresión 3D bajo demanda",
+        "provider": {
+          "@id": "https://comparo3d.com.ar/#org"
+        },
+        "areaServed": {
+          "@type": "Country",
+          "name": "Argentina"
+        },
+        "description": "Cotizá tu impresión 3D y elegí entre proveedores verificados de toda Argentina.",
+        "url": "https://comparo3d.com.ar/"
+      }
+    ]
+  }
+  </script>
 </head>
 
   <body>
