@@ -7,6 +7,13 @@
     <meta name="description" content="Compará presupuestos de impresión 3D de proveedores verificados en Argentina. Subí tu archivo, recibí cotizaciones y elegí la mejor opción.">
     <meta name="author" content="COMPARO3D" />
     <link rel="icon" href="/favicon.png" type="image/png">
+
+    <!-- Fuentes: preconnect + stylesheet en el head (en vez de @import en CSS) para
+         descubrirlas durante el parseo del HTML y bajarlas en paralelo. display=swap
+         evita que bloqueen el texto. Mejora FCP/LCP, sobre todo en mobile. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
     
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://comparo3d.com.ar/" />

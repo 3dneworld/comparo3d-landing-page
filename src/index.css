@@ -1,4 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+/* Fuentes: NO usar @import acá (serializa la carga y bloquea el render). Se cargan
+   con <link> + preconnect en index.html para que el browser las descubra durante el
+   parseo del HTML, en paralelo. display=swap → el texto pinta con fallback al instante. */
 
 @tailwind base;
 @tailwind components;
