@@ -85,11 +85,24 @@ export default {
           from: { opacity: "0", transform: "translateY(20px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        // Hero LCP: slide-up del copy SIN gate de opacidad (el <h1> es el LCP en mobile
+        // y debe pintar desde el primer frame). Reemplaza el framer-motion del Hero.
+        "hero-rise": {
+          from: { transform: "translateY(12px)" },
+          to: { transform: "translateY(0)" },
+        },
+        // Parallax sutil de la grilla de fondo del Hero (loop de 40px = 1 tile).
+        "hero-grid-pan": {
+          from: { backgroundPosition: "0px 0px" },
+          to: { backgroundPosition: "40px 40px" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-up": "fade-up 0.5s ease-out forwards",
+        "hero-rise": "hero-rise 0.3s ease-out",
+        "hero-grid-pan": "hero-grid-pan 20s linear infinite",
       },
     },
   },

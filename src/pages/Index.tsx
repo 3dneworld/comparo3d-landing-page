@@ -1,23 +1,31 @@
-import { useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { AudienceProvider, useAudience } from "@/contexts/AudienceContext";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
-import TrustStrip from "@/components/landing/TrustStrip";
-import ProvidersSection from "@/components/landing/ProvidersSection";
-import HowItWorks from "@/components/landing/HowItWorks";
-import QuoteSection, { CatalogInjection } from "@/components/landing/QuoteSection";
-import CompaniesSection from "@/components/landing/CompaniesSection";
-import NoStlTransformSection from "@/components/landing/NoStlTransformSection";
-import TrendingSection from "@/components/landing/TrendingSection";
-import ProjectsGallery from "@/components/landing/ProjectsGallery";
-import MaterialsSection from "@/components/landing/MaterialsSection";
-import FAQ from "@/components/landing/FAQ";
-import FinalCTA from "@/components/landing/FinalCTA";
-import Footer from "@/components/landing/Footer";
-import FloatingCTA from "@/components/FloatingCTA";
-import BackToTop from "@/components/BackToTop";
-import ChatBubble from "@/components/ChatBubble";
 import { API_BASE_URL, quickQuoteFromCatalog, isApiError, type CatalogItem } from "@/lib/api";
+import type { CatalogInjection } from "@/components/landing/QuoteSection";
+
+// ── Below-the-fold: lazy ──────────────────────────────────────────────────────
+// Solo Navbar + Hero quedan eager (lo que se ve sin scrollear). El resto se parte en
+// chunks aparte para sacarlo del bundle inicial — incluido framer-motion, que ahora
+// solo lo usan secciones lazy (FAQ, etc.). Esto acelera el FCP/LCP mobile. Las secciones
+// montan apenas termina el primer paint y, como están bajo el fold (y ya tienen reveal
+// on-scroll), el usuario no percibe pop-in. Re-exports default → lazy directo.
+const TrustStrip = lazy(() => import("@/components/landing/TrustStrip"));
+const ProvidersSection = lazy(() => import("@/components/landing/ProvidersSection"));
+const HowItWorks = lazy(() => import("@/components/landing/HowItWorks"));
+const QuoteSection = lazy(() => import("@/components/landing/QuoteSection"));
+const CompaniesSection = lazy(() => import("@/components/landing/CompaniesSection"));
+const NoStlTransformSection = lazy(() => import("@/components/landing/NoStlTransformSection"));
+const TrendingSection = lazy(() => import("@/components/landing/TrendingSection"));
+const ProjectsGallery = lazy(() => import("@/components/landing/ProjectsGallery"));
+const MaterialsSection = lazy(() => import("@/components/landing/MaterialsSection"));
+const FAQ = lazy(() => import("@/components/landing/FAQ"));
+const FinalCTA = lazy(() => import("@/components/landing/FinalCTA"));
+const Footer = lazy(() => import("@/components/landing/Footer"));
+const FloatingCTA = lazy(() => import("@/components/FloatingCTA"));
+const BackToTop = lazy(() => import("@/components/BackToTop"));
+const ChatBubble = lazy(() => import("@/components/ChatBubble"));
 
 const NO_STL_WHATSAPP_URL =
   "https://wa.me/5491167987401?text=Hola!%20Quiero%20consultar%20por%20modelado%203D%20sin%20archivo%20STL.";
@@ -95,29 +103,58 @@ const LandingContent = () => {
     })();
   };
 
+  // Scroll robusto a deep-links de campaña (#trending, #faq, #empresas…). Con las
+  // secciones lazy, el elemento monta después del primer paint y el scroll nativo del
+  // browser ya no alcanza: poleamos hasta que aparezca y scrolleamos una sola vez.
+  // #cotizar lo maneja QuoteSection (tiene lógica de pasos propia), así que lo excluimos.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash;
+    if (!hash || hash === "#" || hash === "#cotizar") return;
+    const id = decodeURIComponent(hash.slice(1));
+    let raf = 0;
+    let tries = 0;
+    const tick = () => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      if (tries++ < 120) raf = requestAnimationFrame(tick); // ~2s de margen para chunks lazy
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
 
       <main>
         <Hero />
-        <TrustStrip />
-        <ProvidersSection />
-        <HowItWorks />
-        <QuoteSection catalogInjection={catalogInjection} />
-        {audience === "empresa" && <CompaniesSection />}
-        <NoStlTransformSection whatsappHref={NO_STL_WHATSAPP_URL} />
-        <TrendingSection onSelect={handleCatalogItemSelect} loadingSlug={loadingSlug} onItemsLoaded={handleTrendingItemsLoaded} />
-        <ProjectsGallery />
-        <MaterialsSection />
-        <FAQ />
-        <FinalCTA />
+        {/* Below-the-fold lazy: fallback null (no se ve, está bajo el fold y monta apenas
+            carga el chunk). Las secciones traen su propio reveal on-scroll. */}
+        <Suspense fallback={null}>
+          <TrustStrip />
+          <ProvidersSection />
+          <HowItWorks />
+          <QuoteSection catalogInjection={catalogInjection} />
+          {audience === "empresa" && <CompaniesSection />}
+          <NoStlTransformSection whatsappHref={NO_STL_WHATSAPP_URL} />
+          <TrendingSection onSelect={handleCatalogItemSelect} loadingSlug={loadingSlug} onItemsLoaded={handleTrendingItemsLoaded} />
+          <ProjectsGallery />
+          <MaterialsSection />
+          <FAQ />
+          <FinalCTA />
+        </Suspense>
       </main>
 
-      <Footer />
-      <FloatingCTA />
-      <BackToTop />
-      <ChatBubble />
+      <Suspense fallback={null}>
+        <Footer />
+        <FloatingCTA />
+        <BackToTop />
+        <ChatBubble />
+      </Suspense>
     </div>
   );
 };

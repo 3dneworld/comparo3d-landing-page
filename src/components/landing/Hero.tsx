@@ -1,5 +1,4 @@
 import { ArrowRight, BarChart3, ChevronDown, PackageCheck, Upload } from "lucide-react";
-import { motion } from "framer-motion";
 
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import HeroProcessDemo from "./HeroProcessDemo";
@@ -30,35 +29,25 @@ const Hero = () => {
 
   return (
     <section className="relative bg-gradient-dark pt-28 pb-20 md:pt-36 md:pb-28 overflow-hidden">
-      {/* Subtle grid pattern with parallax */}
-      <motion.div
-        className="absolute inset-0 opacity-[0.03]"
+      {/* Subtle grid pattern with parallax — animación CSS (sin framer-motion, fuera del
+          critical path del LCP mobile). */}
+      <div
+        className="absolute inset-0 opacity-[0.03] animate-hero-grid-pan motion-reduce:animate-none"
         style={{
           backgroundImage:
             "url(\"data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0z' fill='none' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E\")",
-        }}
-        animate={{
-          backgroundPosition: ["0px 0px", "40px 40px"],
-        }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: "linear",
         }}
       />
 
       <div className="container max-w-6xl relative z-10">
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
           {/* Left: copy */}
-          {/* initial opacity:1 — el <h1> es el elemento LCP en mobile; NO debe arrancar
-              invisible esperando a que framer-motion hidrate. Mantenemos el slide-up
-              (y:12→0) que no bloquea el paint del texto. */}
-          <motion.div
+          {/* El <h1> es el elemento LCP en mobile: pinta desde el primer frame (sin gate
+              de opacidad) con un slide-up por CSS. `key={audience}` remonta el bloque al
+              cambiar de público y vuelve a disparar la animación. Sin framer-motion. */}
+          <div
             key={audience}
-            initial={{ opacity: 1, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="flex-1 text-center lg:text-left max-w-xl"
+            className="flex-1 text-center lg:text-left max-w-xl animate-hero-rise motion-reduce:animate-none"
           >
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-hero-foreground leading-tight tracking-tight">
               {current.title}
@@ -101,7 +90,7 @@ const Hero = () => {
                 </div>
               ))}
             </div>
-          </motion.div>
+          </div>
 
           {/* Right: animated process flow illustration */}
           <div className="flex-1 max-w-md w-full hidden lg:block">

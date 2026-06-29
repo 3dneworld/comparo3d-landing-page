@@ -27,13 +27,16 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        // Fase B LCP: separar librerías pesadas en chunks propios para mejor caching
-        // y evitar que una sola lib bloquee el chunk principal. `recharts` solo lo
-        // usa el dashboard (lazy) → su chunk no entra en el initial load de la home.
+        // Fase B LCP: solo separamos react/react-dom/router (sí se importan estáticos
+        // desde el entry → preload legítimo + mejor caching).
+        //
+        // OJO: NO meter framer-motion ni recharts acá. Al asignarlos a un manualChunk
+        // nombrado, Vite los mete en el grafo de `modulepreload` del index.html y se
+        // cargan eager (mata el LCP). Dejándolos fuera, Vite los split como chunks
+        // async compartidos que cargan recién cuando monta la primera sección lazy que
+        // los usa (después del FCP) — que es justo lo que queremos.
         manualChunks: {
           "react-vendor": ["react", "react-dom", "react-router-dom"],
-          recharts: ["recharts"],
-          motion: ["framer-motion"],
         },
       },
     },
