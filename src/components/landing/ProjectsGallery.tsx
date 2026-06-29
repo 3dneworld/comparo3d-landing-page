@@ -1,12 +1,12 @@
 import AnimateOnScroll from "@/components/AnimateOnScroll";
 import { StaggerChildren, StaggerItem } from "@/components/StaggerChildren";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
-import hogarImg from "@/assets/projects/hogar.png";
-import hobbyImg from "@/assets/projects/hobby.png";
-import prototypeImg from "@/assets/projects/prototype.png";
-import customerPresentImg from "@/assets/projects/customer-present.png";
-import makersImg from "@/assets/projects/makers.png";
-import arreglosImg from "@/assets/projects/arreglos.png";
+import hogarImg from "@/assets/projects/hogar.webp";
+import hobbyImg from "@/assets/projects/hobby.webp";
+import prototypeImg from "@/assets/projects/prototype.webp";
+import customerPresentImg from "@/assets/projects/customer-present.webp";
+import makersImg from "@/assets/projects/makers.webp";
+import arreglosImg from "@/assets/projects/arreglos.webp";
 
 interface CaseRow {
   id: string;
@@ -198,6 +198,8 @@ const ProjectsGallery = () => {
                     <img
                       src={c.image}
                       alt={c.title}
+                      loading="lazy"
+                      decoding="async"
                       className="object-contain md:!max-h-[var(--fit-h)] md:!max-w-[var(--fit-w)]"
                       style={{
                         maxWidth: "92%",

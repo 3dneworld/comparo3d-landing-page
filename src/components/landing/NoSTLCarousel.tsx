@@ -9,9 +9,9 @@ interface CaseItem {
 }
 
 const CASES: CaseItem[] = [
-  { slug: "brick",  orig: "/no-stl/brick-orig.webp", stl: "/no-stl/brick-stl.png", alt: "Ladrillo hueco cerámico" },
-  { slug: "dragon", orig: "/no-stl/dragon-orig.jpg", stl: "/no-stl/dragon-stl.png", alt: "Portalápices con forma de dragón" },
-  { slug: "joch",   orig: "/no-stl/joch-orig.png",   stl: "/no-stl/joch-stl.png",   alt: "Pieza Joch" },
+  { slug: "brick",  orig: "/no-stl/brick-orig.webp", stl: "/no-stl/brick-stl.webp", alt: "Ladrillo hueco cerámico" },
+  { slug: "dragon", orig: "/no-stl/dragon-orig.webp", stl: "/no-stl/dragon-stl.webp", alt: "Portalápices con forma de dragón" },
+  { slug: "joch",   orig: "/no-stl/joch-orig.webp",   stl: "/no-stl/joch-stl.webp",   alt: "Pieza Joch" },
 ];
 
 const INTERVAL_MS = 5000;

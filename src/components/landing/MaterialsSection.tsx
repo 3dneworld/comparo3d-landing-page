@@ -1,12 +1,12 @@
 import { ShieldCheck, Thermometer, Zap, Sparkles } from "lucide-react";
 import { useAudience, type Audience } from "@/contexts/AudienceContext";
 import AnimateOnScroll from "@/components/AnimateOnScroll";
-import plaImg from "@/assets/materials/PLA.png";
-import petgImg from "@/assets/materials/PETG.png";
-import absImg from "@/assets/materials/ABS-s-series.png";
-import tpuImg from "@/assets/materials/TPU.png";
-import nylonImg from "@/assets/materials/Nylon-new.png";
-import pcImg from "@/assets/materials/PC.png";
+import plaImg from "@/assets/materials/PLA.webp";
+import petgImg from "@/assets/materials/PETG.webp";
+import absImg from "@/assets/materials/ABS-s-series.webp";
+import tpuImg from "@/assets/materials/TPU.webp";
+import nylonImg from "@/assets/materials/Nylon-new.webp";
+import pcImg from "@/assets/materials/PC.webp";
 
 type AttrKey = "Resistencia" | "Temperatura" | "Flexibilidad" | "Terminación";
 
@@ -206,6 +206,8 @@ const MaterialsSection = () => {
                   <img
                     src={m.image}
                     alt={m.name}
+                    loading="lazy"
+                    decoding="async"
                     className="h-16 w-16 shrink-0 object-contain"
                   />
                   <div className="min-w-0">
@@ -261,6 +263,8 @@ const MaterialsSection = () => {
                 <img
                   src={m.image}
                   alt={m.name}
+                  loading="lazy"
+                  decoding="async"
                   className="h-14 w-14 shrink-0 object-contain"
                 />
                 <div className="min-w-0 flex-1">
