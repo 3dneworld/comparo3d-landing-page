@@ -290,6 +290,39 @@ async function handleShortLinksApi(request: Request, env: WorkerEnv, url: URL) {
   const kv = env.SHORTLINKS_KV;
   if (!kv) return jsonResponse({ ok: false, error: "shortlinks_kv_not_configured" }, 503);
 
+  if (url.pathname === "/api/shortlinks" && request.method === "GET") {
+    // Lista TODOS los shortlinks: union de las keys KV (link:*) + los hardcodeados
+    // DEFAULT_SHORT_LINKS. Cada uno con sus clics totales y de hoy. Ordenado por clics.
+    const slugs = new Set<string>(Object.keys(DEFAULT_SHORT_LINKS));
+    try {
+      const listed = await kv.list({ prefix: "link:" });
+      for (const k of listed.keys) slugs.add(k.name.slice("link:".length));
+    } catch (error) {
+      console.log(`SHORTLINK list error=${String(error)}`);
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    const links = await Promise.all(
+      [...slugs].map(async (slug) => {
+        const config = await resolveShortLink(slug, env);
+        const [total, daily] = await Promise.all([
+          kv.get(`clicks:${slug}:total`),
+          kv.get(`clicks:${slug}:daily:${today}`),
+        ]);
+        return {
+          slug,
+          short_url: new URL(`/r/${slug}`, url.origin).toString(),
+          target_url: config ? buildShortLinkTarget(url, config) : null,
+          clicks_total: Number.parseInt(total || "0", 10) || 0,
+          clicks_today: Number.parseInt(daily || "0", 10) || 0,
+          active: config ? config.active !== false : false,
+          config: config || null,
+        };
+      }),
+    );
+    links.sort((a, b) => b.clicks_total - a.clicks_total);
+    return jsonResponse({ ok: true, count: links.length, links });
+  }
+
   if (url.pathname === "/api/shortlinks" && request.method === "POST") {
     let payload: Record<string, unknown>;
     try {
@@ -320,12 +353,28 @@ async function handleShortLinksApi(request: Request, env: WorkerEnv, url: URL) {
     const config = await resolveShortLink(slug, env);
     if (!config) return jsonResponse({ ok: false, error: "not_found" }, 404);
 
+    // Serie diaria opcional: ?daily=N (clics por día, últimos N días) para el detalle.
+    let clicks_daily: { date: string; clicks: number }[] | undefined;
+    const daysParam = Number.parseInt(url.searchParams.get("daily") || "0", 10);
+    if (daysParam > 0) {
+      const days = Math.min(daysParam, 90);
+      const dates: string[] = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setUTCDate(d.getUTCDate() - i);
+        dates.push(d.toISOString().slice(0, 10));
+      }
+      const vals = await Promise.all(dates.map((d) => kv.get(`clicks:${slug}:daily:${d}`)));
+      clicks_daily = dates.map((date, i) => ({ date, clicks: Number.parseInt(vals[i] || "0", 10) || 0 }));
+    }
+
     return jsonResponse({
       ok: true,
       slug,
       short_url: new URL(`/r/${slug}`, url.origin).toString(),
       target_url: buildShortLinkTarget(url, config),
       clicks_total: Number.parseInt((await kv.get(`clicks:${slug}:total`)) || "0", 10) || 0,
+      ...(clicks_daily ? { clicks_daily } : {}),
       config,
     });
   }
