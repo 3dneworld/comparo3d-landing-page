@@ -132,4 +132,3 @@ then push to `origin/landing-redesign`.
 Wait for the frontend deployment, request `https://comparo3d.com.ar`, confirm
 the active entry bundle changed, and inspect the deployed entry to verify the
 legacy guard and lazy `web-vitals` chunk split are present.
-

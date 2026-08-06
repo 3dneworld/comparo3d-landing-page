@@ -45,4 +45,3 @@ The existing five-minute in-browser signature cooldown remains unchanged.
   bundle.
 - After deploy, the production HTML must reference the new bundle and the
   previous `index-D0aKxUdu.js` must no longer be the active entry.
-
