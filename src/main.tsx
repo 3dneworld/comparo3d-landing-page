@@ -13,4 +13,4 @@ createRoot(document.getElementById("root")!).render(<App />);
 // RUM de Core Web Vitals (field data real, la métrica que Google usa para ranking).
 // Se registra después del render; los observers usan entradas bufferizadas, así que
 // igual capturan LCP/FCP/TTFB previos. No bloquea nada.
-initWebVitals();
+void initWebVitals();

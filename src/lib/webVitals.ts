@@ -7,11 +7,18 @@
 // Cada métrica se reporta una sola vez, en el momento correcto (LCP/INP/CLS al
 // ocultar la página, FCP/TTFB temprano), vía sendBeacon (sobrevive al unload y,
 // con text/plain, no dispara preflight CORS).
-import { onCLS, onFCP, onINP, onLCP, onTTFB, type Metric } from "web-vitals";
+import type { Metric } from "web-vitals";
 
 import { API_BASE_URL } from "@/lib/api";
 
 const ENDPOINT = `${API_BASE_URL}/api/rum/vitals`;
+
+type WebVitalsApi = Pick<
+  typeof import("web-vitals"),
+  "onCLS" | "onFCP" | "onINP" | "onLCP" | "onTTFB"
+>;
+
+const loadWebVitals = (): Promise<WebVitalsApi> => import("web-vitals");
 
 function formFactor(): "mobile" | "desktop" {
   if (typeof window === "undefined") return "mobile";
@@ -48,11 +55,24 @@ function send(metric: Metric): void {
   });
 }
 
-export function initWebVitals(): void {
-  if (typeof window === "undefined") return;
-  onLCP(send);
-  onINP(send);
-  onCLS(send);
-  onFCP(send);
-  onTTFB(send);
+export async function initWebVitals(
+  loader: () => Promise<WebVitalsApi> = loadWebVitals,
+): Promise<void> {
+  if (
+    typeof window === "undefined" ||
+    typeof Array.prototype.at !== "function"
+  ) {
+    return;
+  }
+
+  try {
+    const { onCLS, onFCP, onINP, onLCP, onTTFB } = await loader();
+    onLCP(send);
+    onINP(send);
+    onCLS(send);
+    onFCP(send);
+    onTTFB(send);
+  } catch {
+    // RUM is best-effort and must never affect the customer flow.
+  }
 }

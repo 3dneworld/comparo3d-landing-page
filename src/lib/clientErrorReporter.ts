@@ -8,6 +8,7 @@ const ALERTS_WORKER_URL =
   "https://comparo3d-alerts.3dneworld.workers.dev";
 
 const REPORT_COOLDOWN_MS = 5 * 60 * 1000;
+const BACKEND_REPORT_TIMEOUT_MS = 4_000;
 const reportedAt = new Map<string, number>();
 let installed = false;
 
@@ -61,27 +62,50 @@ export async function reportClientError(report: ClientErrorReport): Promise<void
     user_agent: window.navigator.userAgent,
     ...report,
   });
-  // Mandamos a los dos canales en paralelo y silenciamos errores:
-  //  1) backend /api/client-error: para registrar el incidente en la DB
-  //     (quote_issues, etc.) cuando el backend esta vivo.
-  //  2) worker /client-error: canal independiente del tunnel; sigue
-  //     funcionando aunque el backend o el tunnel esten caidos.
+  // Flask is the primary channel because it records incidents and sends the
+  // operational alert. The Worker is only a fallback when Flask cannot
+  // acknowledge the report, avoiding duplicate emails while preserving an
+  // independent path during backend/tunnel outages.
   // Reportar nunca debe romper el flujo del cliente.
-  const backendCall = API_BASE_URL
-    ? fetch(`${API_BASE_URL}/api/client-error`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        keepalive: true,
-        body: payload,
-      }).catch(() => undefined)
-    : Promise.resolve();
-  const workerCall = fetch(`${ALERTS_WORKER_URL}/client-error`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    keepalive: true,
-    body: payload,
-  }).catch(() => undefined);
-  await Promise.allSettled([backendCall, workerCall]);
+  if (API_BASE_URL) {
+    const controller = new AbortController();
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        controller.abort();
+        reject(new Error("client_error_backend_timeout"));
+      }, BACKEND_REPORT_TIMEOUT_MS);
+    });
+
+    try {
+      const response = await Promise.race([
+        fetch(`${API_BASE_URL}/api/client-error`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          keepalive: true,
+          signal: controller.signal,
+          body: payload,
+        }),
+        timeout,
+      ]);
+      if (response.ok) return;
+    } catch {
+      // Continue with the independent Worker channel.
+    } finally {
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+    }
+  }
+
+  try {
+    await fetch(`${ALERTS_WORKER_URL}/client-error`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      keepalive: true,
+      body: payload,
+    });
+  } catch {
+    // Alert delivery must never break the customer flow.
+  }
 }
 
 function errorMessage(reason: unknown): string {
